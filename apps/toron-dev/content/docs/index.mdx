@@ -1,0 +1,27 @@
+---
+title: Getting Started
+description: Welcome to the toron docs.
+---
+
+Welcome to the docs! Content lives in `/content/docs`.
+
+## Message flow
+
+Build-time mermaid renders this diagram as inline SVG (ADR-0002 D6):
+
+```mermaid
+sequenceDiagram
+    participant A as agentA
+    participant B as bus
+    participant C as agentB
+    A->>B: sign + NIP-17 gift-wrap
+    B->>C: deliver
+    C-->>A: receipt
+```
+
+## What is Next?
+
+<Cards>
+  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
+  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+</Cards>
