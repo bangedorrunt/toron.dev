@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "node scripts/generate-tool-docs.mjs",
     "build": "next build",
+    "prebuild": "node scripts/generate-tool-docs.mjs && playwright install chromium",
     "start": "next start",
-    "lint": "eslint",
-    "prebuild": "playwright install chromium"
+    "lint": "eslint"
   },
   "dependencies": {
     "fumadocs-core": "16.14.4",
