@@ -1,0 +1,288 @@
+@import "tailwindcss";
+
+:root {
+  /* ADR-0001 D2 — verbatim token set, dark ground truth */
+  --toron-bg: #0a0a0f;
+  --toron-violet: #8b5cf6;
+  --toron-green: #34d399;
+  --toron-amber: #f59e0b;
+  --toron-red: #f87171;
+  --toron-ink: #f5f3ff;
+  --toron-body: #a3a3b8;
+  --toron-border: #26262e;
+  --radius: 6px;
+  --max: 1160px;
+
+  /* derived from the locked palette (no second palette) */
+  --toron-surface: #12121a;
+  --toron-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --toron-font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --toron-font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/*
+ * Paper variant — tonal variants of the locked hues, verified WCAG AA
+ * (4.5:1+) on the light surface. Dark tokens stay verbatim; dark is ground
+ * truth, paper is the accessibility light variant (ADR-0001 D2).
+ */
+.paper {
+  --toron-bg: #f5f3ff;
+  --toron-surface: #ffffff;
+  --toron-ink: #1a1a22;
+  --toron-body: #4b4b5c;
+  --toron-border: #d9d6e8;
+  --toron-violet: #6d3ff0;
+  --toron-green: #2e7d32;
+  --toron-amber: #92400e;
+  --toron-red: #b91c1c;
+}
+
+/*
+ * Tailwind v4 theme mapping. Utilities reference the --color-toron-* vars at
+ * runtime, so the ink/paper class flip propagates without a rebuild.
+ */
+@theme {
+  --color-toron-bg: var(--toron-bg);
+  --color-toron-surface: var(--toron-surface);
+  --color-toron-violet: var(--toron-violet);
+  --color-toron-green: var(--toron-green);
+  --color-toron-amber: var(--toron-amber);
+  --color-toron-red: var(--toron-red);
+  --color-toron-ink: var(--toron-ink);
+  --color-toron-body: var(--toron-body);
+  --color-toron-border: var(--toron-border);
+
+  --font-display: var(--toron-font-display);
+  --font-body: var(--toron-font-body);
+  --font-mono: var(--toron-font-mono);
+
+  --radius-toron: var(--radius);
+  --container-toron: var(--max);
+}
+
+/* ---- base components (self-contained; no Tailwind content-scan needed) ---- */
+
+.toron-terminal {
+  background: var(--toron-surface);
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius);
+  font-family: var(--toron-font-mono);
+  overflow: hidden;
+  text-align: left;
+}
+
+.toron-terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--toron-border);
+  background: color-mix(in srgb, var(--toron-surface) 96%, var(--toron-violet));
+}
+
+.toron-terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  flex: none;
+}
+
+.toron-terminal-dot--red {
+  background: var(--toron-red);
+}
+
+.toron-terminal-dot--amber {
+  background: var(--toron-amber);
+}
+
+.toron-terminal-dot--green {
+  background: var(--toron-green);
+}
+
+.toron-terminal-title {
+  margin-left: 0.25rem;
+  color: var(--toron-body);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toron-terminal-status {
+  margin-left: auto;
+  color: var(--toron-green);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.toron-terminal-body {
+  padding: 0.75rem 1rem;
+  color: var(--toron-ink);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.toron-ascii {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--toron-bg);
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius);
+  font-family: var(--toron-font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--toron-body);
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.toron-ascii-title {
+  margin-bottom: 0.5rem;
+  color: var(--toron-body);
+  font-family: var(--toron-font-body);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.toron-envelope-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--toron-violet) 45%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--toron-violet) 10%, transparent);
+  color: var(--toron-violet);
+  font-family: var(--toron-font-body);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.toron-envelope-glyph {
+  animation: toron-envelope-arrival 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--toron-env-delay, 0ms);
+}
+
+.toron-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 0%,
+    color-mix(in srgb, var(--toron-violet) 14%, transparent),
+    transparent 70%
+  );
+}
+
+.toron-glyph {
+  display: inline-block;
+  font-family:
+    var(--toron-font-mono), "Apple Color Emoji", "Segoe UI Symbol", sans-serif;
+  line-height: 1;
+}
+
+.toron-glyph--violet {
+  color: var(--toron-violet);
+}
+
+.toron-glyph--green {
+  color: var(--toron-green);
+}
+
+.toron-glyph--amber {
+  color: var(--toron-amber);
+}
+
+.toron-glyph--red {
+  color: var(--toron-red);
+}
+
+.toron-glyph--body {
+  color: var(--toron-body);
+}
+
+.toron-state-glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--toron-font-body);
+  font-size: 13px;
+  color: var(--toron-body);
+}
+
+.toron-state-glyph__glyph {
+  font-size: 15px;
+}
+
+.toron-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: toron-pulse 2s ease-in-out infinite;
+}
+
+.toron-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--toron-border);
+  border-radius: 9999px;
+  background: var(--toron-surface);
+  color: var(--toron-body);
+  font-family: var(--toron-font-body);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.toron-toggle:hover {
+  color: var(--toron-ink);
+  border-color: var(--toron-violet);
+}
+
+.toron-focus:focus-visible {
+  outline: 2px solid var(--toron-violet);
+  outline-offset: 2px;
+}
+
+@keyframes toron-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes toron-envelope-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toron-envelope-glyph,
+  .toron-pulse-dot {
+    animation: none;
+  }
+}
