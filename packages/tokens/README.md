@@ -19,8 +19,9 @@ Design tokens + base components for toron.dev (ADR-0001 D2).
 ```tsx
 import "@toron/tokens/theme.css";
 
-// theme toggle (client)
-import { ThemeToggle, themeInitScript } from "@toron/tokens/theme-toggle";
+// theme init script (server-safe; prevents FOUC) + toggle (client)
+import { themeInitScript } from "@toron/tokens/theme-init";
+import { ThemeToggle } from "@toron/tokens/theme-toggle";
 
 // tokens
 import { toronTokens, stateGlyphs } from "@toron/tokens/tokens";
@@ -36,7 +37,7 @@ In the app `globals.css`:
 @import "@toron/tokens/theme.css";
 ```
 
-In `<head>` (prevents theme FOUC):
+In the root layout (server component — `theme-init` is client-free):
 
 ```tsx
 <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />

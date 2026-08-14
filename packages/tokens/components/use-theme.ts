@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ToronTheme } from "../tokens";
+import { THEME_STORAGE_KEY } from "../theme-init";
 
-export const THEME_STORAGE_KEY = "toron-theme";
+export { THEME_STORAGE_KEY } from "../theme-init";
 
 export function useTheme(): [ToronTheme, (theme: ToronTheme) => void] {
   const [theme, setTheme] = useState<ToronTheme>(() =>
@@ -28,10 +29,4 @@ export function useTheme(): [ToronTheme, (theme: ToronTheme) => void] {
   }, []);
 
   return [theme, setToronTheme];
-}
-
-export function themeInitScript(): string {
-  return `(function(){try{var t=localStorage.getItem(${JSON.stringify(
-    THEME_STORAGE_KEY,
-  )});document.documentElement.classList.toggle("paper",t==="paper");}catch(e){}})();`;
 }

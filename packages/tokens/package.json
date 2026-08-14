@@ -9,6 +9,10 @@
   ],
   "exports": {
     "./theme.css": "./theme.css",
+    "./theme-init": {
+      "types": "./theme-init.ts",
+      "default": "./theme-init.ts"
+    },
     "./tokens": {
       "types": "./tokens.ts",
       "default": "./tokens.ts"

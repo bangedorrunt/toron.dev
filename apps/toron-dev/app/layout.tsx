@@ -1,6 +1,7 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import type { Metadata } from 'next';
+import { themeInitScript } from '@toron/tokens/theme-init';
 import './global.css';
 
 export const metadata: Metadata = {
@@ -33,6 +34,10 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen">
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitScript() }}
+          suppressHydrationWarning
+        />
         <RootProvider
           search={{
             options: { type: 'static' },
