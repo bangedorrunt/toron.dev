@@ -1,1 +1,3933 @@
-{"tools":[{"name":"x"}]}
+{
+  "cli_commands": [
+    {
+      "args": "--mcp-stdio, --mcp-http <MCP_HTTP>",
+      "description": "Run the toron daemon (mailbox + MCP server)",
+      "name": "serve"
+    },
+    {
+      "args": "status, start, stop, restart, install, uninstall",
+      "description": "Daemon lifecycle: start/stop/restart/status/install/uninstall",
+      "name": "daemon"
+    },
+    {
+      "args": "",
+      "description": "Quick health/config overview (human by default, --json for machines)",
+      "name": "status"
+    },
+    {
+      "args": "",
+      "description": "Emit the MCP surface catalog (38 tools, 25 resources, CLI commands). The toron.dev catalog contract (ADR-0002 D3)",
+      "name": "catalog"
+    },
+    {
+      "args": "--sample",
+      "description": "Show the effective configuration (flags > env > project > user > system)",
+      "name": "config"
+    },
+    {
+      "args": "send, overseer, reply, inbox, ack, read, search, thread-summarize",
+      "description": "Mail: send/reply/inbox/ack/read/search/thread-summarize (MCP parity JSON)",
+      "name": "mail"
+    },
+    {
+      "args": "acquire, conflicts, renew, release, force-release",
+      "description": "File reservations: acquire/conflicts/renew/release/force-release",
+      "name": "reserve"
+    },
+    {
+      "args": "acquire, renew, release",
+      "description": "Build slots: acquire/renew/release",
+      "name": "slot"
+    },
+    {
+      "args": "request, respond, list, policy",
+      "description": "Contacts: request/respond/list/policy",
+      "name": "contact"
+    },
+    {
+      "args": "install, uninstall, check",
+      "description": "Pre-commit guard: install/uninstall",
+      "name": "guard"
+    },
+    {
+      "args": "reconstruct",
+      "description": "Deep health checks (herdr/git/keys/resonate). --check exits 3 on any failure",
+      "name": "doctor"
+    },
+    {
+      "args": "",
+      "description": "In-process operator counters (tool calls, errors, latency)",
+      "name": "metrics"
+    },
+    {
+      "args": "generate, inspect",
+      "description": "NIP-49 key management: generate + inspect (never prints the nsec)",
+      "name": "key"
+    },
+    {
+      "args": "ensure, list",
+      "description": "Project lifecycle: ensure (idempotent manifest) + list",
+      "name": "project"
+    },
+    {
+      "args": "list, add, remove, info",
+      "description": "Relay federation config: list/add/remove/info (config-backed)",
+      "name": "relay"
+    },
+    {
+      "args": "list, status, default",
+      "description": "Backend selection: list/status/default",
+      "name": "backend"
+    },
+    {
+      "args": "<case>",
+      "description": "Bench a mailbox scenario (startup/inbox/send/search/threads). AM-Rust parity",
+      "name": "bench"
+    },
+    {
+      "args": "--refresh-ms <REFRESH_MS>",
+      "description": "Interactive operator dashboard (ratatui; standalone-daemon TUI)",
+      "name": "tui"
+    },
+    {
+      "args": "lint, validate, run, invoke, dry-run",
+      "description": "Workflow (ADR-0005 Spec 5): lint/validate/run/invoke/dry-run a single workflow file — the fabric (standalone) surface. Orchestration (catalogs/cron/crews) lives in flywheel",
+      "name": "workflow"
+    }
+  ],
+  "generated_at": "2026-08-14T11:19:57Z",
+  "resources": [
+    {
+      "description": "List projects known to toron.",
+      "name": "projects",
+      "uri": "toron://projects/{slug}"
+    },
+    {
+      "description": "Project manifest (kind-30010).",
+      "name": "project",
+      "uri": "toron://project/{slug}"
+    },
+    {
+      "description": "Product + linked projects (kind-30011).",
+      "name": "product",
+      "uri": "toron://products/{key}"
+    },
+    {
+      "description": "Registered agents in a project.",
+      "name": "agents",
+      "uri": "toron://agents/{project}"
+    },
+    {
+      "description": "Agent profile (kind-30013).",
+      "name": "agent_profile",
+      "uri": "toron://agents/{name}/profile"
+    },
+    {
+      "description": "Agent inbox (unwrapped mail).",
+      "name": "agent_inbox",
+      "uri": "toron://agents/{name}/inbox"
+    },
+    {
+      "description": "Messages sent by an agent.",
+      "name": "agent_outbox",
+      "uri": "toron://agents/{name}/outbox"
+    },
+    {
+      "description": "Agent mailbox + commit metadata.",
+      "name": "mailbox",
+      "uri": "toron://mailbox/{name}"
+    },
+    {
+      "description": "Single message body/metadata.",
+      "name": "message",
+      "uri": "toron://messages/{id}"
+    },
+    {
+      "description": "Thread DAG (NIP-10 e tags).",
+      "name": "thread",
+      "uri": "toron://threads/{id}"
+    },
+    {
+      "description": "File reservations.",
+      "name": "reservations",
+      "uri": "toron://reservations/{project}"
+    },
+    {
+      "description": "Single file reservation.",
+      "name": "reservation",
+      "uri": "toron://reservations/{id}"
+    },
+    {
+      "description": "Build slots.",
+      "name": "slots",
+      "uri": "toron://slots/{project}"
+    },
+    {
+      "description": "Single build slot.",
+      "name": "slot",
+      "uri": "toron://slots/{slot}"
+    },
+    {
+      "description": "Identity resolution for a project.",
+      "name": "identity",
+      "uri": "toron://identity/{project}"
+    },
+    {
+      "description": "Server environment + HTTP settings.",
+      "name": "config_environment",
+      "uri": "toron://config/environment"
+    },
+    {
+      "description": "Aggregated tool call/error counts.",
+      "name": "metrics",
+      "uri": "toron://tooling/metrics"
+    },
+    {
+      "description": "Core system metrics (HTTP/DB/storage).",
+      "name": "metrics_core",
+      "uri": "toron://tooling/metrics_core"
+    },
+    {
+      "description": "Clustered tool directory.",
+      "name": "directory",
+      "uri": "toron://tooling/directory"
+    },
+    {
+      "description": "Parameter schemas for tools/macros.",
+      "name": "schemas",
+      "uri": "toron://tooling/schemas"
+    },
+    {
+      "description": "Recent tool activity.",
+      "name": "recent",
+      "uri": "toron://tooling/recent/{window_seconds}"
+    },
+    {
+      "description": "Lock metadata from archive storage.",
+      "name": "locks",
+      "uri": "toron://tooling/locks"
+    },
+    {
+      "description": "Diagnostic report + recommendations.",
+      "name": "diagnostics",
+      "uri": "toron://tooling/diagnostics"
+    },
+    {
+      "description": "Tooling capabilities for an agent.",
+      "name": "capabilities",
+      "uri": "toron://tooling/capabilities/{agent}"
+    },
+    {
+      "description": "Ack-required messages past TTL.",
+      "name": "ack_overdue",
+      "uri": "toron://views/ack-overdue/{agent}"
+    }
+  ],
+  "schema_version": 1,
+  "tools": [
+    {
+      "description": "Upsert an agent identity on its existing key (or create if absent).",
+      "example": {
+        "attachments_policy": null,
+        "model": null,
+        "name": null,
+        "pane_id": null,
+        "program": null,
+        "project_key": "<string>",
+        "reaper_exempt": null,
+        "registration_proof": null,
+        "task_description": null
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "attachments_policy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "Model (maps to 30013 content `model`). Optional for backward compat\n(ADR-0005 P2.2 content-map).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pane_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "description": "Harness / program (maps to 30013 content `program`). Optional for\nbackward compat — old callers omit it (ADR-0005 P2.2 content-map).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "reaper_exempt": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "registration_proof": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "register_agent",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "key_path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "profile_event_id": {
+            "type": "string"
+          },
+          "project_slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "project_slug",
+          "npub",
+          "profile_event_id",
+          "key_path",
+          "created"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Mint a fresh agent keypair (ncryptsec) and publish the kind-30013 profile.",
+      "example": {
+        "attachments_policy": null,
+        "model": null,
+        "name_hint": null,
+        "pane_id": null,
+        "program": null,
+        "project_key": "<string>",
+        "registration_proof": null,
+        "task_description": null
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "attachments_policy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "Model (maps to 30013 content `model`). Optional for backward compat\n(ADR-0005 P2.2 content-map).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name_hint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pane_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "description": "Harness / program (maps to 30013 content `program`). Optional for\nbackward compat — old callers omit it (ADR-0005 P2.2 content-map).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "registration_proof": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "create_agent_identity",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "key_path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "profile_event_id": {
+            "type": "string"
+          },
+          "project_slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "project_slug",
+          "npub",
+          "profile_event_id",
+          "key_path",
+          "created"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Resolve an agent name to npub + profile fields (fail-fast on unknown).",
+      "example": {
+        "agent_name": "<string>",
+        "commit_limit": null,
+        "include_recent_commits": null,
+        "project_key": "<string>"
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "commit_limit": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "include_recent_commits": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "whois",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "last_active_ts_us": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "program": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "npub",
+          "last_active_ts_us"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Resolve a herdr pane_id to the agent name (G9).",
+      "example": {
+        "pane_id": null,
+        "project_key": "<string>"
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "pane_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "resolve_pane_identity",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "properties": {
+              "agent_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pane_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pane_id"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "note": {
+                "type": "string"
+              },
+              "pane_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "note",
+              "pane_id"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Prune identities whose herdr panes are absent from the live pane list.",
+      "example": {
+        "project_key": null
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "project_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "name": "cleanup_pane_identities",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "properties": {
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "note"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "List a project's agents with npub + last-active provenance.",
+      "example": {
+        "active_within_days": null,
+        "limit": null,
+        "project_key": "<string>"
+      },
+      "group": "Identity",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "active_within_days": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "list_agents",
+      "output_schema": {
+        "$defs": {
+          "RegisteredAgentOut": {
+            "description": "`register_agent` / `create_agent_identity` / `list_agents` rows.",
+            "properties": {
+              "created": {
+                "type": "boolean"
+              },
+              "key_path": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "npub": {
+                "type": "string"
+              },
+              "profile_event_id": {
+                "type": "string"
+              },
+              "project_slug": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "project_slug",
+              "npub",
+              "profile_event_id",
+              "key_path",
+              "created"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/RegisteredAgentOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Send a NIP-17 gift-wrapped message to one or more recipients.",
+      "example": {
+        "ack_required": null,
+        "attachment_paths": null,
+        "auto_contact_if_blocked": null,
+        "bcc": null,
+        "body_md": "<string>",
+        "broadcast": null,
+        "cc": null,
+        "convert_images": null,
+        "importance": null,
+        "project_key": "<string>",
+        "sender_name": "<string>",
+        "sender_token": null,
+        "subject": "<string>",
+        "thread_id": null,
+        "to": [
+          "<string>"
+        ],
+        "topic": null
+      },
+      "group": "Messaging",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "ack_required": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "attachment_paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "auto_contact_if_blocked": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "bcc": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "body_md": {
+            "type": "string"
+          },
+          "broadcast": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cc": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "convert_images": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "importance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "sender_name",
+          "to",
+          "subject",
+          "body_md"
+        ],
+        "type": "object"
+      },
+      "name": "send_message",
+      "output_schema": {
+        "$defs": {
+          "DeliveryOut": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/DeliveryPayloadOut"
+              },
+              "project": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "project",
+              "payload"
+            ],
+            "type": "object"
+          },
+          "DeliveryPayloadOut": {
+            "description": "`send_message` / `reply_message`.",
+            "properties": {
+              "event_id": {
+                "type": "string"
+              },
+              "recipient": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "recipient",
+              "event_id"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "deliveries": {
+            "items": {
+              "$ref": "#/$defs/DeliveryOut"
+            },
+            "type": "array"
+          },
+          "verified_sender": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deliveries",
+          "count",
+          "verified_sender"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Reply to a message within its thread (NIP-10 reply reference).",
+      "example": {
+        "ack_required": null,
+        "attachment_paths": null,
+        "auto_contact_if_blocked": null,
+        "bcc": null,
+        "body_md": "<string>",
+        "broadcast": null,
+        "cc": null,
+        "convert_images": null,
+        "importance": null,
+        "project_key": "<string>",
+        "sender_name": "<string>",
+        "sender_token": null,
+        "subject": "<string>",
+        "thread_id": null,
+        "to": [
+          "<string>"
+        ],
+        "topic": null
+      },
+      "group": "Messaging",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "ack_required": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "attachment_paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "auto_contact_if_blocked": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "bcc": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "body_md": {
+            "type": "string"
+          },
+          "broadcast": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cc": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "convert_images": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "importance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "sender_name",
+          "to",
+          "subject",
+          "body_md"
+        ],
+        "type": "object"
+      },
+      "name": "reply_message",
+      "output_schema": {
+        "$defs": {
+          "DeliveryOut": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/DeliveryPayloadOut"
+              },
+              "project": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "project",
+              "payload"
+            ],
+            "type": "object"
+          },
+          "DeliveryPayloadOut": {
+            "description": "`send_message` / `reply_message`.",
+            "properties": {
+              "event_id": {
+                "type": "string"
+              },
+              "recipient": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "recipient",
+              "event_id"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "deliveries": {
+            "items": {
+              "$ref": "#/$defs/DeliveryOut"
+            },
+            "type": "array"
+          },
+          "verified_sender": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deliveries",
+          "count",
+          "verified_sender"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Project the agent's inbox (rumor-time order, G7).",
+      "example": {
+        "ack_overdue_only": null,
+        "agent_name": "<string>",
+        "include_bodies": null,
+        "limit": null,
+        "mark_read": null,
+        "project_key": "<string>",
+        "since_ts": null,
+        "topic": null,
+        "unread_only": null,
+        "urgent_only": null
+      },
+      "group": "Messaging",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "ack_overdue_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "agent_name": {
+            "type": "string"
+          },
+          "include_bodies": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "mark_read": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "since_ts": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unread_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "urgent_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "fetch_inbox",
+      "output_schema": {
+        "$defs": {
+          "InboxMessageOut": {
+            "description": "`fetch_inbox` rows.",
+            "properties": {
+              "ack_required": {
+                "type": "boolean"
+              },
+              "body_md": {
+                "type": "string"
+              },
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "importance": {
+                "type": "string"
+              },
+              "read_ts_us": {
+                "description": "Read receipt timestamp (i64-µs) from the `message_reads` projection;\n`null` = unread (bd-5icg).",
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "sender": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "thread_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "sender",
+              "subject",
+              "body_md",
+              "importance",
+              "ack_required",
+              "created_ts_us"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/InboxMessageOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Acknowledge a message (private NIP-17 ack, idempotent).",
+      "example": {
+        "agent_name": "<string>",
+        "message_id": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Messaging",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "message_id": {
+            "description": "toron message id = the rumor's content-addressed hex EventId (NOT an\nAM-style integer sequence). The arg is a string to match toron's own\nid model — `fetch_inbox` returns `id` as hex; this accepts it verbatim.\n(known-divergences §1: id-type differs by design per ADR-0003.)",
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "message_id"
+        ],
+        "type": "object"
+      },
+      "name": "acknowledge_message",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "acknowledged_at_us": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "message_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "acknowledged"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Mark a message read (private NIP-17 read receipt, idempotent).",
+      "example": {
+        "agent_name": "<string>",
+        "message_id": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Messaging",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "message_id": {
+            "description": "See [`AcknowledgeMessageArgs::message_id`] — hex event id, not an int.",
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "message_id"
+        ],
+        "type": "object"
+      },
+      "name": "mark_message_read",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "acknowledged_at_us": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "message_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "acknowledged"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Request contact with another agent (AgentLink + NIP-17 control message).",
+      "example": {
+        "from_agent": "<string>",
+        "model": null,
+        "program": null,
+        "project_key": "<string>",
+        "reason": null,
+        "register_if_missing": null,
+        "task_description": null,
+        "to_agent": "<string>",
+        "to_project": null,
+        "ttl_seconds": null
+      },
+      "group": "Contacts",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "from_agent": {
+            "type": "string"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "register_if_missing": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_agent": {
+            "type": "string"
+          },
+          "to_project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "from_agent",
+          "to_agent"
+        ],
+        "type": "object"
+      },
+      "name": "request_contact",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created_ts_us": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "from_pubkey": {
+            "type": "string"
+          },
+          "project_slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to_name": {
+            "type": "string"
+          },
+          "to_project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_pubkey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_slug",
+          "from_name",
+          "from_pubkey",
+          "to_name",
+          "to_pubkey",
+          "status",
+          "created_ts_us"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Approve or deny a pending contact request.",
+      "example": {
+        "accept": true,
+        "from_agent": "<string>",
+        "from_project": null,
+        "project_key": "<string>",
+        "to_agent": "<string>",
+        "ttl_seconds": null
+      },
+      "group": "Contacts",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "accept": {
+            "type": "boolean"
+          },
+          "from_agent": {
+            "type": "string"
+          },
+          "from_project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "to_agent": {
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "to_agent",
+          "from_agent",
+          "accept"
+        ],
+        "type": "object"
+      },
+      "name": "respond_contact",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created_ts_us": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "from_pubkey": {
+            "type": "string"
+          },
+          "project_slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to_name": {
+            "type": "string"
+          },
+          "to_project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_pubkey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_slug",
+          "from_name",
+          "from_pubkey",
+          "to_name",
+          "to_pubkey",
+          "status",
+          "created_ts_us"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "List an agent's contact links (AgentLink rows).",
+      "example": {
+        "agent_name": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Contacts",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "list_contacts",
+      "output_schema": {
+        "$defs": {
+          "ContactLinkOut": {
+            "description": "`request_contact` / `respond_contact` / `list_contacts` rows.",
+            "properties": {
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "from_name": {
+                "type": "string"
+              },
+              "from_pubkey": {
+                "type": "string"
+              },
+              "project_slug": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "to_name": {
+                "type": "string"
+              },
+              "to_project": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "to_pubkey": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "project_slug",
+              "from_name",
+              "from_pubkey",
+              "to_name",
+              "to_pubkey",
+              "status",
+              "created_ts_us"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/ContactLinkOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Set the agent's inbound contact policy (open|auto|contacts_only|block_all).",
+      "example": {
+        "agent_name": "<string>",
+        "policy": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Contacts",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "policy"
+        ],
+        "type": "object"
+      },
+      "name": "set_contact_policy",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Symmetric-glob conflict report for paths vs other agents' reservations.",
+      "example": {
+        "agent_name": "<string>",
+        "paths": [
+          "<string>"
+        ],
+        "project_key": "<string>"
+      },
+      "group": "File-reservations",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "paths"
+        ],
+        "type": "object"
+      },
+      "name": "check_file_reservation_conflicts",
+      "output_schema": {
+        "$defs": {
+          "PathConflictOut": {
+            "description": "`check_file_reservation_conflicts`.",
+            "properties": {
+              "holders": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "path": {
+                "type": "string"
+              },
+              "reservation_ids": {
+                "description": "Kind-30031 event id of each conflicting lease (bd-dsu1) — parallel to\n`holders`, one id per holder. The operator lock board surfaces these\nfor diagnostics (force-release, request-release, replay).",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "path",
+              "holders",
+              "reservation_ids"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "checked_paths": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "clear_paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "conflict_free": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/$defs/PathConflictOut"
+            },
+            "type": "array"
+          },
+          "has_soft_conflicts": {
+            "type": "boolean"
+          },
+          "soft_conflicts": {
+            "description": "ADR-0011 Spec 4: additive soft tier (in-TTL intents).",
+            "items": {
+              "$ref": "#/$defs/PathConflictOut"
+            },
+            "type": "array"
+          },
+          "total_conflicting_reservations": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conflict_free",
+          "conflicts",
+          "clear_paths",
+          "checked_paths",
+          "total_conflicting_reservations",
+          "soft_conflicts",
+          "has_soft_conflicts"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Acquire exclusive/shared leases on path globs (kind-30031).",
+      "example": {
+        "agent_name": "<string>",
+        "exclusive": null,
+        "paths": [
+          "<string>"
+        ],
+        "project_key": "<string>",
+        "reason": null,
+        "ttl_seconds": null
+      },
+      "group": "File-reservations",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "exclusive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "paths"
+        ],
+        "type": "object"
+      },
+      "name": "file_reservation_paths",
+      "output_schema": {
+        "$defs": {
+          "GrantedReservationOut": {
+            "description": "`file_reservation_paths`.",
+            "properties": {
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "path_pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "path_pattern",
+              "exclusive",
+              "reason"
+            ],
+            "type": "object"
+          },
+          "PathConflictOut": {
+            "description": "`check_file_reservation_conflicts`.",
+            "properties": {
+              "holders": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "path": {
+                "type": "string"
+              },
+              "reservation_ids": {
+                "description": "Kind-30031 event id of each conflicting lease (bd-dsu1) — parallel to\n`holders`, one id per holder. The operator lock board surfaces these\nfor diagnostics (force-release, request-release, replay).",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "path",
+              "holders",
+              "reservation_ids"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "conflicts": {
+            "items": {
+              "$ref": "#/$defs/PathConflictOut"
+            },
+            "type": "array"
+          },
+          "granted": {
+            "items": {
+              "$ref": "#/$defs/GrantedReservationOut"
+            },
+            "type": "array"
+          },
+          "soft_conflicts": {
+            "description": "ADR-0011 Spec 4: additive soft tier (frozen-acquire paths).",
+            "items": {
+              "$ref": "#/$defs/PathConflictOut"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "granted",
+          "conflicts",
+          "soft_conflicts"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Extend the TTLs of the holder's active file reservations.",
+      "example": {
+        "agent_name": "<string>",
+        "extend_seconds": null,
+        "paths": null,
+        "project_key": "<string>"
+      },
+      "group": "File-reservations",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "extend_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "renew_file_reservations",
+      "output_schema": {
+        "$defs": {
+          "GrantedReservationOut": {
+            "description": "`file_reservation_paths`.",
+            "properties": {
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "path_pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "path_pattern",
+              "exclusive",
+              "reason"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "renewed": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reservations": {
+            "items": {
+              "$ref": "#/$defs/GrantedReservationOut"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "renewed",
+          "reservations"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Release the holder's active file reservations (idempotent).",
+      "example": {
+        "agent_name": "<string>",
+        "paths": null,
+        "project_key": "<string>"
+      },
+      "group": "File-reservations",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "release_file_reservations",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "released": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "released"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Operator force-release of a stale reservation (staleness heuristic + revocation).",
+      "example": {
+        "agent_name": "<string>",
+        "holder": null,
+        "note": null,
+        "notify_previous": null,
+        "path": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "File-reservations",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "holder": {
+            "description": "Optional holder name to disambiguate when multiple holders match the\npath. Omit to revoke the (single) matching lease.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notify_previous": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "path": {
+            "description": "Path (or glob) of the stale reservation to revoke. The daemon resolves\nthe active lease on this path itself (bd-cumj) — the caller does NOT\nneed the holder's event id.",
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "force_release_file_reservation",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "FTS5 search over a project's indexed messages (porter/unicode61).",
+      "example": {
+        "cursor": null,
+        "explain": null,
+        "importance": null,
+        "include_body_md": null,
+        "limit": null,
+        "offset": null,
+        "project_key": "<string>",
+        "query": "<string>",
+        "ranking": null,
+        "sender": null,
+        "since": null,
+        "thread_id": null,
+        "until": null
+      },
+      "group": "Search",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explain": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "importance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "include_body_md": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "offset": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "ranking": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "until": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search_messages",
+      "output_schema": {
+        "$defs": {
+          "SearchMessageOut": {
+            "description": "`search_messages` rows.",
+            "properties": {
+              "ack_required": {
+                "type": "boolean"
+              },
+              "body_md": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "from": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "importance": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "thread_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "subject",
+              "from",
+              "created_ts_us",
+              "importance",
+              "ack_required"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/SearchMessageOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Deterministic digest of a thread (participants, key points, actions).",
+      "example": {
+        "include_examples": null,
+        "llm_mode": null,
+        "llm_model": null,
+        "per_thread_limit": null,
+        "project_key": "<string>",
+        "thread_id": "<string>"
+      },
+      "group": "Search",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "include_examples": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_mode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "per_thread_limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "thread_id"
+        ],
+        "type": "object"
+      },
+      "name": "summarize_thread",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "action_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "message_count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "participants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "thread_id",
+          "participants",
+          "key_points",
+          "action_items",
+          "message_count"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Batch: ensure_project + register agent + optional file reservation + inbox snapshot.",
+      "example": {
+        "agent_name": null,
+        "file_reservation_paths": null,
+        "file_reservation_reason": null,
+        "file_reservation_ttl_seconds": null,
+        "human_key": "<string>",
+        "inbox_limit": null,
+        "model": "<string>",
+        "pane_id": null,
+        "program": "<string>",
+        "reaper_exempt": null,
+        "registration_proof": null,
+        "task_description": null
+      },
+      "group": "Macros",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_reservation_paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "file_reservation_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_reservation_ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "human_key": {
+            "type": "string"
+          },
+          "inbox_limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "pane_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "type": "string"
+          },
+          "reaper_exempt": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "registration_proof": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "human_key",
+          "program",
+          "model"
+        ],
+        "type": "object"
+      },
+      "name": "macro_start_session",
+      "output_schema": {
+        "$defs": {
+          "GrantedReservationOut": {
+            "description": "`file_reservation_paths`.",
+            "properties": {
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "path_pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "path_pattern",
+              "exclusive",
+              "reason"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "granted_reservations": {
+            "items": {
+              "$ref": "#/$defs/GrantedReservationOut"
+            },
+            "type": "array"
+          },
+          "inbox_count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "npub",
+          "granted_reservations",
+          "inbox_count"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Batch: ensure registration + thread summary + recent inbox context.",
+      "example": {
+        "agent_name": null,
+        "inbox_limit": null,
+        "include_examples": null,
+        "include_inbox_bodies": null,
+        "llm_mode": null,
+        "llm_model": null,
+        "model": "<string>",
+        "program": "<string>",
+        "project_key": "<string>",
+        "register_if_missing": null,
+        "registration_proof": null,
+        "task_description": null,
+        "thread_id": "<string>"
+      },
+      "group": "Macros",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inbox_limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "include_examples": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "include_inbox_bodies": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_mode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "program": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "register_if_missing": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "registration_proof": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "thread_id",
+          "program",
+          "model"
+        ],
+        "type": "object"
+      },
+      "name": "macro_prepare_thread",
+      "output_schema": {
+        "$defs": {
+          "ThreadSummaryOut": {
+            "description": "`summarize_thread` / `summarize_thread_product`.",
+            "properties": {
+              "action_items": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "key_points": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "message_count": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "thread_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "thread_id",
+              "participants",
+              "key_points",
+              "action_items",
+              "message_count"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "inbox_count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/$defs/ThreadSummaryOut"
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "npub",
+          "thread_id",
+          "summary",
+          "inbox_count"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Batch: request contact + optional auto-accept + welcome message.",
+      "example": {
+        "agent_name": null,
+        "auto_accept": null,
+        "model": null,
+        "program": null,
+        "project_key": "<string>",
+        "reason": null,
+        "register_if_missing": null,
+        "requester": null,
+        "target": null,
+        "task_description": null,
+        "thread_id": null,
+        "to_agent": null,
+        "to_project": null,
+        "ttl_seconds": null,
+        "welcome_body": null,
+        "welcome_subject": null
+      },
+      "group": "Macros",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auto_accept": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "register_if_missing": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "requester": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "welcome_body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "welcome_subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "macro_contact_handshake",
+      "output_schema": {
+        "$defs": {
+          "ContactLinkOut": {
+            "description": "`request_contact` / `respond_contact` / `list_contacts` rows.",
+            "properties": {
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "from_name": {
+                "type": "string"
+              },
+              "from_pubkey": {
+                "type": "string"
+              },
+              "project_slug": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "to_name": {
+                "type": "string"
+              },
+              "to_project": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "to_pubkey": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "project_slug",
+              "from_name",
+              "from_pubkey",
+              "to_name",
+              "to_pubkey",
+              "status",
+              "created_ts_us"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "link": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ContactLinkOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requester": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "welcome_sent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "requester",
+          "target",
+          "welcome_sent"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Batch: reserve a set of path globs, optionally release them at the end.",
+      "example": {
+        "agent_name": "<string>",
+        "auto_release": null,
+        "exclusive": null,
+        "paths": [
+          "<string>"
+        ],
+        "project_key": "<string>",
+        "reason": null,
+        "ttl_seconds": null
+      },
+      "group": "Macros",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "auto_release": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "exclusive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "paths"
+        ],
+        "type": "object"
+      },
+      "name": "macro_file_reservation_cycle",
+      "output_schema": {
+        "$defs": {
+          "GrantedReservationOut": {
+            "description": "`file_reservation_paths`.",
+            "properties": {
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "path_pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "path_pattern",
+              "exclusive",
+              "reason"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "granted": {
+            "items": {
+              "$ref": "#/$defs/GrantedReservationOut"
+            },
+            "type": "array"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "released": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "granted",
+          "released"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Idempotent product manifest (kind-30011) for a product key.",
+      "example": {
+        "name": null,
+        "product_key": null
+      },
+      "group": "Product-bus",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "product_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "name": "ensure_product",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "member_projects": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "product_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_key",
+          "name",
+          "member_projects",
+          "created"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Link a project into a product (idempotent; kind-30011 a-tag).",
+      "example": {
+        "product_key": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Product-bus",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "product_key": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_key",
+          "project_key"
+        ],
+        "type": "object"
+      },
+      "name": "products_link",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "member_projects": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "product_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_key",
+          "name",
+          "member_projects",
+          "created"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Fan an FTS5 search across a product's member projects.",
+      "example": {
+        "cursor": null,
+        "importance": null,
+        "include_body_md": null,
+        "limit": null,
+        "product_key": "<string>",
+        "project": null,
+        "query": "<string>",
+        "ranking": null,
+        "sender": null,
+        "thread_id": null
+      },
+      "group": "Product-bus",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "importance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "include_body_md": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "product_key": {
+            "type": "string"
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "query": {
+            "type": "string"
+          },
+          "ranking": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "product_key",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search_messages_product",
+      "output_schema": {
+        "$defs": {
+          "ProjectSearchMessageOut": {
+            "description": "`search_messages_product` rows (`(project, SearchMessage)` flatten).",
+            "properties": {
+              "ack_required": {
+                "type": "boolean"
+              },
+              "body_md": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "from": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "importance": {
+                "type": "string"
+              },
+              "project": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "thread_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "project",
+              "id",
+              "subject",
+              "from",
+              "created_ts_us",
+              "importance",
+              "ack_required"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/ProjectSearchMessageOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Fan an inbox fetch across a product's member projects.",
+      "example": {
+        "agent_name": "<string>",
+        "include_bodies": null,
+        "limit": null,
+        "product_key": "<string>",
+        "since_ts": null,
+        "urgent_only": null
+      },
+      "group": "Product-bus",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "include_bodies": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "product_key": {
+            "type": "string"
+          },
+          "since_ts": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "urgent_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "product_key",
+          "agent_name"
+        ],
+        "type": "object"
+      },
+      "name": "fetch_inbox_product",
+      "output_schema": {
+        "$defs": {
+          "ProjectInboxMessageOut": {
+            "description": "`fetch_inbox_product` rows (`(project, InboxMessage)` flatten).",
+            "properties": {
+              "ack_required": {
+                "type": "boolean"
+              },
+              "body_md": {
+                "type": "string"
+              },
+              "created_ts_us": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "importance": {
+                "type": "string"
+              },
+              "project": {
+                "type": "string"
+              },
+              "sender": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "thread_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "project",
+              "id",
+              "sender",
+              "subject",
+              "body_md",
+              "importance",
+              "ack_required",
+              "created_ts_us"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "items": {
+          "$ref": "#/$defs/ProjectInboxMessageOut"
+        },
+        "type": "array"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Summarize a thread across a product's member projects.",
+      "example": {
+        "include_examples": null,
+        "llm_mode": null,
+        "llm_model": null,
+        "per_thread_limit": null,
+        "product_key": "<string>",
+        "thread_id": "<string>"
+      },
+      "group": "Product-bus",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "include_examples": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_mode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "llm_model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "per_thread_limit": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "product_key": {
+            "type": "string"
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_key",
+          "thread_id"
+        ],
+        "type": "object"
+      },
+      "name": "summarize_thread_product",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "action_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "message_count": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "participants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "thread_id",
+          "participants",
+          "key_points",
+          "action_items",
+          "message_count"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Acquire an advisory build-slot lease (kind-30032), optionally exclusive.",
+      "example": {
+        "agent_name": "<string>",
+        "exclusive": null,
+        "project_key": "<string>",
+        "slot": "<string>",
+        "ttl_seconds": null
+      },
+      "group": "Build-slots",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "exclusive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "slot": {
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "slot"
+        ],
+        "type": "object"
+      },
+      "name": "acquire_build_slot",
+      "output_schema": {
+        "$defs": {
+          "GrantedSlotOut": {
+            "description": "`acquire_build_slot`.",
+            "properties": {
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "slot": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "slot",
+              "exclusive"
+            ],
+            "type": "object"
+          },
+          "SlotConflictOut": {
+            "properties": {
+              "holders": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "slot": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "slot",
+              "holders"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "conflicts": {
+            "items": {
+              "$ref": "#/$defs/SlotConflictOut"
+            },
+            "type": "array"
+          },
+          "granted": {
+            "items": {
+              "$ref": "#/$defs/GrantedSlotOut"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "granted",
+          "conflicts"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Extend an active build-slot lease's TTL (no-op when missing).",
+      "example": {
+        "agent_name": "<string>",
+        "extend_seconds": null,
+        "project_key": "<string>",
+        "slot": "<string>"
+      },
+      "group": "Build-slots",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "extend_seconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "slot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "slot"
+        ],
+        "type": "object"
+      },
+      "name": "renew_build_slot",
+      "output_schema": {
+        "$defs": {
+          "BuildSlotOut": {
+            "description": "`renew_build_slot` (null when no lease).",
+            "properties": {
+              "agent_name": {
+                "type": "string"
+              },
+              "agent_pubkey": {
+                "type": "string"
+              },
+              "exclusive": {
+                "type": "boolean"
+              },
+              "expires_ts_us": {
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "slot": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "slot",
+              "agent_name",
+              "agent_pubkey",
+              "exclusive",
+              "status"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "$ref": "#/$defs/BuildSlotOut"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Release an active build-slot lease (non-destructive).",
+      "example": {
+        "agent_name": "<string>",
+        "project_key": "<string>",
+        "slot": "<string>"
+      },
+      "group": "Build-slots",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          },
+          "slot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "agent_name",
+          "slot"
+        ],
+        "type": "object"
+      },
+      "name": "release_build_slot",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "boolean"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Bus liveness + archive health for a project (AM-Rust parity).",
+      "example": {
+        "project_key": null
+      },
+      "group": "Infrastructure",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "project_key": {
+            "default": null,
+            "description": "AM parity: `health_check` takes no required args. The field is kept\noptional (default empty) so clients that mirror the project-scoped\nconvention still parse, but it is NOT required and NOT used — the\ndaemon reports process-global bus + archive health.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "name": "health_check",
+      "output_schema": {
+        "$defs": {
+          "HealthComponentOut": {
+            "description": "`health_check`: `{bus, archive}` each `{ok, message}`.",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "ok": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "archive": {
+            "$ref": "#/$defs/HealthComponentOut"
+          },
+          "bus": {
+            "$ref": "#/$defs/HealthComponentOut"
+          }
+        },
+        "required": [
+          "bus",
+          "archive"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Idempotent project initialization (kind-30010 manifest).",
+      "example": {
+        "human_key": "<string>",
+        "identity_mode": null
+      },
+      "group": "Infrastructure",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "human_key": {
+            "type": "string"
+          },
+          "identity_mode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "human_key"
+        ],
+        "type": "object"
+      },
+      "name": "ensure_project",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "manifest_event_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "manifest_event_id",
+          "created"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Install the toron pre-commit hook in a git repository.",
+      "example": {
+        "code_repo_path": "<string>",
+        "project_key": "<string>"
+      },
+      "group": "Infrastructure",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "code_repo_path": {
+            "type": "string"
+          },
+          "project_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_key",
+          "code_repo_path"
+        ],
+        "type": "object"
+      },
+      "name": "install_precommit_guard",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "hook_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hook_path"
+        ],
+        "type": "object"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    },
+    {
+      "description": "Remove the toron pre-commit hook (never clobbers a user hook).",
+      "example": {
+        "code_repo_path": "<string>"
+      },
+      "group": "Infrastructure",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "code_repo_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code_repo_path"
+        ],
+        "type": "object"
+      },
+      "name": "uninstall_precommit_guard",
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "boolean"
+      },
+      "parity": "AM-Rust 38-tool surface"
+    }
+  ],
+  "toron_version": "1.1.0"
+}

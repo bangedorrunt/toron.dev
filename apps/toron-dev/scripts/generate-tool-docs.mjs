@@ -41,6 +41,11 @@ function slugify(name) {
     .replace(/^-+|-+$/g, '');
 }
 
+
+// Escape a markdown table cell: pipes break MDX tables.
+function esc(s) {
+  return String(s).replaceAll('|', '\\|');
+}
 // Flatten a JSON Schema object into table rows: name (dot path),
 // type string, required flag, description. Recurses into nested objects
 // and array items. Generic over the schema shape.
@@ -104,8 +109,8 @@ function toolPageMarkdown(tool) {
   const { name, description = '', input_schema, output_schema, example, parity } = tool;
   const parts = [
     '---',
-    `title: ${name}`,
-    `description: ${String(description).replaceAll('\n', ' ')}`,
+    `title: ${JSON.stringify(name)}`,
+    `description: ${JSON.stringify(String(description))}`,
     '---',
     '',
     description,
@@ -170,7 +175,7 @@ function referenceMarkdown(catalog) {
   const lines = [
     '---',
     'title: Reference',
-    'description: Full tool surface, parity grid, resources, and CLI commands, generated from the catalog.',
+    `description: ${JSON.stringify('Full tool surface, parity grid, resources, and CLI commands, generated from the catalog.')}`,
     '---',
     '',
     `## Tools (${tools.length})`,
@@ -181,14 +186,14 @@ function referenceMarkdown(catalog) {
   for (const tool of tools) {
     const cell = parity ? parity.cell(tool) : '';
     const href = `./tools/${slugify(tool.group)}/${tool.name}`;
-    lines.push(`| [\`${tool.name}\`](${href}) | ${tool.group} | ${cell} |`);
+    lines.push(`| [\`${tool.name}\`](${href}) | ${esc(tool.group)} | ${esc(cell)} |`);
   }
 
   const resources = catalog.resources ?? [];
   if (resources.length > 0) {
     lines.push('', `## Resources (${resources.length})`, '', '| Name | URI | Description |', '|---|---|---|');
     for (const r of resources) {
-      lines.push(`| \`${r.name}\` | \`${r.uri}\` | ${r.description ?? ''} |`);
+      lines.push(`| \`${r.name}\` | \`${r.uri}\` | ${esc(r.description ?? '')} |`);
     }
   }
 
@@ -196,7 +201,7 @@ function referenceMarkdown(catalog) {
   if (cli.length > 0) {
     lines.push('', `## CLI commands (${cli.length})`, '', '| Command | Args | Description |', '|---|---|---|');
     for (const c of cli) {
-      lines.push(`| \`${c.name}\` | \`${c.args ?? ''}\` | ${c.description ?? ''} |`);
+      lines.push(`| \`${c.name}\` | \`${esc(c.args ?? '')}\` | ${esc(c.description ?? '')} |`);
     }
   }
   lines.push('');
