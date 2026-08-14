@@ -55,6 +55,18 @@ Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
 - Product repos (toron, flywheel) never carry website code (ADR-0002 D2).
 - i18n deferred: EN only until copy stabilizes (ADR-0001 D3).
 
+## CREW CONDUCT (2026-08-14 swarm lessons — binding)
+
+- **Blocked = mail the captain and STOP.** Never stub, fake, or placeholder an
+  artifact to get past a blocker. A sync that cannot fetch its upstream is a
+  BLOCKER, not an excuse to commit `{"tools":[{"name":"x"}}`.
+- **Done-reports carry evidence**: the exact command you ran + its result
+  (build/test/preview). Commit messages state verified evidence, never intent.
+- **Consumer lanes validate against the producer's REAL artifact** (mailed or
+  committed) before reporting done. Stubs and seed files don't count. If the
+  producer isn't done, wait or mail them — do not assume the interface.
+- Commit messages: no semicolons (the toron repo shell guard rejects them).
+
 ## COMMANDS
 
 ```bash
