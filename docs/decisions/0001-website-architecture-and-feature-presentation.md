@@ -160,7 +160,7 @@ proof — they belong on different surfaces.
 
 ### D7 — Tool docs: grouped sidebar, tool-per-page
 
-Fumadocs sidebar with **7 grouped sections**: Identity (6) · Messaging (5) ·
+Fumadocs sidebar with **9 grouped sections**: Identity (6) · Messaging (5) ·
 Contacts (4) · File-reservations (5) · Search (2) · Macros (4) · Product-bus
 (5) · Build-slots (3) · Infrastructure (4). Each of the 38 tools gets one page
 with: input/output schema, code example, AM-Rust parity note. A parity grid on
