@@ -1,0 +1,69 @@
+---
+title: Buzz parity
+description: Living tracker of Buzz → toron/flywheel leverage: landed, adapted, rejected, hold.
+---
+
+# Buzz parity
+
+Living tracker of what we **steal / adapt / reject** from [block/buzz](https://github.com/block/buzz) (and AgentMail where relevant) so agents do not re-litigate closed decisions.
+
+**Sources of truth (toron repo):** ADR-0003 (`docs/decisions/0003-nostr-mailbox-fabric.md`) · comparison note (`docs/notes/2026-08-07-buzz-agentmail-comparison.md`) · GS-061/062 ship reports.
+
+**Last updated:** 2026-09-25 (Melbourne AEST)
+
+## Status legend
+
+| Status | Meaning |
+|--------|---------|
+| **Landed** | Call site + tests (or live gate) on tip; do not re-implement |
+| **Adapted** | Buzz pattern kept; dependency/shape changed (e.g. SQLite not Redis) |
+| **Rejected** | Explicit non-goal — do not open as "Buzz has it" |
+| **Hold** | Scouted / library-only / needs captain word — no invent-green |
+
+## GS-061 / GS-062 parity table
+
+| Pattern | Buzz signal | Toron / flywheel action | Status | Ship | Notes |
+|---------|-------------|-------------------------|--------|------|-------|
+| Busy-owner bound + generation fence | ACP hold bound + fence `#7337`/`#7340` | `busy_owner` + `DispatchPool::try_acquire_fenced` / `fork_rebind` / deadline wake | **Landed** | GS-062 | No ACP harness. Drop→Release. Stale gen cannot reclaim |
+| Presence fail-closed | OK false when Redis fails `#7532` | `presence_admit(store.is_healthy())` via SQLite `SELECT 1` | **Adapted → Landed** | GS-062 | **Never Redis**. Never hardcoded `true` |
+| Convergence leave/close | Kick at convergence `#7298` | Propose→Commit→FireLive (`Kick`/`Disable`) + ReAdd fence + hold authority | **Landed** | GS-062 (A) | Join attempted gen from **held**; cross-channel safe |
+| DeliveryCursor | ACP session delivery dedup `#7620` | Session delivery cursor; assignee = session | **Landed** | GS-062 | Agent-key signed ≠ delivery proof |
+| verify-before-route | Verify id+sig before prompt route `#7010` | Ingress stage order + forge tripwires | **Landed** | GS-061/062 | Boundary discipline; no double-validate in pure core |
+| soft_delete / WorkflowLifecycle | Workflow deletion honesty `#7735` | Soft-delete clears executable under one lock; host gates `try_start` | **Landed** | GS-062 | Settlement ≠ business done (ADR-0032) |
+| Arc workflow defs | Shared definition list | `Arc` shared registry so Clone sees soft_delete | **Landed** | GS-062 (B) | No Vec-copy blind to delete |
+| SleepUntilDeadline journal/park | Deadline wake of held ACP | Journaled park effect on fenced busy-owner | **Landed** | GS-062 (C) | Effect settlement ≠ provider done |
+| wake_liveness Quiet/Live/Deaf/NeverStamped | WS recovery telemetry `#7546` | Classifier on `flywheel serve` `/health` **and** doorbell `:18980` | **Landed** | GS-062 (E) | Split stamps: `.event` / `.hb`. Never `max(event,hb)` into `last_event_ms` |
+| F worst-of across alive hosted | — | Aggregate pipe = worst class; `wake.workspace` = worst winner | **Landed** | GS-062 (F) | Deaf+Live → pipe=Deaf, workspace=ws-deaf |
+| ADV-5 try_send / stamp-after-Ok / Died | Capacity-paced recovery | `try_send`; stamp only after Ok; Full → Died + `blocking_send` | **Landed** | GS-062 | No silent drop under Full |
+| T1(a) Deferred→Accepted | — | Deferred is **not** Settled-Delivered until published | **Landed** | GS-062 | Never claim Settled before publish |
+| T2(b) Transient Exhausted→ProvenFailed | Missing models without retry `#7538` | Exhausted Transient → ProvenFailed + DLQ whole batch | **Landed** | GS-062 | Never force-retry Exhausted Transient |
+| T3 Buffered→timer NoSigner | — | Timer NoSigner → durable fail / DLQ | **Landed** | GS-062 | Fail-closed, journaled |
+| Side Q A: DeliveryCursor honesty | Session delivery vs agent-key | Steal cursor honesty | **Adapted** | GS-061/062 | **Reject** channel-wide chat memory / ACP harness |
+| Redis presence | `#7532` Redis storage | — | **Rejected** | — | Local-first SQLite only |
+| AgentServer / OTP | Buzz agent identity UX | — | **Rejected** | — | herdr+MCP (ADR-0003 Adapt) |
+| Casual new kinds / Forge wire | NIP-MP / Forge | — | **Rejected / Hold epic** | — | ADR-0033 freeze; captain kinds gate |
+| Funnel / dual SoT | — | — | **Rejected** | — | GS-053/054 locks |
+| NIP-FI runtime | Federated JWKS `#7109` | — | **Rejected** | — | No federation epic without captain |
+| Channel-wide conversational UX / ACP | ACP session harness | — | **Rejected** | — | Mailbox-first; Tick Law Msg immutable |
+| Newest-first thread windows / read-state snapshots | `#7823` `#7572` | Optional query shapes | **Hold** | — | Captain opens context-assembly ship |
+| L1 toron-audit hash-chain + TLV | `#7492` | Opt-in chain over bus/journal | **Hold** | Aug-07 L1 | Captain authorize; no Postgres |
+| ifc-core lattice runtime | `#7293` | Vocabulary only | **Rejected (runtime)** | — | Adapt labels, not lattice on Tick |
+
+## Explicit REJECT / HOLD (do not re-open casually)
+
+**REJECT:** Redis presence · AgentServer · OTP · casual new Nostr kinds · Funnel · dual SoT · NIP-FI runtime · ACP / stdio harness · channel-wide chat memory · push-gateway / mobile UX · buzz-relay-mesh as default · Postgres+S3 as authority path.
+
+**HOLD (captain word):** L1 audit TLV · Forge/NIP-34 thaw · newest-first windows / read-state snapshots · wake.sock recovery counter sprawl beyond Quiet/Live/Deaf/NeverStamped.
+
+## How to update this page
+
+1. **Buzz PR scouted** — add or revise a row; cite Buzz PR/SHA; set Status=Hold until a GS ship lands call sites.
+2. **After a GS ship** — flip Status to Landed/Adapted/Rejected with Ship id; link the ship report path under `agent-data/grok-ship/reports/`.
+3. **Never invent-green** — Landed requires call site + test (or live gate evidence). Library-only stays Hold.
+4. Keep ADR-0003 Prior Art and the Aug-07 comparison note in sync when status flips.
+
+## Related
+
+- toron ADR-0003 Rev10+ — Prior Art & Leverage (steal/adapt/reject)
+- `docs/notes/2026-08-07-buzz-agentmail-comparison.md` — GS-061/062 deltas
+- Skills: `toron` / `flywheel` → `references/buzz-parity.md` (agent-facing NEVER list)
