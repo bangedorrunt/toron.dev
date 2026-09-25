@@ -1,6 +1,8 @@
 # toron.dev — Agent Instructions
 
-Marketing + docs site for toron + flywheel. Sites-monorepo, Vercel-hosted.
+Marketing + docs site for the autonomous agent stack: toron, flywheel, beads, and chiebukuro. Sites-monorepo, Vercel-hosted.
+
+**Current scope:** toron owns signed transport and records, flywheel owns orchestration, beads owns work evidence, and chiebukuro owns knowledge and memory. ADR-0003 supersedes the earlier toron-only scope on this point.
 
 **Generated:** 2026-08-14
 **Repo:** bangedorrunt/toron.dev

@@ -131,7 +131,9 @@ backend, safety review of what visitors see, and uptime guarantees. A
 deterministic state machine ships fast, has no security surface, and looks real.
 Upgrade path to a real daemon stream is documented as a v2 option.
 
-### D5 — flywheel scope: section of toron.dev
+### D5 — flywheel scope: section of toron.dev (superseded by ADR-0003 on 2026-09-25)
+
+> ADR-0003 expands the public site from a toron-first section model to a four-plane stack model. The visual language, dark-first palette, abstraction ladder, and build-time Mermaid rules below remain in force.
 
 flywheel is presented as a **section of toron.dev**, not a separate site. A
 **layer-ownership table** on `/architecture` explains who-owns-what:

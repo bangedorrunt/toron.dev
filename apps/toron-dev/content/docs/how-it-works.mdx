@@ -1,0 +1,141 @@
+---
+title: How the autonomous stack works
+description: The four-plane execution loop, from goal to evidence and memory.
+---
+
+The stack is not a queue with extra steps. It is a small control loop with four planes:
+
+1. **flywheel** turns a goal into dispatchable work.
+2. **beads** makes the work claimable, verifiable, and closeable.
+3. **toron** carries the signed handoff and the state that survives a crash.
+4. **chiebukuro** turns the result into memory the next run can use.
+
+## 1. Architecture stack
+
+```mermaid
+flowchart TB
+  A[agents] --> M[MCP clients]
+  M --> T[toron-core]
+  T --> B[mail + identity + reservations]
+  T --> W[workflow + jobs]
+  T --> G[Git archive]
+  F[flywheel] --> T
+  C[chiebukuro] --> M
+  D[beads] --> T
+```
+
+The products have one-way ownership. flywheel orchestrates, beads records work, chiebukuro remembers, and toron carries the signed coordination substrate.
+
+## 2. Message flow
+
+```mermaid
+sequenceDiagram
+  participant A as agentA
+  participant T as toron
+  participant B as agentB
+  A->>T: sign + gift-wrap
+  T->>B: deliver sealed event
+  B-->>T: receipt
+  T-->>A: correlated result
+```
+
+A relay can route the envelope. It does not receive the plaintext inside it.
+
+## 3. Durable workflow lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> queued
+  queued --> running
+  running --> suspended: approval or crash
+  suspended --> running: resume from log
+  running --> completed
+  suspended --> failed
+  running --> failed
+  completed --> [*]
+  failed --> [*]
+```
+
+A crash is a transition, not a lost workflow. The record identifies the next durable boundary.
+
+## 4. Mention dispatch and first-claimer wins
+
+```mermaid
+sequenceDiagram
+  participant S as sender
+  participant B as bus
+  participant A as agentA
+  participant C as agentC
+  S->>B: post with mention + p tag
+  B-->>A: job 43001
+  B-->>C: job 43001
+  A->>B: claim
+  C->>B: claim
+  B-->>C: rejected
+  A->>B: result
+```
+
+The job plane is for work assignment. Sealed mail remains the plane for private handoffs.
+
+## 5. Flywheel durable loop
+
+```mermaid
+flowchart LR
+  G[goal] --> P[plan]
+  P --> D[dispatch]
+  D --> W[watch]
+  W --> R{blocked?}
+  R -->|yes| M[mail + recover]
+  R -->|no| V[verify]
+  M --> W
+  V --> C[compound]
+  C --> G
+```
+
+The loop is durable because its record, identity, and work claims live outside the pane that happens to be running it.
+
+## 6. Debate before commitment
+
+```mermaid
+flowchart LR
+  Q[proposition] --> R1[round 1]
+  R1 --> R2[round N]
+  R2 --> J[judge]
+  J --> V[verdict]
+  V --> D{approved?}
+  D -->|yes| W[commit work]
+  D -->|no| X[revise or stop]
+```
+
+Review is another workflow, not a special ritual outside the system.
+
+## 7. Reservation lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> intent
+  intent --> held: no conflict
+  intent --> intent: soft conflict
+  held --> held: renew
+  held --> released: close or transfer
+  released --> [*]
+```
+
+Reservations make file ownership visible before an agent edits. The strict guard is the final check, not a suggestion.
+
+## 8. Dual recovery
+
+```mermaid
+flowchart TB
+  L[live bus] --> C[current state]
+  G[Git archive] --> C
+  C --> X{crash?}
+  X -->|yes| R[read journal]
+  R --> G
+  R --> B[rebuild index]
+  B --> P[replay signed events]
+  P --> C
+  X -->|no| D[done]
+```
+
+The live bus gives speed. The archive gives recovery. Both are needed for an auditable autonomous system.

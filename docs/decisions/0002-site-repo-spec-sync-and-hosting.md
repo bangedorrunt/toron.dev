@@ -31,19 +31,19 @@ questions remained open:
 
 ## Decision
 
-### D1 — Product scope: toron + flywheel only; chiebukuro deferred
+### D1 — Product scope: toron + flywheel only; chiebukuro deferred (superseded by ADR-0003 on 2026-09-25)
 
-toron.dev covers **toron + flywheel** exactly as ADR-0001 + flywheel ADR-0004
-specify. **chiebukuro is NOT on toron.dev.** It gets its own site when its
-trigger fires. Rationale: flywheel earned section status by depending on toron;
-chiebukuro doesn't — an umbrella/multi-product repositioning was rejected
-because it dilutes the single-product funnel ADR-0001 D1 ("Mail for machines")
-was designed for.
+> ADR-0003 expands the public site to present toron, flywheel, beads, and chiebukuro as four planes of one autonomous agent stack. The generated-catalog and site-repository decisions below remain in force.
 
-**chiebukuro spin-out trigger** (mirrors flywheel ADR-0004 §2.3): chiebukuro
-gains external users arriving for knowledge-management, not for toron's
-mailbox → scaffold a standalone site (own repo, own domain) from the same
-stack. Until then: nothing.
+The original ADR-0002 scope was **toron + flywheel only**. It deferred
+chiebukuro because chiebukuro did not share toron’s transport dependency at
+that time. ADR-0003 supersedes that product-scope decision: the site now
+presents toron, flywheel, beads, and chiebukuro as four planes of one
+autonomous stack. The original funnel rationale is retained here as history,
+not as the current site boundary.
+
+A standalone chiebukuro site remains a later spin-out option when its external
+audience warrants it.
 
 ### D2 — Site code: new dedicated repo, sites-monorepo layout
 
@@ -141,8 +141,9 @@ Analytics revisit trigger: custom events needed, or sustained >50K events/mo
   catalog extractor + freshness test (small, mechanical, governed-by-marked).
 - **Drift is structurally impossible**: unmergeable in product repos (CI
   gate), un-staleable on the site (build-time fetch + deploy hook).
-- **chiebukuro has no web presence** until its trigger fires — accepted
-  cost of keeping the funnel sharp.
+- **chiebukuro has no separate web presence** until its trigger fires; it is
+  currently represented as the knowledge and memory plane inside the stack
+  site under ADR-0003.
 - The flywheel.dev spin-out path (flywheel ADR-0004 §4) becomes cheap: new
   Vercel project, same repo, shared `packages/tokens`.
 - SKILL.md manual sync remains the known-drift surface until D3.5 lands;

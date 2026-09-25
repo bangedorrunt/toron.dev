@@ -31,6 +31,7 @@ const CATALOG_PATH = join(REPO_ROOT, 'catalog', 'toron-mcp.json');
 const CONTENT_DIR = join(APP_ROOT, 'content', 'docs');
 
 const ROOT_PAGE = 'index';
+const HOW_IT_WORKS_PAGE = 'how-it-works';
 const TOOLS_PAGE = 'tools';
 const REFERENCE_PAGE = 'reference';
 
@@ -78,7 +79,7 @@ function typeString(prop) {
 }
 
 function schemaTable(schema, heading) {
-  const rows = schemaRows(schema);
+  const rows = schemaRows(schema, '', schema?.required ?? []);
   if (rows.length === 0) {
     return `## ${heading}\n\nNo fields.`;
   }
@@ -211,9 +212,9 @@ function referenceMarkdown(catalog) {
 // Merge root meta.json: preserve existing hand-written pages (e.g.
 // sections added by later phases), pin index first, tools + reference.
 function mergeRootMeta(existing) {
-  const known = new Set([ROOT_PAGE, TOOLS_PAGE, REFERENCE_PAGE]);
+  const known = new Set([ROOT_PAGE, HOW_IT_WORKS_PAGE, TOOLS_PAGE, REFERENCE_PAGE]);
   const kept = (existing?.pages ?? []).filter((p) => !known.has(p));
-  const pages = [ROOT_PAGE, TOOLS_PAGE, REFERENCE_PAGE, ...kept];
+  const pages = [ROOT_PAGE, HOW_IT_WORKS_PAGE, TOOLS_PAGE, REFERENCE_PAGE, ...kept];
   return JSON.stringify({ ...existing, pages }, null, 2);
 }
 
@@ -225,7 +226,9 @@ function main() {
     throw new Error(`cannot read catalog ${CATALOG_PATH}: ${err.message}`);
   }
   const tools = catalog.tools ?? [];
-  if (tools.length === 0) throw new Error(`catalog ${CATALOG_PATH} has no tools`);
+  const resources = catalog.resources ?? [];
+  if (tools.length !== 38) throw new Error(`catalog ${CATALOG_PATH} must contain 38 tools, found ${tools.length}`);
+  if (resources.length !== 25) throw new Error(`catalog ${CATALOG_PATH} must contain 25 resources, found ${resources.length}`);
 
   // Group tools by their `group` field, preserving catalog order.
   const groups = new Map();
@@ -234,6 +237,7 @@ function main() {
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(tool);
   }
+  if (groups.size !== 9) throw new Error(`catalog ${CATALOG_PATH} must contain 9 tool groups, found ${groups.size}`);
 
   // Clean generated output: the tools/ subtree + reference page.
   const toolsDir = join(CONTENT_DIR, TOOLS_PAGE);

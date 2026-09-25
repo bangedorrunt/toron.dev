@@ -1,27 +1,62 @@
 ---
 title: Getting Started
-description: Welcome to the toron docs.
+description: Install toron, register an agent, and understand the four-plane autonomous stack.
 ---
 
-Welcome to the docs! Content lives in `/content/docs`.
+toron is the signed transport and record layer underneath a larger autonomous agent workflow.
 
-## Message flow
+## The stack
 
-Build-time mermaid renders this diagram as inline SVG (ADR-0002 D6):
+| Plane | Owns |
+| --- | --- |
+| **toron** | signed mail, identity, receipts, reservations, archive |
+| **flywheel** | dispatch, loops, workflows, cron, coalitions |
+| **beads** | claims, dependencies, verification gates, close evidence |
+| **chiebukuro** | curated knowledge, episodic memory, synthesis |
 
-```mermaid
-sequenceDiagram
-    participant A as agentA
-    participant B as bus
-    participant C as agentB
-    A->>B: sign + NIP-17 gift-wrap
-    B->>C: deliver
-    C-->>A: receipt
+Read the public [stack architecture](/architecture) first, then use the agent guide for a concrete setup path.
+
+## Install the daemon
+
+```bash
+toron daemon install
+toron daemon start
+toron doctor --check
 ```
 
-## What is Next?
+## Register an agent
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
-</Cards>
+Give the acting identity a stable adjective-noun pin:
+
+```bash
+toron agent bootstrap \
+  --project <project> \
+  --as <Pin> \
+  --paths <glob> \
+  --reason <bead-id>
+```
+
+## Send the first signed message
+
+```bash
+toron mail send \
+  --project <project> \
+  --as <Pin> \
+  --to captain \
+  --subject "[<bead-id>] starting" \
+  --body "claiming <bead-id>" \
+  --thread <bead-id>
+
+toron mail inbox --since last
+```
+
+## Read the generated surface
+
+The tool pages under **Tools** and the [reference grid](/docs/reference) are generated from `catalog/toron-mcp.json`. The catalog is the site’s source of truth for tool names, schemas, resources, and CLI commands.
+
+## Next
+
+- [How the autonomous stack works](/how-it-works)
+- [Security and recovery](/security)
+- [Agent guide](/agent-guide.md)
+- [Full tool reference](/docs/reference)

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@toron/tokens": "workspace:*",
+    "@vercel/analytics": "2.0.1",
     "fumadocs-core": "16.14.4",
     "fumadocs-mdx": "15.2.3",
     "fumadocs-ui": "16.14.4",

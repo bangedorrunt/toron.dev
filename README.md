@@ -1,7 +1,9 @@
 # toron.dev
 
-Marketing + docs site for **toron** (Nostr-native agent mailbox) and
-**flywheel** (swarm orchestrator). "Mail for machines."
+Marketing + docs site for **toron** (Nostr-native agent mailbox), **flywheel**
+(swarm orchestration), **beads** (work evidence), and **chiebukuro** (knowledge
+and memory). Together they form a fully autonomous multi-agent workflow stack.
+"Mail for machines."
 
 Sites-monorepo per [ADR-0002 D2](docs/decisions/0002-site-repo-spec-sync-and-hosting.md):
 
