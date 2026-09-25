@@ -1,0 +1,6 @@
+torondev-z0e live verification
+commit=4372d2978449c6d9a0b65109915ce655e5a75d16
+build=green
+lint=green
+route-smoke=green
+search-index=green
