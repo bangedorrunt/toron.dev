@@ -73,17 +73,20 @@ export function Section({
 }
 
 export function StackStrip() {
+  // `name` is the product name as it is displayed, `slug` is the path segment it
+  // links into. The two differ only in the leading capital, and conflating them
+  // is what kept the section titles lowercase in the first place.
   const planes = [
-    { name: 'toron', role: 'signed mail · identity · receipts · reservations', href: 'https://github.com/bangedorrunt/toron' },
-    { name: 'flywheel', role: 'spawn · dispatch · loops · workflows · cron', href: 'https://github.com/bangedorrunt/flywheel' },
-    { name: 'beads', role: 'work items · dependencies · gates · close evidence', href: 'https://github.com/bangedorrunt/br' },
-    { name: 'chiebukuro', role: 'curated knowledge · episodic memory · synthesis', href: 'https://github.com/bangedorrunt/chiebukuro' },
+    { name: 'Toron', slug: 'toron', role: 'signed mail · identity · receipts · reservations', href: 'https://github.com/bangedorrunt/toron' },
+    { name: 'Flywheel', slug: 'flywheel', role: 'spawn · dispatch · loops · workflows · cron', href: 'https://github.com/bangedorrunt/flywheel' },
+    { name: 'Beads', slug: 'beads', role: 'work items · dependencies · gates · close evidence', href: 'https://github.com/bangedorrunt/br' },
+    { name: 'Chiebukuro', slug: 'chiebukuro', role: 'curated knowledge · episodic memory · synthesis', href: 'https://github.com/bangedorrunt/chiebukuro' },
   ];
 
   return (
     <div className="toron-stack-strip" aria-label="The four planes of the autonomous agent stack">
       {planes.map((plane) => (
-        <a key={plane.name} href={plane.href} target="_blank" rel="noreferrer" className="toron-stack-strip__item">
+        <a key={plane.slug} href={plane.href} target="_blank" rel="noreferrer" className="toron-stack-strip__item">
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
         </a>

@@ -35,6 +35,44 @@
   --toron-font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --toron-font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /*
+   * Motion. Durations and easings are tokens because the alternative is a
+   * number typed next to a transition, and a second number typed next to the
+   * first is how a third appears. Measured before these existed: six
+   * transition rules, two durations, one easing, no scale.
+   *
+   * The scale is deliberately small. Five steps is enough to express intent
+   * and few enough that nobody adds a sixth for one component.
+   *
+   *   instant  a state change the eye must not notice (focus, selection)
+   *   fast     hover and press, the reader is acting and expecting an answer
+   *   base     an element entering or leaving, the default
+   *   slow     a large surface moving, where a fast fade would look cheap
+   *   ambient  an unattended loop with no reader in the loop
+   */
+  --toron-dur-instant: 90ms;
+  --toron-dur-fast: 150ms;
+  --toron-dur-base: 220ms;
+  --toron-dur-slow: 380ms;
+  --toron-dur-ambient: 12s;
+
+  /*
+   * Easings carry as much meaning as durations, so they are named for what
+   * they do rather than for their curve.
+   *
+   *   standard    symmetric, the default when nothing else applies
+   *   enter       accelerates out, for something arriving
+   *   exit        leaves faster than it entered, because it is already gone
+   *   settle      decelerates with a hair of overshoot, for something
+   *               arriving at rest, which is the crash cycle's resume
+   *   stepped     holds, then jumps, for a state machine rather than a slide
+   */
+  --toron-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --toron-ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --toron-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --toron-ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --toron-ease-stepped: steps(1, end);
 }
 
 /*
@@ -269,9 +307,9 @@
   line-height: 1;
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    color var(--toron-dur-fast) var(--toron-ease-standard),
+    border-color var(--toron-dur-fast) var(--toron-ease-standard),
+    background-color var(--toron-dur-fast) var(--toron-ease-standard);
 }
 
 .toron-toggle:hover {

@@ -208,9 +208,12 @@ for (const plane of planes) {
     }
   }
 
+  // The plane slug is lowercase because it is a path segment, but it is a
+  // product name in a nav label, so it is capitalised on the way out.
+  const planeLabel = plane.plane.charAt(0).toUpperCase() + plane.plane.slice(1);
   writeFileSync(
     join(outDir, 'meta.json'),
-    `${JSON.stringify({ title: `${plane.plane} guides`, description: `Every canonical ${plane.plane} guide, projected from the ${plane.repo} repository.` }, null, 2)}\n`,
+    `${JSON.stringify({ title: `${planeLabel} guides`, description: `Every canonical ${planeLabel} guide, projected from the ${plane.repo} repository.` }, null, 2)}\n`,
   );
 }
 

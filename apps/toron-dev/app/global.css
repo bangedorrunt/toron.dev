@@ -236,15 +236,206 @@ summary:focus-visible {
   text-decoration: none;
   white-space: nowrap;
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
 }
 
-.toron-btn:hover {
-  border-color: color-mix(in srgb, var(--toron-border-strong) 70%, var(--toron-ink));
-  background: color-mix(in srgb, var(--toron-raised) 88%, var(--toron-ink));
+/*
+ * Route transitions, in CSS, with no runtime.
+ *
+ * `@view-transition { navigation: auto }` asks the browser to snapshot the old
+ * and new document and animate between them on every same-origin navigation.
+ * It is a cross-document feature, so it works across Next.js navigations
+ * without a client component, a router hook, or a single byte of JavaScript.
+ *
+ * The default cross-fade is deliberately left almost alone. A route transition
+ * is a change of page, and a page change that swoops draws attention to itself
+ * rather than to the content that arrived. What is tuned here is only the
+ * direction and the pace, from the motion scale, so it reads as the same site
+ * turning a page rather than as an effect.
+ *
+ * Firefox has no support and needs none: without the at-rule the navigation is
+ * instant, which is the correct degraded behaviour and not a broken state.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: toron-vt-out var(--toron-dur-fast) var(--toron-ease-exit) both;
+}
+
+::view-transition-new(root) {
+  animation: toron-vt-in var(--toron-dur-base) var(--toron-ease-enter) both;
+}
+
+@keyframes toron-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes toron-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Scroll-linked reveals, also without a runtime.
+ *
+ * `animation-timeline: view()` ties an animation to an element's own progress
+ * through the viewport, so the browser drives it off the compositor's existing
+ * scroll work. There is no scroll listener, no IntersectionObserver, no
+ * requestAnimationFrame loop, and nothing to run on the main thread. An
+ * IntersectionObserver reveal costs a callback per element per scroll tick; this
+ * costs nothing at all once the stylesheet is parsed.
+ *
+ * It is progressive enhancement by construction: `@supports` gates the whole
+ * block, and a browser without scroll-driven animations simply renders the
+ * final state. That is the right default for a content site, where a reader who
+ * never sees the animation should still see all of the content.
+ */
+@supports (animation-timeline: view()) {
+  /*
+   * Every selector here was checked against a real class in a real component
+   * before being written down. An earlier draft of this block named
+   * `.toron-home__section`, which matches nothing in any component, and a
+   * reveal on a selector with no subject is a rule that looks like coverage and
+   * animates nothing.
+   */
+  .toron-home__copy,
+  .toron-home__figure,
+  .toron-home__trust,
+  .toron-page__header,
+  .toron-section__head,
+  .toron-section__body,
+  .toron-tile,
+  .toron-card,
+  .toron-stack-strip__item,
+  .toron-walk__step {
+    animation: toron-reveal both var(--toron-dur-slow) var(--toron-ease-enter);
+    /* `cover` so the animation runs while the element is entering and fully
+       settled, rather than starting when its first pixel appears and finishing
+       long after it is on screen. */
+    animation-timeline: view();
+    animation-range: entry 0% cover 32%;
+  }
+
+  /* A group arrives as a group, offset by position, so the eye reads the set as
+     one object instead of four things appearing at once. */
+  .toron-grid > * {
+    animation: toron-reveal both var(--toron-dur-slow) var(--toron-ease-enter);
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+
+  .toron-grid > *:nth-child(2) {
+    animation-range: entry 4% cover 34%;
+  }
+
+  .toron-grid > *:nth-child(3) {
+    animation-range: entry 8% cover 38%;
+  }
+
+  .toron-grid > *:nth-child(4) {
+    animation-range: entry 12% cover 42%;
+  }
+}
+
+@keyframes toron-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * A reader who asked for less motion gets none of it, including the reveals.
+ * Without this block a reduced-motion browser would still get the scroll-linked
+ * animation, because `animation-duration` is not what a scroll timeline reads.
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  .toron-home__copy,
+  .toron-home__figure,
+  .toron-home__trust,
+  .toron-page__header,
+  .toron-section__head,
+  .toron-section__body,
+  .toron-tile,
+  .toron-card,
+  .toron-stack-strip__item,
+  .toron-walk__step,
+  .toron-grid > * {
+    animation: none;
+  }
+}
+
+/*
+ * Hover is an overlay, not a repaint.
+ *
+ * The resting border and background stay exactly where they are and a
+ * pseudo-element carries the hover appearance, cross-faded on opacity so the
+ * compositor does the work. Before this, five of the six transitions on the
+ * site animated border-color or background-color, which repaints the element
+ * and its label on every frame of every hover. On a site whose entire visual
+ * language is a hairline border on near-black, that is every interactive
+ * surface on the page.
+ *
+ * The selector list is written once per property block rather than opted into
+ * per element, because `toron-btn` appears 53 times across ten files and a
+ * class added in markup is a class someone forgets on the eleventh file.
+ *
+ * `isolation: isolate` is load-bearing. Without it the negative z-index lets
+ * the overlay escape behind the element's own background and the hover becomes
+ * invisible. With it, the veil paints above the surface and below the text.
+ */
+:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link) {
+  position: relative;
+  isolation: isolate;
+  /* Named explicitly rather than left to the initial value, which is `all`.
+     Harmless at a 0s duration, and a trap for whoever later adds a duration
+     and gets every property animated, including the paint ones this exists to
+     avoid. */
+  transition-property: opacity;
+  transition-duration: 0s;
+}
+
+:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--toron-veil-border, transparent);
+  border-radius: inherit;
+  background: var(--toron-veil-wash, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--toron-dur-fast) var(--toron-ease-standard);
+}
+
+:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link):is(
+    :hover,
+    :focus-visible
+  )::after {
+  opacity: 1;
+}
+
+.toron-btn {
+  --toron-veil-border: color-mix(
+    in srgb,
+    var(--toron-border-strong) 70%,
+    var(--toron-ink)
+  );
+  --toron-veil-wash: color-mix(in srgb, var(--toron-raised) 88%, var(--toron-ink));
 }
 
 .toron-btn--primary {
@@ -311,11 +502,19 @@ summary:focus-visible {
   color: var(--toron-body);
   font-size: 0.8125rem;
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: color var(--toron-dur-fast) var(--toron-ease-standard);
+}
+
+/*
+ * The border half of this hover is a veil; the colour half is a real
+ * transition, because `color` on the label is the whole signal here and there
+ * is no overlay that can carry it without covering the text.
+ */
+.toron-home__pill {
+  --toron-veil-border: var(--toron-border-strong);
 }
 
 .toron-home__pill:hover {
-  border-color: var(--toron-border-strong);
   color: var(--toron-ink);
 }
 
@@ -806,7 +1005,7 @@ summary:focus-visible {
   border-radius: inherit;
   background: color-mix(in srgb, var(--toron-red) 22%, transparent);
   opacity: 0;
-  animation: toron-crash-flash 12s infinite;
+  animation: toron-crash-flash var(--toron-dur-ambient) infinite;
 }
 
 .toron-hero__log--cycle {
@@ -819,7 +1018,20 @@ summary:focus-visible {
 .toron-cycle-status {
   grid-area: 1 / 1;
   opacity: 0;
-  animation: toron-cycle 12s infinite;
+  animation: toron-cycle var(--toron-dur-ambient) infinite;
+}
+
+/*
+ * Off screen, the cycle stops. `animation-play-state` rather than removing the
+ * animation, so resuming picks the cycle back up where it paused instead of
+ * restarting the crash from the top, which would read as a second crash.
+ *
+ * The reduced-motion block below already neutralises these animations
+ * entirely, so a reader who asked for less motion is unaffected by this gate
+ * either way.
+ */
+.toron-hero[data-cycle='idle'] :is(.toron-cycle-line, .toron-cycle-status, .toron-crash-flash, .toron-envelope-glyph, .toron-pulse-dot) {
+  animation-play-state: paused;
 }
 
 .toron-cycle-status--steady,
@@ -844,32 +1056,78 @@ summary:focus-visible {
 .toron-cycle-line--crash,
 .toron-cycle-status--crash {
   animation-name: toron-cycle-crash;
+  /* A knock is mechanical, so it is not eased. An eased jolt reads as a
+     wobble, which is the wrong event entirely. */
+  animation-timing-function: linear;
 }
 
 .toron-cycle-line--restart,
 .toron-cycle-status--restart {
   animation-name: toron-cycle-restart;
+  /* The run re-executes from the left, so the wipe has to grow from the left. */
+  transform-origin: left center;
+  /* Wipe in fast, because a restart is quick and should feel like it. */
+  animation-timing-function: var(--toron-ease-enter);
 }
 
 .toron-cycle-line--resume,
 .toron-cycle-status--resume {
   animation-name: toron-cycle-resume;
+  /* Work returning to rest: decelerating, with a hair of overshoot. This is
+     the one state that should feel like relief. */
+  animation-timing-function: var(--toron-ease-settle);
 }
 
+/*
+ * Spatial language for the cycle.
+ *
+ * These four states used to differ only in opacity and in the words they
+ * printed, which made a crash, a restart, and a resume the same visual event
+ * three times. The claim the site is built on is that a crash is a transition
+ * and not a lost run, and it was being enacted with the weakest motion
+ * vocabulary available. Each state now moves the way it behaves:
+ *
+ *   steady    holds still. Nothing is happening, so nothing moves.
+ *   crash     the line is knocked out of true: a short lateral jolt that
+ *             decays, so the eye reads interruption rather than a fade.
+ *   restart   the run is re-executed from the left, so the line is wiped in
+ *             with a scaleX from zero, transform-origin left.
+ *   resume    the work comes back to rest, so it arrives from slightly below
+ *             and settles, on the decelerating curve with a hair of overshoot.
+ *
+ * The reader learns the vocabulary once and can then identify the state from
+ * the movement, before reading a single word. That is the point of the change:
+ * motion carrying the meaning rather than decorating it.
+ */
 @keyframes toron-cycle-crash {
   0%,
   30% {
     opacity: 0;
+    transform: none;
   }
 
-  31%,
-  42% {
+  31% {
     opacity: 1;
+    transform: translateX(0);
   }
 
-  43%,
+  /* the jolt: three decaying offsets, so it reads as a knock, not a wobble */
+  33% {
+    transform: translateX(-3px);
+  }
+
+  35% {
+    transform: translateX(2px);
+  }
+
+  37% {
+    transform: translateX(-1px);
+  }
+
+  42%,
   100% {
     opacity: 0;
+    transform: none;
   }
 }
 
@@ -877,16 +1135,19 @@ summary:focus-visible {
   0%,
   42% {
     opacity: 0;
+    transform: scaleX(0);
   }
 
-  43%,
-  52% {
+  43% {
     opacity: 1;
+    transform: scaleX(0);
   }
 
-  53%,
+  /* re-running the line: it wipes in from the left rather than appearing */
+  52%,
   100% {
     opacity: 0;
+    transform: scaleX(1);
   }
 }
 
@@ -894,16 +1155,28 @@ summary:focus-visible {
   0%,
   52% {
     opacity: 0;
+    transform: translateY(6px);
   }
 
-  53%,
+  53% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  /* arriving at rest, decelerating, with a hair of overshoot at the end */
   72% {
     opacity: 1;
+    transform: translateY(0);
   }
 
-  73%,
+  78% {
+    transform: translateY(-1px);
+  }
+
+  84%,
   100% {
     opacity: 0;
+    transform: none;
   }
 }
 
@@ -961,17 +1234,14 @@ summary:focus-visible {
   color: var(--toron-ink);
 }
 
-.toron-tile--link {
-  text-decoration: none;
-  transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease;
-}
-
-.toron-tile--link:hover {
-  border-color: var(--toron-border-strong);
-  background: var(--toron-surface);
-}
+/*
+ * `.toron-tile--link` was removed rather than veiled. The class appears
+ * nowhere in any component: the tool tiles on the landing page are
+ * `toron-tile` with no link modifier, so the rule had no subject. Carrying a
+ * hover treatment for a selector that matches nothing is the kind of thing that
+ * looks like coverage and is not, and a future reader has no way to tell a
+ * deliberately dead rule from a live one.
+ */
 
 .toron-tile__head {
   display: flex;
@@ -1080,11 +1350,7 @@ summary:focus-visible {
   background: var(--toron-bg);
   color: var(--toron-ink);
   text-decoration: none;
-  transition: background-color 0.18s ease;
-}
-
-.toron-stack-strip__item:hover {
-  background: var(--toron-surface);
+  --toron-veil-wash: var(--toron-surface);
 }
 
 .toron-stack-strip__name {
@@ -1638,12 +1904,8 @@ summary:focus-visible {
 
 .toron-card--link {
   text-decoration: none;
-  transition: border-color 0.18s ease, background-color 0.18s ease;
-}
-
-.toron-card--link:hover {
-  border-color: var(--toron-border-strong);
-  background: var(--toron-surface);
+  --toron-veil-border: var(--toron-border-strong);
+  --toron-veil-wash: var(--toron-surface);
 }
 
 .toron-card__eyebrow {

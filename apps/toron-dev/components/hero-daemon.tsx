@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { SealedEnvelopeBadge } from "@toron/tokens/sealed-envelope-badge";
 import { StateGlyph } from "@toron/tokens/state-glyph";
+import { CycleGate } from "./cycle-gate";
 
 const PI_LINES = [
   "$ toron mail send --to opencode --subject \"review: landing\"",
@@ -102,6 +103,7 @@ export function HeroDaemon({ className }: { className?: string }) {
       </div>
 
       <p className="toron-sr-only">Simulated demo starts in a running state and cycles through crash, restart, and resume.</p>
+      <CycleGate />
     </section>
   );
 }
