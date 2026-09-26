@@ -1,4 +1,4 @@
-import { docsLlms } from '@/lib/source';
+import { docsLlms } from "@/lib/source";
 
 // governed-by: ADR-0005 D2
 // Every docs page rendered as Markdown in one file. The single-fetch option
@@ -7,6 +7,6 @@ export const revalidate = false;
 
 export async function GET() {
   return new Response(await docsLlms.full(), {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }

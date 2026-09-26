@@ -7,19 +7,19 @@
 // launcher path and those environment values.
 //
 // Runs only on Vercel; local builds keep Playwright's own Chromium.
-import { writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // Kept in sync with source.config.ts (both read this one path).
-const sidecarPath = join(tmpdir(), 'toron-dev-vercel-chromium.json');
+const sidecarPath = join(tmpdir(), "toron-dev-vercel-chromium.json");
 
 if (!process.env.VERCEL) {
-  console.log('[vercel-chromium] not a Vercel build, keeping Playwright Chromium');
+  console.log("[vercel-chromium] not a Vercel build, keeping Playwright Chromium");
   process.exit(0);
 }
 
-const { default: chromium } = await import('@sparticuz/chromium');
+const { default: chromium } = await import("@sparticuz/chromium");
 const executablePath = await chromium.executablePath();
 // Importing the package fills these in (setupLambdaEnvironment). Without them
 // the loader cannot find the AL2023 libraries and Chromium exits 127.

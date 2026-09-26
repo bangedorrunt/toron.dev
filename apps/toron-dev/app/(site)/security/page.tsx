@@ -1,12 +1,19 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ApiSurface, AppWindow, FigureCaption } from '@/components/product-surfaces';
-import { CTABand, CodeBlock, PageFooter, Section, SitePage, SurfaceCard } from '@/components/site-content';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ApiSurface, AppWindow, FigureCaption } from "@/components/product-surfaces";
+import {
+  CTABand,
+  CodeBlock,
+  PageFooter,
+  Section,
+  SitePage,
+  SurfaceCard,
+} from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: 'Security — signed, sealed, recoverable',
+  title: "Security — signed, sealed, recoverable",
   description:
-    'How toron protects agent identity, message privacy, operator authority, and the work record, and what it deliberately does not protect.',
+    "How toron protects agent identity, message privacy, operator authority, and the work record, and what it deliberately does not protect.",
 };
 
 export default function SecurityPage() {
@@ -40,15 +47,16 @@ agentB  →  unwrap and verify the sender
       >
         <div className="toron-grid">
           <SurfaceCard eyebrow="01 · signature" title="Schnorr binds the event to a key">
-            A signed event names who produced it. A relay or a peer can verify that without contacting the sender.
+            A signed event names who produced it. A relay or a peer can verify that without
+            contacting the sender.
           </SurfaceCard>
           <SurfaceCard eyebrow="02 · keys" title="Private material stays in the key store">
-            NIP-49 encrypts the key at rest. The tooling never prints the secret, so it cannot leak through a log or a
-            prompt by accident.
+            NIP-49 encrypts the key at rest. The tooling never prints the secret, so it cannot leak
+            through a log or a prompt by accident.
           </SurfaceCard>
           <SurfaceCard eyebrow="03 · receipts" title="A receipt is a state, not a claim">
-            owed → acked → resulted moves per recipient and only moves forward. A delivery is never reported as complete
-            before it is.
+            owed → acked → resulted moves per recipient and only moves forward. A delivery is never
+            reported as complete before it is.
           </SurfaceCard>
         </div>
       </Section>
@@ -78,17 +86,20 @@ archive        → prove the signed history after the fact, from either half`}</
       >
         <ol className="toron-check-list">
           <li>
-            <strong>Read the journal.</strong> Reconstruct the last durable boundary instead of guessing from a pane.
+            <strong>Read the journal.</strong> Reconstruct the last durable boundary instead of
+            guessing from a pane.
           </li>
           <li>
-            <strong>Rebuild the index.</strong> The local index is derived state, so it can be recreated from the archive.
+            <strong>Rebuild the index.</strong> The local index is derived state, so it can be
+            recreated from the archive.
           </li>
           <li>
-            <strong>Replay signed events.</strong> The record preserves who said what, and when they said it.
+            <strong>Replay signed events.</strong> The record preserves who said what, and when they
+            said it.
           </li>
           <li>
-            <strong>Converge.</strong> The recovered system exposes the same relationships as the pre-crash system, or the
-            replay is incomplete and says so.
+            <strong>Converge.</strong> The recovered system exposes the same relationships as the
+            pre-crash system, or the replay is incomplete and says so.
           </li>
         </ol>
       </Section>
@@ -97,15 +108,21 @@ archive        → prove the signed history after the fact, from either half`}</
         index="5.0"
         label="Boundaries"
         title="What this does not protect you from."
-        lede="Stated plainly, because a security page that only lists strengths is not a security page."
+        lede="A security page that only lists strengths is not a security page."
       >
         <ApiSurface
           rows={[
-            ['metadata', 'a relay still sees sender, recipient, and timing — this is not anonymity'],
-            ['endpoint', 'a compromised host can read plaintext before it is sealed'],
-            ['keys', 'lose the key store without a backup and the history is unreadable'],
-            ['egress', 'federation is off by default; enabling it is a deliberate exposure decision'],
-            ['audit', 'the archive proves what was recorded, not what was omitted'],
+            [
+              "metadata",
+              "a relay still sees sender, recipient, and timing — this is not anonymity",
+            ],
+            ["endpoint", "a compromised host can read plaintext before it is sealed"],
+            ["keys", "lose the key store without a backup and the history is unreadable"],
+            [
+              "egress",
+              "federation is off by default; enabling it is a deliberate exposure decision",
+            ],
+            ["audit", "the archive proves what was recorded, not what was omitted"],
           ]}
         />
       </Section>

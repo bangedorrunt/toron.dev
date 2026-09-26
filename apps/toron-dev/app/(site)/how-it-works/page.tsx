@@ -1,20 +1,21 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { DocsBody } from 'fumadocs-ui/layouts/docs/page';
-import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { getMDXComponents } from '@/components/mdx';
-import { CTABand, PageFooter, SitePage } from '@/components/site-content';
-import { source } from '@/lib/source';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { DocsBody } from "fumadocs-ui/layouts/docs/page";
+import { createRelativeLink } from "fumadocs-ui/mdx";
+import { getMDXComponents } from "@/components/mdx";
+import { CTABand, PageFooter, SitePage } from "@/components/site-content";
+import { source } from "@/lib/source";
 
 export const metadata: Metadata = {
-  title: 'How it works',
-  description: 'The four-plane execution loop as eight build-time diagrams, from goal to evidence and memory.',
+  title: "How it works",
+  description:
+    "The four-plane execution loop as eight build-time diagrams, from goal to evidence and memory.",
 };
 
 export default function HowItWorksPage() {
-  const page = source.getPage(['how-it-works']);
+  const page = source.getPage(["how-it-works"]);
   if (!page) {
-    throw new Error('how-it-works content is missing from the docs source');
+    throw new Error("how-it-works content is missing from the docs source");
   }
   const MDX = page.data.body;
 
@@ -32,7 +33,10 @@ export default function HowItWorksPage() {
         title="Run one of these diagrams yourself."
         body="The crash-recovery walkthrough kills the daemon mid-workflow and shows the run resuming from the journal, with the output at every step."
       >
-        <Link href="/docs/guides/crash-recovery" className="toron-btn toron-btn--primary toron-btn--lg">
+        <Link
+          href="/docs/guides/crash-recovery"
+          className="toron-btn toron-btn--primary toron-btn--lg"
+        >
           Survive a crash
         </Link>
         <Link href="/architecture" className="toron-btn toron-btn--lg">

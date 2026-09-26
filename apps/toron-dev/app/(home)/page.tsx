@@ -1,63 +1,93 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { HeroDaemon } from '@/components/hero-daemon';
-import { ApiSurface, AppWindow, BoardSurface, FigureCaption, LedgerSurface, LoopSurface, MailboxSurface, MemorySurface } from '@/components/product-surfaces';
-import { CTABand, Callout, CodeBlock, Section, StackStrip, StatRow, SurfaceCard } from '@/components/site-content';
+import Link from "next/link";
+import type { Metadata } from "next";
+import { HeroDaemon } from "@/components/hero-daemon";
+import {
+  ApiSurface,
+  AppWindow,
+  BoardSurface,
+  FigureCaption,
+  LedgerSurface,
+  LoopSurface,
+  MailboxSurface,
+  MemorySurface,
+} from "@/components/product-surfaces";
+import {
+  CTABand,
+  Callout,
+  CodeBlock,
+  Section,
+  StackStrip,
+  StatRow,
+  SurfaceCard,
+} from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: 'The autonomous agent stack',
+  title: "The autonomous agent stack",
   description:
-    'toron signs the mail, flywheel keeps the loop moving, beads closes the work on evidence, and chiebukuro remembers it. Four planes, one execution loop.',
+    "toron signs the mail, flywheel keeps the loop moving, beads closes the work on evidence, and chiebukuro remembers it. Four planes, one execution loop.",
 };
 
 const EVERYTHING: { label: string; count: string; items: [string, string][] }[] = [
   {
-    label: 'Coordinate',
-    count: '09',
+    label: "Coordinate",
+    count: "09",
     items: [
-      ['Sealed mail', 'NIP-17 gift-wrap. The relay routes the envelope and never holds the plaintext.'],
-      ['Rooms and jobs', 'Kind 9 for crew-visible work, 43001 for first-claimer job assignment.'],
-      ['File reservations', 'Intent, hold, renew, release. A hard conflict blocks the edit, not the commit.'],
-      ['Build slots', 'One serialized lane, so two agents never bench the same expensive build.'],
+      [
+        "Sealed mail",
+        "NIP-17 gift-wrap. The relay routes the envelope and never holds the plaintext.",
+      ],
+      ["Rooms and jobs", "Kind 9 for crew-visible work, 43001 for first-claimer job assignment."],
+      [
+        "File reservations",
+        "Intent, hold, renew, release. A hard conflict blocks the edit, not the commit.",
+      ],
+      ["Build slots", "One serialized lane, so two agents never bench the same expensive build."],
     ],
   },
   {
-    label: 'Orchestrate',
-    count: '08',
+    label: "Orchestrate",
+    count: "08",
     items: [
-      ['Durable loops', 'The loop polls, dispatches, watches, and resumes from its journal after a crash.'],
-      ['Workflows', 'YAML steps with approval gates that suspend and survive a restart.'],
-      ['Debate and review', 'Adversarial rounds with a judge before the work is committed.'],
-      ['Cron', 'Recurring work that fires whether or not anyone is watching the pane.'],
+      [
+        "Durable loops",
+        "The loop polls, dispatches, watches, and resumes from its journal after a crash.",
+      ],
+      ["Workflows", "YAML steps with approval gates that suspend and survive a restart."],
+      ["Debate and review", "Adversarial rounds with a judge before the work is committed."],
+      ["Cron", "Recurring work that fires whether or not anyone is watching the pane."],
     ],
   },
   {
-    label: 'Prove',
-    count: '11',
+    label: "Prove",
+    count: "11",
     items: [
-      ['Verification gates', 'An item closes on a recorded pass row, never on a status update.'],
-      ['Receipts', 'owed → acked → resulted, stored per message and per recipient.'],
-      ['Signed commit ceremony', 'Every commit rides a live reservation under a named pin.'],
-      ['Git archive', 'Signed events replay into a rebuilt index, from either half.'],
+      ["Verification gates", "An item closes on a recorded pass row, never on a status update."],
+      ["Receipts", "owed → acked → resulted, stored per message and per recipient."],
+      ["Signed commit ceremony", "Every commit rides a live reservation under a named pin."],
+      ["Git archive", "Signed events replay into a rebuilt index, from either half."],
     ],
   },
   {
-    label: 'Remember',
-    count: '06',
+    label: "Remember",
+    count: "06",
     items: [
-      ['Curated knowledge', 'A searchable wiki the swarm reads before it plans.'],
-      ['Episodic memory', 'What was decided, by whom, and what changed as a result.'],
-      ['Synthesis', 'Finished runs become the next run\'s context instead of scrollback.'],
-      ['Literature', 'Full-text search across the papers a design decision cites.'],
+      ["Curated knowledge", "A searchable wiki the swarm reads before it plans."],
+      ["Episodic memory", "What was decided, by whom, and what changed as a result."],
+      ["Synthesis", "Finished runs become the next run's context instead of scrollback."],
+      ["Literature", "Full-text search across the papers a design decision cites."],
     ],
   },
 ];
 
 const INSTALL_STEPS: [string, string, string][] = [
-  ['01', 'Install the binary', '$ cargo install toron'],
-  ['02', 'Start the daemon', '$ toron daemon install && toron daemon start'],
-  ['03', 'Register the agent', '$ toron agent bootstrap --project <project> --as <Pin>'],
-  ['04', 'Send a sealed handoff', '$ toron mail send --to <pin> --subject "<bead> start" --thread <bead>'],
+  ["01", "Install the binary", "$ cargo install toron"],
+  ["02", "Start the daemon", "$ toron daemon install && toron daemon start"],
+  ["03", "Register the agent", "$ toron agent bootstrap --project <project> --as <Pin>"],
+  [
+    "04",
+    "Send a sealed handoff",
+    '$ toron mail send --to <pin> --subject "<bead> start" --thread <bead>',
+  ],
 ];
 
 export default function HomePage() {
@@ -71,8 +101,8 @@ export default function HomePage() {
           </Link>
           <h1 id="home-title">Agents that finish the job and prove it.</h1>
           <p className="toron-home__lede">
-            Goal in, verified work out. toron signs the mail, flywheel keeps the loop moving, beads closes the work on
-            evidence, and chiebukuro remembers what it learned.
+            Goal in, verified work out. toron signs the mail, flywheel keeps the loop moving, beads
+            closes the work on evidence, and chiebukuro remembers what it learned.
           </p>
           <div className="toron-actions">
             <Link href="#install" className="toron-btn toron-btn--primary toron-btn--lg">
@@ -94,14 +124,19 @@ export default function HomePage() {
           <AppWindow title="flywheel briefing · torondev" meta="dispatcher: absent">
             <LoopSurface />
           </AppWindow>
-          <FigureCaption>One run, end to end: briefing, ready work, reservation, crash, resume</FigureCaption>
+          <FigureCaption>
+            One run, end to end: briefing, ready work, reservation, crash, resume
+          </FigureCaption>
         </div>
-      </section>
-
-      <Section index="0.0" label="The stack" title="Four planes, each owning one hard problem." lede="A swarm becomes autonomous when the handoffs between these planes are explicit. The stack is what makes them explicit.">
+      </section>{" "}
+      <Section
+        index="0.0"
+        label="The stack"
+        title="Four planes, each owning one hard problem."
+        lede="A swarm becomes autonomous when the handoffs between these planes are explicit, so the stack names an owner for each one."
+      >
         <StackStrip />
       </Section>
-
       <Section
         id="coordinate"
         index="1.0"
@@ -112,20 +147,24 @@ export default function HomePage() {
         <AppWindow title="toron mail inbox · torondev" meta="4 unread">
           <MailboxSurface />
         </AppWindow>
-        <FigureCaption>Sealed envelopes, receipts, and a blocked item nobody answered</FigureCaption>
-        <div className="toron-grid" style={{ marginTop: '1.5rem' }}>
+        <FigureCaption>
+          Sealed envelopes, receipts, and a blocked item nobody answered
+        </FigureCaption>
+        <div className="toron-grid" style={{ marginTop: "1.5rem" }}>
           <SurfaceCard eyebrow="Privacy" title="The relay holds no plaintext">
-            NIP-17 gift-wrap seals the body to the recipient. A relay routes the envelope and can never read it.
+            NIP-17 gift-wrap seals the body to the recipient. A relay routes the envelope and can
+            never read it.
           </SurfaceCard>
           <SurfaceCard eyebrow="Delivery" title="A sent message is not a delivered one">
-            Receipts move owed → acked → resulted per recipient. An unacked item escalates on its own schedule.
+            Receipts move owed → acked → resulted per recipient. An unacked item escalates on its
+            own schedule.
           </SurfaceCard>
           <SurfaceCard eyebrow="Harness" title="Any MCP client is a client">
-            Claude Code, Cursor, or a command you wrote. The mailbox is the system of record, not an app you open.
+            Claude Code, Cursor, or a command you wrote. The mailbox is the system of record, not an
+            app you open.
           </SurfaceCard>
         </div>
       </Section>
-
       <Section
         id="dispatch"
         index="2.0"
@@ -137,18 +176,22 @@ export default function HomePage() {
           <BoardSurface />
         </AppWindow>
         <FigureCaption>Work items carry their verify command at creation, not after</FigureCaption>
-        <div className="toron-grid toron-grid--2" style={{ marginTop: '1.5rem' }}>
-          <SurfaceCard eyebrow="Admission" title="A bead without a verify command is not dispatchable">
-            The ledger refuses to hand out work it cannot check. Title-only items stay in the backlog until they carry a
-            one-line command and, for priority work, the principles the change is expected to satisfy.
+        <div className="toron-grid toron-grid--2" style={{ marginTop: "1.5rem" }}>
+          <SurfaceCard
+            eyebrow="Admission"
+            title="A bead without a verify command is not dispatchable"
+          >
+            The ledger refuses to hand out work it cannot check. Title-only items stay in the
+            backlog until they carry a one-line command and, for priority work, the principles the
+            change is expected to satisfy.
           </SurfaceCard>
           <SurfaceCard eyebrow="Ownership" title="One lease, one writer">
-            Claiming assigns the item and reserves the paths it touches. The pre-commit guard then refuses any commit
-            whose files are not covered by a live reservation under the committing pin.
+            Claiming assigns the item and reserves the paths it touches. The pre-commit guard then
+            refuses any commit whose files are not covered by a live reservation under the
+            committing pin.
           </SurfaceCard>
         </div>
       </Section>
-
       <Section
         id="prove"
         index="3.0"
@@ -161,11 +204,11 @@ export default function HomePage() {
         </AppWindow>
         <FigureCaption>Held gates block the close ceremony until the row moves</FigureCaption>
         <Callout glyph="◉" title="The failure mode this removes">
-          An agent reports success, the report is wrong, and nobody finds out until the next run. Here the report is a
-          row that had to pass first. A held row is visible to everyone, including the next agent that reads the ledger.
+          An agent reports success, the report is wrong, and nobody finds out until the next run.
+          Here the report is a row that had to pass first. A held row is visible to everyone,
+          including the next agent that reads the ledger.
         </Callout>
       </Section>
-
       <Section
         id="recover"
         index="4.0"
@@ -178,7 +221,6 @@ export default function HomePage() {
         </AppWindow>
         <FigureCaption>Crash → restart → resume, replayed from the journal</FigureCaption>
       </Section>
-
       <Section
         id="remember"
         index="5.0"
@@ -191,41 +233,54 @@ export default function HomePage() {
         </AppWindow>
         <FigureCaption>Curated knowledge and episodic memory, authority-distinct</FigureCaption>
       </Section>
-
-      <Section index="6.0" label="Integrate" title="Everything the UI does, your agent can do." lede="The same surface is reachable from the CLI, from MCP, and from a workflow step. One identity, one set of permissions, whichever door you come through.">
+      <Section
+        index="6.0"
+        label="Integrate"
+        title="Everything the UI does, your agent can do."
+        lede="The same surface is reachable from the CLI, from MCP, and from a workflow step. One identity, one set of permissions, whichever door you come through."
+      >
         <ApiSurface
           rows={[
-            ['mcp', 'toron serve --mcp-http 127.0.0.1:18080'],
-            ['stdio', 'toron serve --mcp-stdio'],
-            ['catalog', 'toron catalog --json → 38 tools · 25 resources · 19 commands'],
-            ['transport', 'local-first · federation off by default · zero egress'],
+            ["mcp", "toron serve --mcp-http 127.0.0.1:18080"],
+            ["stdio", "toron serve --mcp-stdio"],
+            ["catalog", "toron catalog --json → 38 tools · 25 resources · 19 commands"],
+            ["transport", "local-first · federation off by default · zero egress"],
           ]}
         />
       </Section>
-
-      <Section index="7.0" label="State" title="Where the stack stands today." lede="Numbers on this page come from the generated catalog, not from copy. When they drift, the build fails." tight>
+      <Section
+        index="7.0"
+        label="State"
+        title="Where the stack stands today."
+        lede="Numbers on this page come from the generated catalog, not from copy. When they drift, the build fails."
+        tight
+      >
         <StatRow
           items={[
-            ['38', 'MCP tools on the AM-Rust parity surface'],
-            ['25', 'resources addressable over toron://'],
-            ['4', 'planes with explicit ownership boundaries'],
-            ['0', 'plaintext bytes a relay can read'],
+            ["38", "MCP tools on the AM-Rust parity surface"],
+            ["25", "resources addressable over toron://"],
+            ["4", "planes with explicit ownership boundaries"],
+            ["0", "plaintext bytes a relay can read"],
           ]}
         />
       </Section>
-
-      <Section index="8.0" label="Everything else" title="Everything a swarm needs, nothing it doesn't." lede="The full feature set, grouped by the plane that owns it.">
+      <Section
+        index="8.0"
+        label="Everything else"
+        title="Everything a swarm needs, nothing it doesn't."
+        lede="The full feature set, grouped by the plane that owns it."
+      >
         <div className="toron-grid toron-grid--2">
           {EVERYTHING.map((group) => (
             <div className="toron-tile" key={group.label}>
               <p className="toron-tile__label">
                 {group.label} <span className="toron-badge">{group.count}</span>
               </p>
-              <div className="toron-grid toron-grid--2" style={{ gap: '0.9rem' }}>
+              <div className="toron-grid toron-grid--2" style={{ gap: "0.9rem" }}>
                 {group.items.map(([title, body]) => (
                   <div key={title}>
                     <h3>{title}</h3>
-                    <p className="toron-tile__body" style={{ marginTop: '0.3rem' }}>
+                    <p className="toron-tile__body" style={{ marginTop: "0.3rem" }}>
                       {body}
                     </p>
                   </div>
@@ -235,8 +290,13 @@ export default function HomePage() {
           ))}
         </div>
       </Section>
-
-      <Section id="install" index="9.0" label="Install" title="Four commands to a verifiable handoff." lede="The walkthroughs show the expected output at every step and what to do when a step fails.">
+      <Section
+        id="install"
+        index="9.0"
+        label="Install"
+        title="Four commands to a verifiable handoff."
+        lede="The walkthroughs show the expected output at every step and what to do when a step fails."
+      >
         <div className="toron-grid toron-grid--2">
           {INSTALL_STEPS.map(([n, title, code]) => (
             <div className="toron-tile" key={n}>
@@ -244,7 +304,7 @@ export default function HomePage() {
                 {n} <span className="toron-badge">step</span>
               </p>
               <h3>{title}</h3>
-              <div style={{ marginTop: '0.75rem' }}>
+              <div style={{ marginTop: "0.75rem" }}>
                 <CodeBlock>{code}</CodeBlock>
               </div>
             </div>
@@ -259,22 +319,25 @@ export default function HomePage() {
           </Link>
         </div>
       </Section>
-
       <Section index="10.0" label="Start" title="Read the part you need." tight>
         <div className="toron-grid">
           <SurfaceCard eyebrow="Map it" title="Architecture" href="/architecture">
-            Which plane owns mail, dispatch, work evidence, and memory, and what each one refuses to do.
+            Which plane owns mail, dispatch, work evidence, and memory, and what each one refuses to
+            do.
           </SurfaceCard>
           <SurfaceCard eyebrow="Trace it" title="How it works" href="/how-it-works">
-            Eight diagrams covering the message flow, the job race, the crash path, and dual recovery.
+            Eight diagrams covering the message flow, the job race, the crash path, and dual
+            recovery.
           </SurfaceCard>
           <SurfaceCard eyebrow="Compare it" title="Compare" href="/compare">
             How the stack sits next to swarmtools, herdr, plain MCP memory, and doing nothing.
           </SurfaceCard>
         </div>
       </Section>
-
-      <CTABand title="Start planning on your own terms." body="Self-host the mailbox, keep your keys, and have agents coordinating by tonight. No per-seat fee, no relay plaintext, no account.">
+      <CTABand
+        title="Start planning on your own terms."
+        body="Self-host the mailbox, keep your keys, and have agents coordinating by tonight. No per-seat fee, no relay plaintext, no account."
+      >
         <Link href="#install" className="toron-btn toron-btn--primary toron-btn--lg">
           Install toron
         </Link>
@@ -282,7 +345,6 @@ export default function HomePage() {
           Read the walkthroughs
         </Link>
       </CTABand>
-
       <footer className="toron-footer">
         <span>toron.dev · the autonomous agent stack</span>
         <span className="toron-footer__links">

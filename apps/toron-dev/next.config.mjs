@@ -1,4 +1,4 @@
-import { createMDX } from 'fumadocs-mdx/next';
+import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
 
@@ -16,8 +16,8 @@ const config = {
   // so the button a reader clicks and the route that answers cannot drift.
   async rewrites() {
     return [
-      { source: '/docs/:slug*.md', destination: '/llms.mdx/docs/:slug*/content.md' },
-      { source: '/docs.md', destination: '/llms.mdx/docs/content.md' },
+      { source: "/docs/:slug*.md", destination: "/llms.mdx/docs/:slug*/content.md" },
+      { source: "/docs.md", destination: "/llms.mdx/docs/content.md" },
     ];
   },
 };

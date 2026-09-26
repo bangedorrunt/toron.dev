@@ -8,7 +8,7 @@ const posts = {
     title: "Why the receipt is the proof",
     intro: "A self-report is useful. It is not evidence.",
     body: [
-      "When an agent says it sent a message, the interesting question is not whether the agent believes it. The interesting question is whether the system has a signed handoff and a receipt for the state that followed.",
+      "When an agent says it sent a message, the interesting question is whether the system has a signed handoff and a receipt for the state that followed, rather than whether the agent believes it sent one.",
       "toron keeps that boundary honest. A message can be owed, acknowledged, or resulted. A close can point to a commit and a verification gate. beads can refuse a false close. The proof is a relationship between an effect and an artifact, not a sentence in a log.",
       "That distinction is what lets flywheel dispatch autonomously without turning every worker into a source of unverifiable optimism.",
     ],
@@ -19,7 +19,7 @@ const posts = {
     intro: "The stack works because the boundaries meet at a loop.",
     body: [
       "toron carries the signed handoff. flywheel decides how work moves. beads records the claim and the gate. chiebukuro turns the result into memory. No plane needs to impersonate another one.",
-      "The public site now shows that composition explicitly. A visitor should be able to start with one project and still understand the next move: from mailbox to dispatch, from dispatch to evidence, from evidence to memory.",
+      "The public site now shows that composition explicitly. You can start reading at any one project and still follow the next move: from mailbox to dispatch, from dispatch to evidence, from evidence to memory.",
     ],
   },
   "crash-is-a-transition": {
@@ -39,7 +39,9 @@ export function generateStaticParams() {
   return Object.keys(posts).map((slug) => ({ slug }));
 }
 
-export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await props.params;
   const post = posts[slug as PostSlug];
   if (!post) return {};
@@ -54,7 +56,9 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
   return (
     <SitePage eyebrow={post.date} title={post.title} description={post.intro}>
       <article className="toron-article">
-        {post.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        {post.body.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
       </article>
       <PageFooter />
     </SitePage>

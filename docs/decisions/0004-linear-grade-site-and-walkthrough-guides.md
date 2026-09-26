@@ -136,9 +136,9 @@ Rejected. The ladder is ADR-0001's best structural idea and it survives; the fai
 ## Verification
 
 ```bash
-npx pnpm@11.21.0 --filter toron-dev build     # must be green
-npx pnpm@11.21.0 --filter toron-dev lint      # must be green
-git diff --check                              # no whitespace errors
+bun run --filter toron-dev build     # must be green
+bun run --filter toron-dev lint      # oxlint, must be green
+git diff --check                     # no whitespace errors
 
 # every public destination returns 200
 for p in / /architecture /features /compare /security /roadmap /faq /blog \

@@ -1,7 +1,7 @@
-@import 'tailwindcss';
-@import 'fumadocs-ui/css/neutral.css';
-@import 'fumadocs-ui/css/preset.css';
-@import '@toron/tokens/theme.css';
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "@toron/tokens/theme.css";
 
 /*
  * governed-by: ADR-0004 D2/D3/D4
@@ -48,16 +48,32 @@ html {
   inset: -30% -20% auto;
   height: 120vh;
   background:
-    radial-gradient(ellipse 46% 42% at 50% 0%, color-mix(in srgb, var(--toron-accent) 22%, transparent) 0%, transparent 68%),
-    radial-gradient(ellipse 70% 50% at 84% 6%, color-mix(in srgb, var(--toron-accent) 10%, transparent) 0%, transparent 62%);
+    radial-gradient(
+      ellipse 46% 42% at 50% 0%,
+      color-mix(in srgb, var(--toron-accent) 22%, transparent) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 84% 6%,
+      color-mix(in srgb, var(--toron-accent) 10%, transparent) 0%,
+      transparent 62%
+    );
 }
 
 .toron-bg__grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--toron-border) 62%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--toron-border) 62%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--toron-border) 62%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--toron-border) 62%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 68px 68px;
   opacity: 0.34;
   mask-image: radial-gradient(ellipse 76% 52% at 50% 0%, black 0%, transparent 74%);
@@ -430,11 +446,7 @@ summary:focus-visible {
 }
 
 .toron-btn {
-  --toron-veil-border: color-mix(
-    in srgb,
-    var(--toron-border-strong) 70%,
-    var(--toron-ink)
-  );
+  --toron-veil-border: color-mix(in srgb, var(--toron-border-strong) 70%, var(--toron-ink));
   --toron-veil-wash: color-mix(in srgb, var(--toron-raised) 88%, var(--toron-ink));
 }
 
@@ -563,7 +575,7 @@ summary:focus-visible {
     color-mix(in srgb, var(--toron-accent) 26%, transparent),
     transparent 70%
   );
-  content: '';
+  content: "";
 }
 
 .toron-home__figure .toron-window,
@@ -1030,7 +1042,14 @@ summary:focus-visible {
  * entirely, so a reader who asked for less motion is unaffected by this gate
  * either way.
  */
-.toron-hero[data-cycle='idle'] :is(.toron-cycle-line, .toron-cycle-status, .toron-crash-flash, .toron-envelope-glyph, .toron-pulse-dot) {
+.toron-hero[data-cycle="idle"]
+  :is(
+    .toron-cycle-line,
+    .toron-cycle-status,
+    .toron-crash-flash,
+    .toron-envelope-glyph,
+    .toron-pulse-dot
+  ) {
   animation-play-state: paused;
 }
 
@@ -1780,7 +1799,7 @@ summary:focus-visible {
     color-mix(in srgb, var(--toron-accent) 20%, transparent),
     transparent 70%
   );
-  content: '';
+  content: "";
 }
 
 .toron-cta > * {
@@ -1882,7 +1901,7 @@ summary:focus-visible {
   position: absolute;
   left: 0;
   color: var(--toron-green);
-  content: '✓';
+  content: "✓";
 }
 
 /* ============================================================ card primitive */

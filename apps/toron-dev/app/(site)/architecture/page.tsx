@@ -1,19 +1,27 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { AppWindow, FigureCaption, LoopSurface } from '@/components/product-surfaces';
-import { CTABand, CodeBlock, PageFooter, Section, SitePage, StackStrip, SurfaceCard } from '@/components/site-content';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { AppWindow, FigureCaption, LoopSurface } from "@/components/product-surfaces";
+import {
+  CTABand,
+  CodeBlock,
+  PageFooter,
+  Section,
+  SitePage,
+  StackStrip,
+  SurfaceCard,
+} from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: 'Architecture — the four planes',
+  title: "Architecture — the four planes",
   description:
-    'Which plane owns mail, dispatch, work evidence, and memory, what each one refuses to do, and how they hand off to each other.',
+    "Which plane owns mail, dispatch, work evidence, and memory, what each one refuses to do, and how they hand off to each other.",
 };
 
 const ownership: [string, string, string][] = [
-  ['toron', 'Mail, identity, receipts, reservations, archive', 'Transport and system of record'],
-  ['flywheel', 'Spawn, dispatch, loops, workflows, cron, coalitions', 'The control loop'],
-  ['beads', 'Work items, dependencies, gates, close evidence', 'The accountable ledger'],
-  ['chiebukuro', 'Curated knowledge, episodic memory, synthesis', 'The learning plane'],
+  ["toron", "Mail, identity, receipts, reservations, archive", "Transport and system of record"],
+  ["flywheel", "Spawn, dispatch, loops, workflows, cron, coalitions", "The control loop"],
+  ["beads", "Work items, dependencies, gates, close evidence", "The accountable ledger"],
+  ["chiebukuro", "Curated knowledge, episodic memory, synthesis", "The learning plane"],
 ];
 
 export default function ArchitecturePage() {
@@ -41,15 +49,17 @@ export default function ArchitecturePage() {
         </AppWindow>
         <FigureCaption>Each arrow is a durable artifact, not a function call</FigureCaption>
 
-        <div className="toron-grid" style={{ marginTop: '1.5rem' }}>
+        <div className="toron-grid" style={{ marginTop: "1.5rem" }}>
           <SurfaceCard eyebrow="Plan" title="Break the goal into lanes" href="/how-it-works">
-            flywheel turns intent into work with dependencies and proof targets, then owns the dispatch policy.
+            flywheel turns intent into work with dependencies and proof targets, then owns the
+            dispatch policy.
           </SurfaceCard>
           <SurfaceCard eyebrow="Carry" title="Make the handoff signed" href="/security">
             toron turns each handoff into a sealed message with a receipt and a path reservation.
           </SurfaceCard>
           <SurfaceCard eyebrow="Close" title="Record the evidence" href="/features">
-            beads records the gate row. chiebukuro keeps the conclusion. The next run starts smarter.
+            beads records the gate row. chiebukuro keeps the conclusion. The next run starts
+            smarter.
           </SurfaceCard>
         </div>
       </Section>
@@ -61,7 +71,12 @@ export default function ArchitecturePage() {
         lede="This table is canonical. If a capability is not listed under a plane, that plane does not own it, and the site will not claim otherwise."
       >
         <StackStrip />
-        <div className="toron-ownership-table" role="table" aria-label="Autonomous stack plane ownership" style={{ marginTop: '1.5rem' }}>
+        <div
+          className="toron-ownership-table"
+          role="table"
+          aria-label="Autonomous stack plane ownership"
+          style={{ marginTop: "1.5rem" }}
+        >
           <div className="toron-ownership-table__row toron-ownership-table__row--head" role="row">
             <span role="columnheader">Plane</span>
             <span role="columnheader">Owns</span>
@@ -97,16 +112,16 @@ export default function ArchitecturePage() {
       >
         <div className="toron-grid">
           <SurfaceCard eyebrow="Not a runtime" title="toron is not a terminal">
-            A multiplexer keeps a pane alive. toron keeps the work relationship alive across processes, machines, and
-            restarts. They compose rather than compete.
+            A multiplexer keeps a pane alive. toron keeps the work relationship alive across
+            processes, machines, and restarts. They compose rather than compete.
           </SurfaceCard>
           <SurfaceCard eyebrow="Not a ledger" title="flywheel is not the queue">
-            flywheel decides how work moves. beads records what was claimed, blocked, verified, and closed, and holds
-            the gate rows that authorise a close.
+            flywheel decides how work moves. beads records what was claimed, blocked, verified, and
+            closed, and holds the gate rows that authorise a close.
           </SurfaceCard>
           <SurfaceCard eyebrow="Not the bus" title="chiebukuro is not the mailbox">
-            chiebukuro turns retrieved knowledge and observed events into queryable memory. toron carries the signed
-            handoff between agents.
+            chiebukuro turns retrieved knowledge and observed events into queryable memory. toron
+            carries the signed handoff between agents.
           </SurfaceCard>
         </div>
       </Section>

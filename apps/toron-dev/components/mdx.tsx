@@ -1,7 +1,16 @@
-import defaultMdxComponents from 'fumadocs-ui/mdx';
-import type { MDXComponents } from 'mdx/types';
-import { Callout, CodeBlock, Fail, StatRow, Step, Walk } from './site-content';
-import { ApiSurface, AppWindow, BoardSurface, FigureCaption, LedgerSurface, LoopSurface, MailboxSurface, MemorySurface } from './product-surfaces';
+import defaultMdxComponents from "fumadocs-ui/mdx";
+import type { MDXComponents } from "mdx/types";
+import { Callout, CodeBlock, Fail, StatRow, Step, Walk } from "./site-content";
+import {
+  ApiSurface,
+  AppWindow,
+  BoardSurface,
+  FigureCaption,
+  LedgerSurface,
+  LoopSurface,
+  MailboxSurface,
+  MemorySurface,
+} from "./product-surfaces";
 
 /*
  * governed-by: ADR-0004 D6

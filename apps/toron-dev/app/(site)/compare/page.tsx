@@ -1,59 +1,66 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from '@/components/site-content';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: 'Compare — pick the smallest tool for each failure',
+  title: "Compare — pick the smallest tool for each failure",
   description:
-    'How the toron.dev stack sits next to swarmtools, herdr, plain MCP memory servers, and coordinating by hand.',
+    "How the toron.dev stack sits next to swarmtools, herdr, plain MCP memory servers, and coordinating by hand.",
 };
 
-const COLUMNS = ['toron.dev stack', 'swarmtools', 'herdr', 'plain MCP memory', 'by hand'];
+const COLUMNS = ["toron.dev stack", "swarmtools", "herdr", "plain MCP memory", "by hand"];
 
 const ROWS: [string, string[]][] = [
+  ["Encrypted mail between agents", ["yes · NIP-17 gift-wrap", "no", "no", "no", "a shared file"]],
   [
-    'Encrypted mail between agents',
-    ['yes · NIP-17 gift-wrap', 'no', 'no', 'no', 'a shared file'],
+    "Agent has a signed identity",
+    ["yes · Schnorr, NIP-49", "no", "pane identity", "session only", "a hostname"],
   ],
   [
-    'Agent has a signed identity',
-    ['yes · Schnorr, NIP-49', 'no', 'pane identity', 'session only', 'a hostname'],
+    "Keeps a terminal run alive",
+    ["composes with one", "yes", "yes · its whole job", "no", "a terminal you guess at"],
+  ],
+  ["Work item closes on evidence", ["yes · gate row + sha", "no", "no", "no", "a status message"]],
+  [
+    "Recovers work after a crash",
+    ["yes · journal replay", "partial", "yes · for the pane", "no", "re-read the scrollback"],
   ],
   [
-    'Keeps a terminal run alive',
-    ['composes with one', 'yes', 'yes · its whole job', 'no', 'a terminal you guess at'],
+    "Serializes a shared file",
+    ["yes · reservation guard", "no", "no", "no", "asking nicely in chat"],
+  ],
+  ["Reachable over MCP", ["yes · 38 tools, 25 resources", "yes", "varies", "yes", "n/a"]],
+  [
+    "Knowledge carries across runs",
+    ["yes · wiki + episodic", "no", "no", "yes · vector recall", "no"],
   ],
   [
-    'Work item closes on evidence',
-    ['yes · gate row + sha', 'no', 'no', 'no', 'a status message'],
-  ],
-  [
-    'Recovers work after a crash',
-    ['yes · journal replay', 'partial', 'yes · for the pane', 'no', 're-read the scrollback'],
-  ],
-  [
-    'Serializes a shared file',
-    ['yes · reservation guard', 'no', 'no', 'no', 'asking nicely in chat'],
-  ],
-  [
-    'Reachable over MCP',
-    ['yes · 38 tools, 25 resources', 'yes', 'varies', 'yes', 'n/a'],
-  ],
-  [
-    'Knowledge carries across runs',
-    ['yes · wiki + episodic', 'no', 'no', 'yes · vector recall', 'no'],
-  ],
-  [
-    'Runs local-first, no account',
-    ['yes · federation off by default', 'yes', 'yes', 'usually', 'yes'],
+    "Runs local-first, no account",
+    ["yes · federation off by default", "yes", "yes", "usually", "yes"],
   ],
 ];
 
 const COMPOSE: [string, string, string][] = [
-  ['The process dies', 'herdr keeps the runtime', 'Panes stay alive and visible. toron keeps the signed relationship and the archive, so a crash does not erase the work record.'],
-  ['The work is ambiguous', 'beads makes it accountable', 'The smallest verifiable unit gets an owner, a dependency graph, a gate row, and a close reason.'],
-  ['Knowledge is missing', 'chiebukuro makes it reusable', 'Retrieved pages, episodic events, and synthesis become context for the next agent instead of a re-explanation.'],
-  ['Nothing is coordinated', 'toron carries the handoff', 'Signed mail, receipts, reservations, and durable workflows make each handoff observable after the fact.'],
+  [
+    "The process dies",
+    "herdr keeps the runtime",
+    "Panes stay alive and visible. toron keeps the signed relationship and the archive, so a crash does not erase the work record.",
+  ],
+  [
+    "The work is ambiguous",
+    "beads makes it accountable",
+    "The smallest verifiable unit gets an owner, a dependency graph, a gate row, and a close reason.",
+  ],
+  [
+    "Knowledge is missing",
+    "chiebukuro makes it reusable",
+    "Retrieved pages, episodic events, and synthesis become context for the next agent instead of a re-explanation.",
+  ],
+  [
+    "Nothing is coordinated",
+    "toron carries the handoff",
+    "Signed mail, receipts, reservations, and durable workflows make each handoff observable after the fact.",
+  ],
 ];
 
 export default function ComparePage() {
@@ -61,7 +68,7 @@ export default function ComparePage() {
     <SitePage
       eyebrow="Compare"
       title="Pick the smallest tool for each failure."
-      description="A terminal, a mailbox, a ledger, and a memory system solve different problems. None of them is a worse version of the others, and a stack that pretends otherwise is a stack you cannot debug."
+      description="A terminal, a mailbox, a ledger, and a memory system solve different problems. None of them is a worse version of the others."
     >
       <Section
         index="1.0"
@@ -71,7 +78,9 @@ export default function ComparePage() {
       >
         <div className="toron-compare-wrap">
           <table className="toron-compare-table">
-            <caption className="sr-only">Capability comparison between the toron.dev stack and adjacent tools</caption>
+            <caption className="sr-only">
+              Capability comparison between the toron.dev stack and adjacent tools
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Capability</th>
@@ -100,7 +109,7 @@ export default function ComparePage() {
         index="2.0"
         label="The composition"
         title="Use each tool for the failure it was built for."
-        lede="The stack is not a monolith, and that is the point. Most of the value comes from four tools refusing to impersonate each other."
+        lede="Most of the value comes from four tools refusing to impersonate each other."
       >
         <div className="toron-grid toron-grid--2">
           {COMPOSE.map(([eyebrow, title, body]) => (
@@ -121,7 +130,10 @@ export default function ComparePage() {
           <li>Four projects is four things to install, version, and keep in sync.</li>
           <li>Local-first means you own the relay, the archive, and the backups.</li>
           <li>Reservation and gate ceremony is real overhead on a one-line change.</li>
-          <li>MCP client support varies by harness, and the parity surface is not the whole product surface.</li>
+          <li>
+            MCP client support varies by harness, and the parity surface is not the whole product
+            surface.
+          </li>
         </ul>
       </Section>
 

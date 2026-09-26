@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 /**
  * Pauses the hero's crash cycle when it is not on screen.
@@ -26,30 +26,30 @@ export function CycleGate() {
   const anchor = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const host = anchor.current?.closest('section');
+    const host = anchor.current?.closest("section");
     if (!host) return;
 
     // No IntersectionObserver means no gate. The animation running is the
     // correct degraded behaviour, so this is a capability check and not a
     // reason to hide anything.
-    if (typeof IntersectionObserver === 'undefined') {
-      host.dataset.cycle = 'running';
+    if (typeof IntersectionObserver === "undefined") {
+      host.dataset.cycle = "running";
       return;
     }
 
     // Start paused. Before this effect runs the CSS default is running, so the
     // first paint of a cached page can show a frame of the loop before it is
     // gated. Marking the host optimistically avoids that flash.
-    host.dataset.cycle = 'idle';
+    host.dataset.cycle = "idle";
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        host.dataset.cycle = entry.isIntersecting ? 'running' : 'idle';
+        host.dataset.cycle = entry.isIntersecting ? "running" : "idle";
       },
       // Start a little before the hero is fully on screen, so the cycle is
       // already running by the time the reader looks at it rather than
       // beginning under their eye.
-      { rootMargin: '120px 0px' },
+      { rootMargin: "120px 0px" },
     );
 
     observer.observe(host);

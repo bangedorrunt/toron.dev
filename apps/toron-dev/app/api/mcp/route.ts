@@ -1,7 +1,7 @@
-import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
-import { registerSearchTool, registerSourceTools } from 'fumadocs-core/mcp';
-import { createFromSource } from 'fumadocs-core/search/server';
-import { docsLlms, source } from '@/lib/source';
+import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
+import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
+import { createFromSource } from "fumadocs-core/search/server";
+import { docsLlms, source } from "@/lib/source";
 
 // governed-by: ADR-0005 D4
 // The docs over MCP, for an agent that would rather query than crawl. The page
@@ -13,7 +13,7 @@ import { docsLlms, source } from '@/lib/source';
 // disclosure surface — but it is still an unauthenticated route, which is why
 // it lives on the same deployment instead of becoming new infrastructure.
 const server = createMcpHandler(() => {
-  const mcp = new McpServer({ name: 'toron.dev docs', version: '1.0.0' });
+  const mcp = new McpServer({ name: "toron.dev docs", version: "1.0.0" });
 
   registerSourceTools(mcp, source, docsLlms);
   registerSearchTool(mcp, createFromSource(source));

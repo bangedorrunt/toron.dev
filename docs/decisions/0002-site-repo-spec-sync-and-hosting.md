@@ -118,6 +118,10 @@ Tier facts (limits, ToS wording, deploy-hook/API availability) are recorded in
 
 ### D6 — ADR-0001 D3 amendments (research-verified 2026-08-14)
 
+> The framework, docs, diagram, and analytics rows below stand. The package
+> manager, linter, and formatter are **superseded by ADR-0008** (bun, oxlint,
+> oxfmt).
+
 Research crews (VercelPlatform2, StackCurrency2) found ADR-0001's D3 stack
 row stale one day after acceptance. Amended:
 

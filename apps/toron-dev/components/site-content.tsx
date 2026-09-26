@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import Link from 'next/link';
+import type { ReactNode } from "react";
+import Link from "next/link";
 
 /*
  * governed-by: ADR-0004 D3/D5/D6
@@ -50,11 +50,15 @@ export function Section({
   children: ReactNode;
   tight?: boolean;
 }) {
-  const anchor = id ?? label?.toLowerCase().replaceAll(' ', '-') ?? undefined;
-  const headingId = `${anchor ?? 'section'}-title`;
+  const anchor = id ?? label?.toLowerCase().replaceAll(" ", "-") ?? undefined;
+  const headingId = `${anchor ?? "section"}-title`;
 
   return (
-    <section id={anchor} className={`toron-section${tight ? ' toron-section--tight' : ''}`} aria-labelledby={headingId}>
+    <section
+      id={anchor}
+      className={`toron-section${tight ? " toron-section--tight" : ""}`}
+      aria-labelledby={headingId}
+    >
       {index || label ? (
         <p className="toron-section__head">
           {index ? <span className="toron-section__index">{index}</span> : null}
@@ -77,16 +81,42 @@ export function StackStrip() {
   // links into. The two differ only in the leading capital, and conflating them
   // is what kept the section titles lowercase in the first place.
   const planes = [
-    { name: 'Toron', slug: 'toron', role: 'signed mail · identity · receipts · reservations', href: 'https://github.com/bangedorrunt/toron' },
-    { name: 'Flywheel', slug: 'flywheel', role: 'spawn · dispatch · loops · workflows · cron', href: 'https://github.com/bangedorrunt/flywheel' },
-    { name: 'Beads', slug: 'beads', role: 'work items · dependencies · gates · close evidence', href: 'https://github.com/bangedorrunt/br' },
-    { name: 'Chiebukuro', slug: 'chiebukuro', role: 'curated knowledge · episodic memory · synthesis', href: 'https://github.com/bangedorrunt/chiebukuro' },
+    {
+      name: "Toron",
+      slug: "toron",
+      role: "signed mail · identity · receipts · reservations",
+      href: "https://github.com/bangedorrunt/toron",
+    },
+    {
+      name: "Flywheel",
+      slug: "flywheel",
+      role: "spawn · dispatch · loops · workflows · cron",
+      href: "https://github.com/bangedorrunt/flywheel",
+    },
+    {
+      name: "Beads",
+      slug: "beads",
+      role: "work items · dependencies · gates · close evidence",
+      href: "https://github.com/bangedorrunt/br",
+    },
+    {
+      name: "Chiebukuro",
+      slug: "chiebukuro",
+      role: "curated knowledge · episodic memory · synthesis",
+      href: "https://github.com/bangedorrunt/chiebukuro",
+    },
   ];
 
   return (
     <div className="toron-stack-strip" aria-label="The four planes of the autonomous agent stack">
       {planes.map((plane) => (
-        <a key={plane.slug} href={plane.href} target="_blank" rel="noreferrer" className="toron-stack-strip__item">
+        <a
+          key={plane.slug}
+          href={plane.href}
+          target="_blank"
+          rel="noreferrer"
+          className="toron-stack-strip__item"
+        >
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
         </a>
@@ -148,7 +178,15 @@ export function StatRow({ items }: { items: [string, string][] }) {
   );
 }
 
-export function Callout({ glyph = '↻', title, children }: { glyph?: string; title: string; children: ReactNode }) {
+export function Callout({
+  glyph = "↻",
+  title,
+  children,
+}: {
+  glyph?: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <div className="toron-callout">
       <p className="toron-callout__glyph" aria-hidden="true">
@@ -162,7 +200,15 @@ export function Callout({ glyph = '↻', title, children }: { glyph?: string; ti
   );
 }
 
-export function CTABand({ title, body, children }: { title: string; body: string; children: ReactNode }) {
+export function CTABand({
+  title,
+  body,
+  children,
+}: {
+  title: string;
+  body: string;
+  children: ReactNode;
+}) {
   return (
     <div className="toron-cta">
       <div>
@@ -205,7 +251,7 @@ export function WalkStep({
   return (
     <article className="toron-walk__step">
       <span className="toron-walk__num" aria-hidden="true">
-        {String(n).padStart(2, '0')}
+        {String(n).padStart(2, "0")}
       </span>
       <div>
         <h3 className="toron-walk__title">{title}</h3>
@@ -218,7 +264,7 @@ export function WalkStep({
               {fail}
               {diagnose ? (
                 <>
-                  {' '}
+                  {" "}
                   Run <code>{diagnose}</code>.
                 </>
               ) : null}
@@ -246,7 +292,7 @@ export function Step({ n, title, children }: { n: number; title: string; childre
   return (
     <article className="toron-walk__step">
       <span className="toron-walk__num" aria-hidden="true">
-        {String(n).padStart(2, '0')}
+        {String(n).padStart(2, "0")}
       </span>
       <div className="toron-md-step">
         <h3 className="toron-walk__title">{title}</h3>
@@ -266,7 +312,7 @@ export function Fail({ diagnose, children }: { diagnose?: string; children: Reac
         {children}
         {diagnose ? (
           <>
-            {' '}
+            {" "}
             Run <code>{diagnose}</code>.
           </>
         ) : null}
@@ -277,9 +323,17 @@ export function Fail({ diagnose, children }: { diagnose?: string; children: Reac
 
 /* ------------------------------------------------------------------ code */
 
-export function CodeBlock({ children, label, out = false }: { children: string; label?: string; out?: boolean }) {
+export function CodeBlock({
+  children,
+  label,
+  out = false,
+}: {
+  children: string;
+  label?: string;
+  out?: boolean;
+}) {
   return (
-    <figure className={`toron-code-block${out ? ' toron-code-block--out' : ''}`}>
+    <figure className={`toron-code-block${out ? " toron-code-block--out" : ""}`}>
       {label ? <figcaption>{label}</figcaption> : null}
       <pre>
         <code>{children}</code>

@@ -45,24 +45,24 @@
 //
 // Run: node scripts/sync-guides.mjs
 // Repos resolve from TORON_SYNC_<PLANE>_REPO, else ../<repo> beside toron.dev.
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const APP_ROOT = resolve(HERE, '..');
-const REPO_ROOT = resolve(APP_ROOT, '../..');
-const DOCS_DIR = join(APP_ROOT, 'content', 'docs');
-const GUIDES_DIR = join(DOCS_DIR, 'guides');
-const PLANES_PATH = join(DOCS_DIR, 'planes.json');
-const LOCK_PATH = join(REPO_ROOT, 'catalog', 'guides.lock.json');
+const APP_ROOT = resolve(HERE, "..");
+const REPO_ROOT = resolve(APP_ROOT, "../..");
+const DOCS_DIR = join(APP_ROOT, "content", "docs");
+const GUIDES_DIR = join(DOCS_DIR, "guides");
+const PLANES_PATH = join(DOCS_DIR, "planes.json");
+const LOCK_PATH = join(REPO_ROOT, "catalog", "guides.lock.json");
 
 const rel = (p) => relative(REPO_ROOT, p);
-const sha256 = (text) => createHash('sha256').update(text).digest('hex');
+const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
 // The one transform, exported so the gate can state the same contract.
-export const TRANSFORM = 'mdx-safe-v1';
+export const TRANSFORM = "mdx-safe-v1";
 
 // A plain YAML scalar cannot contain ": " — the parser reads it as a nested
 // mapping and the build dies on the description line. One beads guide says
@@ -71,22 +71,22 @@ export const TRANSFORM = 'mdx-safe-v1';
 // and changes nothing the reader sees.
 function yamlSafeFrontmatter(frontmatter) {
   return frontmatter
-    .split('\n')
+    .split("\n")
     .map((line) => {
       const match = line.match(/^([A-Za-z_][\w-]*):[ \t]*(.*)$/);
       if (!match) return line;
       const [, key, raw] = match;
       const value = raw.trim();
-      if (value === '' || /^["'].*["']$/.test(value)) return line;
+      if (value === "" || /^["'].*["']$/.test(value)) return line;
       const ambiguous =
-        value.includes(': ') ||
-        value.endsWith(':') ||
-        value.includes(' #') ||
+        value.includes(": ") ||
+        value.endsWith(":") ||
+        value.includes(" #") ||
         /^[[{&*!%@`>|'"]/.test(value);
       if (!ambiguous) return line;
-      return `${key}: "${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+      return `${key}: "${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
     })
-    .join('\n');
+    .join("\n");
 }
 
 // Escape MDX's two prose metacharacters, and nothing else. `<` becomes an
@@ -95,8 +95,8 @@ function yamlSafeFrontmatter(frontmatter) {
 // command example must arrive exactly as written.
 export function mdxSafe(text) {
   const frontmatter = text.match(/^(---\n[\s\S]*?\n---\n)/);
-  const head = frontmatter ? yamlSafeFrontmatter(frontmatter[1]) : '';
-  const lines = (frontmatter ? text.slice(frontmatter[1].length) : text).split('\n');
+  const head = frontmatter ? yamlSafeFrontmatter(frontmatter[1]) : "";
+  const lines = (frontmatter ? text.slice(frontmatter[1].length) : text).split("\n");
 
   let fence = null;
   return (
@@ -116,10 +116,12 @@ export function mdxSafe(text) {
         // indices are the spans themselves.
         return line
           .split(/(`+[^`]*`+)/)
-          .map((part, i) => (i % 2 === 1 ? part : part.replace(/</g, '&lt;').replace(/\{/g, '&#123;')))
-          .join('');
+          .map((part, i) =>
+            i % 2 === 1 ? part : part.replace(/</g, "&lt;").replace(/\{/g, "&#123;"),
+          )
+          .join("");
       })
-      .join('\n')
+      .join("\n")
   );
 }
 
@@ -132,7 +134,7 @@ function frontmatterTitle(text) {
   return match[1].match(/^title:\s*(.+?)\s*$/m)?.[1] ?? null;
 }
 
-const planes = JSON.parse(readFileSync(PLANES_PATH, 'utf8')).planes ?? [];
+const planes = JSON.parse(readFileSync(PLANES_PATH, "utf8")).planes ?? [];
 if (planes.length === 0) {
   console.error(`FAIL ${rel(PLANES_PATH)} declares no planes, so no guide is projected`);
   process.exit(1);
@@ -148,9 +150,11 @@ for (const plane of planes) {
   const repo =
     process.env[`TORON_SYNC_${plane.plane.toUpperCase()}_REPO`] ??
     (process.env[`TORON_SYNC_${plane.repo.toUpperCase()}_REPO`] || `../${plane.repo}`);
-  const guidesDir = join(resolve(REPO_ROOT, repo), 'docs', 'guides');
+  const guidesDir = join(resolve(REPO_ROOT, repo), "docs", "guides");
   if (!existsSync(guidesDir)) {
-    problems.push(`plane ${plane.plane}: no guide directory at ${repo}/docs/guides — set TORON_SYNC_${plane.plane.toUpperCase()}_REPO`);
+    problems.push(
+      `plane ${plane.plane}: no guide directory at ${repo}/docs/guides — set TORON_SYNC_${plane.plane.toUpperCase()}_REPO`,
+    );
     continue;
   }
 
@@ -160,23 +164,25 @@ for (const plane of planes) {
   for (const name of readdirSync(guidesDir).sort()) {
     // index.mdx is the repo's own navigation, not a guide. The site has its own
     // plane section page, so projecting it would put two indexes in the tree.
-    if (!name.endsWith('.mdx') || name === 'index.mdx') continue;
+    if (!name.endsWith(".mdx") || name === "index.mdx") continue;
 
     const source = join(guidesDir, name);
-    const text = readFileSync(source, 'utf8');
+    const text = readFileSync(source, "utf8");
     const title = frontmatterTitle(text);
     if (title === null) {
-      problems.push(`plane ${plane.plane}: ${name} has no frontmatter title, so it cannot be projected`);
+      problems.push(
+        `plane ${plane.plane}: ${name} has no frontmatter title, so it cannot be projected`,
+      );
       continue;
     }
 
-    const slug = name.replace(/\.mdx$/, '');
+    const slug = name.replace(/\.mdx$/, "");
     const target = join(outDir, name);
     wanted.add(name);
 
     mkdirSync(outDir, { recursive: true });
     const rendered = mdxSafe(text);
-    if (existsSync(target) && readFileSync(target, 'utf8') === rendered) {
+    if (existsSync(target) && readFileSync(target, "utf8") === rendered) {
       unchanged += 1;
     } else {
       writeFileSync(target, rendered);
@@ -200,7 +206,7 @@ for (const plane of planes) {
   // keep a page published for a document that no longer exists.
   if (existsSync(outDir)) {
     for (const name of readdirSync(outDir)) {
-      if (name.endsWith('.mdx') && !wanted.has(name)) {
+      if (name.endsWith(".mdx") && !wanted.has(name)) {
         rmSync(join(outDir, name));
         deleted += 1;
         console.log(`rm    ${rel(join(outDir, name))}  (gone from ${plane.repo}/docs/guides)`);
@@ -212,7 +218,7 @@ for (const plane of planes) {
   // product name in a nav label, so it is capitalised on the way out.
   const planeLabel = plane.plane.charAt(0).toUpperCase() + plane.plane.slice(1);
   writeFileSync(
-    join(outDir, 'meta.json'),
+    join(outDir, "meta.json"),
     `${JSON.stringify({ title: `${planeLabel} guides`, description: `Every canonical ${planeLabel} guide, projected from the ${plane.repo} repository.` }, null, 2)}\n`,
   );
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 /*
  * governed-by: ADR-0004 D3
@@ -31,7 +31,9 @@ export function AppWindow({
         <span className="toron-window__title">{title}</span>
         {meta ? <span className="toron-window__meta">{meta}</span> : null}
       </div>
-      <div className={`toron-window__body${flush ? ' toron-window__body--flush' : ''}`}>{children}</div>
+      <div className={`toron-window__body${flush ? " toron-window__body--flush" : ""}`}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -43,24 +45,44 @@ export function FigureCaption({ children }: { children: ReactNode }) {
 /* ---------------------------------------------------------------- mailbox */
 
 type MailRow = {
-  state: 'sealed' | 'acked' | 'blocked' | 'pending';
+  state: "sealed" | "acked" | "blocked" | "pending";
   subject: string;
   from: string;
   note: string;
 };
 
 const INBOX: MailRow[] = [
-  { state: 'sealed', subject: '[bead-xo2] landing redesign brief', from: 'captain → QuietHarbor', note: 'sealed · relay holds no plaintext' },
-  { state: 'acked', subject: '[bead-xo2] claimed, reserving paths', from: 'QuietHarbor → captain', note: '✓✓ acked 0.4s' },
-  { state: 'blocked', subject: '[bead-qf4] cannot fetch catalog', from: 'DustySparrow → captain', note: '◉ blocked · ack overdue 31m' },
-  { state: 'pending', subject: '[bead-xo2] gate report: pass', from: 'QuietHarbor → captain', note: '○ owed · not yet read' },
+  {
+    state: "sealed",
+    subject: "[bead-xo2] landing redesign brief",
+    from: "captain → QuietHarbor",
+    note: "sealed · relay holds no plaintext",
+  },
+  {
+    state: "acked",
+    subject: "[bead-xo2] claimed, reserving paths",
+    from: "QuietHarbor → captain",
+    note: "✓✓ acked 0.4s",
+  },
+  {
+    state: "blocked",
+    subject: "[bead-qf4] cannot fetch catalog",
+    from: "DustySparrow → captain",
+    note: "◉ blocked · ack overdue 31m",
+  },
+  {
+    state: "pending",
+    subject: "[bead-xo2] gate report: pass",
+    from: "QuietHarbor → captain",
+    note: "○ owed · not yet read",
+  },
 ];
 
-const MAIL_GLYPH: Record<MailRow['state'], { glyph: string; tone: string }> = {
-  sealed: { glyph: '✉', tone: 'toron-glyph--accent' },
-  acked: { glyph: '✓✓', tone: 'toron-glyph--green' },
-  blocked: { glyph: '◉', tone: 'toron-glyph--amber' },
-  pending: { glyph: '○', tone: 'toron-glyph--body' },
+const MAIL_GLYPH: Record<MailRow["state"], { glyph: string; tone: string }> = {
+  sealed: { glyph: "✉", tone: "toron-glyph--accent" },
+  acked: { glyph: "✓✓", tone: "toron-glyph--green" },
+  blocked: { glyph: "◉", tone: "toron-glyph--amber" },
+  pending: { glyph: "○", tone: "toron-glyph--body" },
 };
 
 export function MailboxSurface() {
@@ -87,37 +109,75 @@ export function MailboxSurface() {
 
 /* ------------------------------------------------------------------ board */
 
-type Issue = { id: string; title: string; label?: string; tone?: 'accent' | 'green' | 'amber' | 'red'; who: string };
+type Issue = {
+  id: string;
+  title: string;
+  label?: string;
+  tone?: "accent" | "green" | "amber" | "red";
+  who: string;
+};
 
 const BOARD: { column: string; count: number; issues: Issue[] }[] = [
   {
-    column: 'Ready',
+    column: "Ready",
     count: 4,
     issues: [
-      { id: 'br-xo2', title: 'Landing page grammar', label: 'site', tone: 'accent', who: 'QH' },
-      { id: 'br-k71', title: 'Walkthrough: first sealed mail', label: 'docs', tone: 'accent', who: 'QH' },
-      { id: 'br-m08', title: 'Catalog freshness gate', label: 'gate', who: 'DO' },
+      { id: "br-xo2", title: "Landing page grammar", label: "site", tone: "accent", who: "QH" },
+      {
+        id: "br-k71",
+        title: "Walkthrough: first sealed mail",
+        label: "docs",
+        tone: "accent",
+        who: "QH",
+      },
+      { id: "br-m08", title: "Catalog freshness gate", label: "gate", who: "DO" },
     ],
   },
   {
-    column: 'In progress',
+    column: "In progress",
     count: 2,
     issues: [
-      { id: 'br-p43', title: 'Tool-page descriptions from catalog', label: 'docs', tone: 'accent', who: 'SI' },
-      { id: 'br-r12', title: 'Compare matrix refresh', label: 'site', who: 'MV' },
+      {
+        id: "br-p43",
+        title: "Tool-page descriptions from catalog",
+        label: "docs",
+        tone: "accent",
+        who: "SI",
+      },
+      { id: "br-r12", title: "Compare matrix refresh", label: "site", who: "MV" },
     ],
   },
   {
-    column: 'Blocked',
+    column: "Blocked",
     count: 1,
-    issues: [{ id: 'br-qf4', title: 'Sync catalog from product repo', label: 'blocked', tone: 'amber', who: 'DS' }],
+    issues: [
+      {
+        id: "br-qf4",
+        title: "Sync catalog from product repo",
+        label: "blocked",
+        tone: "amber",
+        who: "DS",
+      },
+    ],
   },
   {
-    column: 'Closed',
+    column: "Closed",
     count: 13,
     issues: [
-      { id: 'br-t77', title: 'Reservation lifecycle diagram', label: 'pass', tone: 'green', who: 'QH' },
-      { id: 'br-v21', title: 'Verify fence in bead template', label: 'pass', tone: 'green', who: 'DO' },
+      {
+        id: "br-t77",
+        title: "Reservation lifecycle diagram",
+        label: "pass",
+        tone: "green",
+        who: "QH",
+      },
+      {
+        id: "br-v21",
+        title: "Verify fence in bead template",
+        label: "pass",
+        tone: "green",
+        who: "DO",
+      },
     ],
   },
 ];
@@ -137,8 +197,8 @@ export function BoardSurface() {
                 <span className="toron-issue__id">{issue.id}</span>
                 <span className="toron-issue__title">{issue.title}</span>
                 <span className="toron-issue__meta">
-                  <span className={`toron-chip${issue.tone ? ` toron-chip--${issue.tone}` : ''}`}>
-                    {issue.label ?? 'task'}
+                  <span className={`toron-chip${issue.tone ? ` toron-chip--${issue.tone}` : ""}`}>
+                    {issue.label ?? "task"}
                   </span>
                   <span className="toron-avatar" aria-hidden="true">
                     {issue.who}
@@ -155,26 +215,29 @@ export function BoardSurface() {
 
 /* ------------------------------------------------------------------- loop */
 
-type LogLine = { text: string; tone?: 'key' | 'ok' | 'warn' | 'bad' | 'accent' | 'dim' };
+type LogLine = { text: string; tone?: "key" | "ok" | "warn" | "bad" | "accent" | "dim" };
 
 const LOOP: LogLine[] = [
-  { text: '$ flywheel briefing "ship the change" --project torondev --json', tone: 'key' },
-  { text: '  vehicle: none (raw) — no catalog route, no live fleet', tone: 'dim' },
-  { text: '  ready_beads: 4 · held_paths: 0 · dispatcher: absent', tone: 'dim' },
-  { text: '$ br ready --json', tone: 'key' },
-  { text: '  br-xo2  Ready     landing page grammar        verify: pnpm build', tone: 'ok' },
-  { text: '  br-k71  Ready     walkthrough: first mail    verify: sh -n install.sh', tone: 'ok' },
-  { text: '$ toron reserve acquire --paths "apps/toron-dev/app/*"', tone: 'key' },
-  { text: '  granted · conflicts: [] · reason: br-xo2', tone: 'accent' },
-  { text: '… daemon restart …', tone: 'warn' },
-  { text: '  ↻ resumed from journal — 0 work items re-dispatched', tone: 'ok' },
+  { text: '$ flywheel briefing "ship the change" --project torondev --json', tone: "key" },
+  { text: "  vehicle: none (raw) — no catalog route, no live fleet", tone: "dim" },
+  { text: "  ready_beads: 4 · held_paths: 0 · dispatcher: absent", tone: "dim" },
+  { text: "$ br ready --json", tone: "key" },
+  { text: "  br-xo2  Ready     landing page grammar        verify: bun run build", tone: "ok" },
+  { text: "  br-k71  Ready     walkthrough: first mail    verify: sh -n install.sh", tone: "ok" },
+  { text: '$ toron reserve acquire --paths "apps/toron-dev/app/*"', tone: "key" },
+  { text: "  granted · conflicts: [] · reason: br-xo2", tone: "accent" },
+  { text: "… daemon restart …", tone: "warn" },
+  { text: "  ↻ resumed from journal — 0 work items re-dispatched", tone: "ok" },
 ];
 
 export function LoopSurface() {
   return (
     <div className="toron-log">
       {LOOP.map((line, index) => (
-        <span className={`toron-log__line${line.tone ? ` toron-log__line--${line.tone}` : ''}`} key={index}>
+        <span
+          className={`toron-log__line${line.tone ? ` toron-log__line--${line.tone}` : ""}`}
+          key={index}
+        >
           {line.text}
         </span>
       ))}
@@ -184,15 +247,35 @@ export function LoopSurface() {
 
 /* ----------------------------------------------------------------- ledger */
 
-type GateRow = { name: string; status: 'pass' | 'held' | 'pending'; tone: 'green' | 'amber' | 'body'; evidence: string };
+type GateRow = {
+  name: string;
+  status: "pass" | "held" | "pending";
+  tone: "green" | "amber" | "body";
+  evidence: string;
+};
 
 const GATES: GateRow[] = [
-  { name: 'verify · pnpm build', status: 'pass', tone: 'green', evidence: '61 routes · 0 type errors' },
-  { name: 'verify · pnpm lint', status: 'pass', tone: 'green', evidence: '0 problems' },
-  { name: 'gate · catalog freshness', status: 'pass', tone: 'green', evidence: '38 tools · 25 resources' },
-  { name: 'gate · route smoke', status: 'pass', tone: 'green', evidence: '12/12 → 200' },
-  { name: 'gate · guide output shown', status: 'held', tone: 'amber', evidence: '3 walkthroughs missing output' },
-  { name: 'close · commit cites bead', status: 'pending', tone: 'body', evidence: 'awaiting sha' },
+  {
+    name: "verify · bun run build",
+    status: "pass",
+    tone: "green",
+    evidence: "61 routes · 0 type errors",
+  },
+  { name: "verify · bun run lint", status: "pass", tone: "green", evidence: "0 problems" },
+  {
+    name: "gate · catalog freshness",
+    status: "pass",
+    tone: "green",
+    evidence: "38 tools · 25 resources",
+  },
+  { name: "gate · route smoke", status: "pass", tone: "green", evidence: "12/12 → 200" },
+  {
+    name: "gate · guide output shown",
+    status: "held",
+    tone: "amber",
+    evidence: "3 walkthroughs missing output",
+  },
+  { name: "close · commit cites bead", status: "pending", tone: "body", evidence: "awaiting sha" },
 ];
 
 export function LedgerSurface() {
@@ -213,16 +296,18 @@ export function LedgerSurface() {
 
 const MEMORY = [
   {
-    source: 'memory://torondev/decided',
-    claim: 'the design tokens are locked by ADR; a palette change needs its own ADR before any CSS moves.',
+    source: "memory://torondev/decided",
+    claim:
+      "the design tokens are locked by ADR; a palette change needs its own ADR before any CSS moves.",
   },
   {
-    source: 'docs/learnings/next-16-fonts.md',
-    claim: 'Next 16.2.x mis-resolves fonts under Turbopack — pin the version and check the build.',
+    source: "docs/learnings/next-16-fonts.md",
+    claim: "Next 16.2.x mis-resolves fonts under Turbopack — pin the version and check the build.",
   },
   {
-    source: 'wiki://toron/mail-plane',
-    claim: 'kind 9 is the room, 1059 is the sealed letter, 43001 is a job. Never gift-wrap a room post.',
+    source: "wiki://toron/mail-plane",
+    claim:
+      "kind 9 is the room, 1059 is the sealed letter, 43001 is a job. Never gift-wrap a room post.",
   },
 ];
 
