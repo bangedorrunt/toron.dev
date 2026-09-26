@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "note": "Each walkthrough on this site is a public projection of canonical product documentation, which stays in the product repository (ADR-0003 D4). This file is what check-freshness.mjs reads: an entry fails the build when its source file is gone, when that file is retitled, or when the site page it names does not exist. basis=authored-from means the site page was written from that file; basis=covers means the page answers the same task from the product surface and must be re-read when the source changes. chiebukuro is a local-only repository, so the upstream half of this check is skipped wherever the clone is absent.",
+  "entries": [
+    {
+      "site_page": "remember-and-recall",
+      "plane": "chiebukuro",
+      "repo": "chiebukuro",
+      "path": "docs/guides/knowledge-plane.mdx",
+      "title": "The knowledge plane",
+      "basis": "authored-from"
+    },
+    {
+      "site_page": "remember-and-recall",
+      "plane": "chiebukuro",
+      "repo": "chiebukuro",
+      "path": "docs/guides/memory-plane.mdx",
+      "title": "The memory plane",
+      "basis": "authored-from"
+    },
+    {
+      "site_page": "remember-and-recall",
+      "plane": "chiebukuro",
+      "repo": "chiebukuro",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "chiebukuro quick start",
+      "basis": "covers"
+    },
+    {
+      "site_page": "first-signed-handoff",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "toron quick start",
+      "basis": "covers"
+    },
+    {
+      "site_page": "first-signed-handoff",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/identity.mdx",
+      "title": "Identity",
+      "basis": "covers"
+    },
+    {
+      "site_page": "first-signed-handoff",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/mail.mdx",
+      "title": "Mail",
+      "basis": "covers"
+    },
+    {
+      "site_page": "first-signed-handoff",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/daemon-ops.mdx",
+      "title": "Daemon operations",
+      "basis": "covers"
+    },
+    {
+      "site_page": "crash-recovery",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/daemon-ops.mdx",
+      "title": "Daemon operations",
+      "basis": "covers"
+    },
+    {
+      "site_page": "crash-recovery",
+      "plane": "beads",
+      "repo": "beads",
+      "path": "docs/guides/lifecycle.mdx",
+      "title": "Lifecycle",
+      "basis": "covers"
+    },
+    {
+      "site_page": "run-a-swarm-loop",
+      "plane": "flywheel",
+      "repo": "flywheel",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "flywheel quick start",
+      "basis": "covers"
+    },
+    {
+      "site_page": "run-a-swarm-loop",
+      "plane": "flywheel",
+      "repo": "flywheel",
+      "path": "docs/guides/loop.mdx",
+      "title": "The loop",
+      "basis": "covers"
+    },
+    {
+      "site_page": "run-a-swarm-loop",
+      "plane": "flywheel",
+      "repo": "flywheel",
+      "path": "docs/guides/fleet-ops.mdx",
+      "title": "Fleet operations",
+      "basis": "covers"
+    },
+    {
+      "site_page": "run-a-swarm-loop",
+      "plane": "beads",
+      "repo": "beads",
+      "path": "docs/guides/lifecycle.mdx",
+      "title": "Lifecycle",
+      "basis": "covers"
+    },
+    {
+      "site_page": "close-with-evidence",
+      "plane": "beads",
+      "repo": "beads",
+      "path": "docs/guides/close-ceremony.mdx",
+      "title": "The close ceremony",
+      "basis": "covers"
+    },
+    {
+      "site_page": "close-with-evidence",
+      "plane": "beads",
+      "repo": "beads",
+      "path": "docs/guides/lifecycle.mdx",
+      "title": "Lifecycle",
+      "basis": "covers"
+    },
+    {
+      "site_page": "close-with-evidence",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/reservations.mdx",
+      "title": "Reservations and slots",
+      "basis": "covers"
+    },
+    {
+      "site_page": "close-with-evidence",
+      "plane": "toron",
+      "repo": "toron",
+      "path": "docs/guides/mail.mdx",
+      "title": "Mail",
+      "basis": "covers"
+    }
+  ]
+}

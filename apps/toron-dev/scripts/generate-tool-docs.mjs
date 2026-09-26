@@ -48,6 +48,24 @@ function slugify(name) {
 function esc(s) {
   return String(s).replaceAll('|', '\\|');
 }
+
+// MDX is JSX, so catalog prose carrying a shell placeholder (`--to <names>`) is
+// parsed as an unclosed tag and the build dies on it. Escape the characters MDX
+// treats as syntax and the text renders literally. Only prose needs this:
+// text inside a backtick code span is already literal to the parser.
+function mdx(s) {
+  return String(s ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('{', '&#123;')
+    .replaceAll('}', '&#125;');
+}
+
+// A table cell needs both: a pipe breaks the column, an angle breaks the parse.
+function cellText(s) {
+  return mdx(esc(s ?? ''));
+}
 // Flatten a JSON Schema object into table rows: name (dot path),
 // type string, required flag, description. Recurses into nested objects
 // and array items. Generic over the schema shape.
@@ -96,7 +114,7 @@ function schemaTable(schema, heading) {
   const divider = hasDescriptions ? '|---|---|---|---|' : '|---|---|---|';
   const body = rows.map((r) =>
     hasDescriptions
-      ? `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} | ${r.description.replaceAll('|', '\\|')} |`
+      ? `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} | ${cellText(r.description)} |`
       : `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} |`,
   );
   return [`## ${heading}`, '', header, divider, ...body].join('\n');
@@ -123,7 +141,7 @@ function exampleBlock(example) {
 
 function parityNote(parity) {
   const note = typeof parity === 'string' ? parity : JSON.stringify(parity);
-  return ['## Parity', '', note].join('\n');
+  return ['## Parity', '', mdx(note)].join('\n');
 }
 
 function requiredSummary(schema) {
@@ -142,7 +160,7 @@ function relatedTools(tool, groupTools) {
   return [
     '## Related tools',
     '',
-    ...siblings.map((t) => `- [\`${t.name}\`](./${t.name}) — ${t.description ?? ''}`),
+    ...siblings.map((t) => `- [\`${t.name}\`](./${t.name}) — ${mdx(t.description ?? '')}`),
   ].join('\n');
 }
 
@@ -154,9 +172,9 @@ function toolPageMarkdown(tool, groupTools) {
     `description: ${JSON.stringify(String(description))}`,
     '---',
     '',
-    description,
+    mdx(description),
     '',
-    `**Group:** ${group} · ${requiredSummary(input_schema)}`,
+    `**Group:** ${mdx(group)} · ${requiredSummary(input_schema)}`,
     '',
     'Task-oriented help lives in the [walkthroughs](/docs/guides). This page is the generated schema reference.',
     '',
@@ -239,14 +257,14 @@ function referenceMarkdown(catalog) {
   for (const tool of tools) {
     const cell = parity ? parity.cell(tool) : '';
     const href = `./tools/${slugify(tool.group)}/${tool.name}`;
-    lines.push(`| [\`${tool.name}\`](${href}) | ${esc(tool.group)} | ${esc(cell)} |`);
+    lines.push(`| [\`${tool.name}\`](${href}) | ${cellText(tool.group)} | ${cellText(cell)} |`);
   }
 
   const resources = catalog.resources ?? [];
   if (resources.length > 0) {
     lines.push('', `## Resources (${resources.length})`, '', '| Name | URI | Description |', '|---|---|---|');
     for (const r of resources) {
-      lines.push(`| \`${r.name}\` | \`${r.uri}\` | ${esc(r.description ?? '')} |`);
+      lines.push(`| \`${r.name}\` | \`${r.uri}\` | ${cellText(r.description ?? '')} |`);
     }
   }
 
@@ -254,7 +272,7 @@ function referenceMarkdown(catalog) {
   if (cli.length > 0) {
     lines.push('', `## CLI commands (${cli.length})`, '', '| Command | Args | Description |', '|---|---|---|');
     for (const c of cli) {
-      lines.push(`| \`${c.name}\` | \`${esc(c.args ?? '')}\` | ${esc(c.description ?? '')} |`);
+      lines.push(`| \`${c.name}\` | \`${esc(c.args ?? '')}\` | ${cellText(c.description ?? '')} |`);
     }
   }
   lines.push('');

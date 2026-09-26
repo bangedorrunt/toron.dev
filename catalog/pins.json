@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "note": "The surface this site renders, pinned. check-freshness.mjs fails when a committed catalog stops matching its pin, when a catalog file has no pin, or when the product's live surface differs from what is committed. The pin is never rewritten automatically: the failure prints the new hash so the diff can be read first, and bumping a pin here is the operator saying yes on purpose. surface_sha256 covers tools, resources, and cli_commands with object keys sorted, and excludes generated_at and version strings so a plain re-sync of an unchanged surface does not fail.",
+  "catalogs": {
+    "toron-mcp.json": {
+      "plane": "toron",
+      "repo": "toron",
+      "upstream_path": "docs/catalog/toron-mcp.json",
+      "catalog_command": ["toron", "catalog"],
+      "surface": "AM-Rust parity projection of the toron MCP surface, emitted by `toron catalog` and copied by scripts/sync-catalogs.sh",
+      "counts": {
+        "tools": 38,
+        "resources": 25,
+        "cli_commands": 29
+      },
+      "surface_sha256": "91dbe7839785a0b8884dc5a48ca8f4fc7fc48819614738f9d1eb483b7815d5e2"
+    }
+  }
+}

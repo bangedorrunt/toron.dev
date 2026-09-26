@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs",
+    "predev": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs && node scripts/check-freshness.mjs",
     "build": "next build",
-    "prebuild": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs && playwright install chromium",
+    "prebuild": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs && node scripts/check-freshness.mjs && playwright install chromium",
+    "check:freshness": "node scripts/check-freshness.mjs",
     "start": "next start",
     "lint": "eslint"
   },
