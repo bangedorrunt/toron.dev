@@ -1,0 +1,16 @@
+torondev-vercel-auto-deploy-n1a live verification
+sha=027af57bf99ec9e193002c1b48df8aa7b11b6472
+trigger=git push origin main -> Vercel Git integration (gitSource ref=main, type=github)
+deployment=dpl_FYDsVJmppMEbPeP9j4jtjZ4Gu8xJ
+state=READY target=production buildSkipped=false build-seconds=56
+aliases=toronmail.vercel.app toron-dev-bangedorrunts-projects.vercel.app toron-dev-git-main-bangedorrunts-projects.vercel.app
+live=https://toronmail.vercel.app http=200 bytes=118996 title="The autonomous agent stack | toron.dev"
+routes=/,/docs,/how-it-works,/security,/sitemap.xml,/robots.txt all 200
+ignored-build-step=153 chars, cds to $(git rev-parse --show-toplevel) before diffing repo-root pathspecs (apps packages catalog pnpm-lock.yaml pnpm-workspace.yaml vercel.json package.json)
+probe-cwd-apps/toron-dev=commit touching apps/toron-dev/README.md -> exit 1 (build)
+probe-cwd-repo-root=same commit -> exit 1 (build)
+probe-skip=.github-only commit (3f21698) -> exit 0 (skip)
+regression=b1ed851 deployment ERROR, "The `vercel.json` schema validation failed with the following message: `ignoreCommand` should NOT be longer than 256 characters"
+repo-visibility=public (gh repo edit bangedorrunt/toron.dev --visibility public --accept-visibility-change-consequences), GitHub Actions billing no longer a factor
+commands=curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/dpl_FYDsVJmppMEbPeP9j4jtjZ4Gu8xJ?teamId=team_6r544iAjZUYZFi1vqZlkrWdA" => readyState READY, buildSkipped false, alias toronmail.vercel.app
+commands=for p in / /docs /how-it-works /security /sitemap.xml /robots.txt; do curl -s -o /dev/null -w "%{http_code}" https://toronmail.vercel.app$p; done => all 200
