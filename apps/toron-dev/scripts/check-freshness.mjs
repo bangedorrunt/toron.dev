@@ -463,6 +463,38 @@ if (toolPages === null) {
 // in that product's repository and checked by that product's gate. Holding this
 // site's pin against another project's numbers would fail the build on prose
 // this repo does not own and cannot fix.
+//
+// QUOTED TEXT IS EXEMPT, and that exclusion was not theoretical. toron's
+// daemon-ops guide explains the catalog contract and, doing so, quotes the stale
+// figure it is warning about: "the guide index's older \"40 tools\" is exactly
+// the drift the gate is for". The first version of this check failed the build
+// on that sentence, because the number inside a quotation is indistinguishable
+// from an assertion to a regex. The guide was right and the gate was wrong.
+//
+// The rule is therefore: a count that appears inside a code span, a straight
+// or curly double-quoted run, or a single-quoted run is being talked about, not
+// asserted, and is not this check's business. Everything else is asserted and
+// must match the pin.
+const NOT_AN_ASSERTION = [
+  /`[^`]*`/g, // code spans
+  /"[^"\n]*"/g, // straight double quotes
+  /“[^”\n]*”/g, // curly double quotes
+  /'[^'\n]*'/g, // single quotes
+];
+
+function assertedText(line) {
+  return NOT_AN_ASSERTION.reduce((text, pattern) => text.replace(pattern, ' '), line);
+}
+
+if (assertedText('the older "40 tools" is drift').match(COUNT_CLAIM) !== null) {
+  console.error('FAIL the count check reads a quoted figure as an assertion, refusing to trust this run');
+  process.exit(1);
+}
+if (assertedText('the surface publishes 40 tools').match(COUNT_CLAIM) === null) {
+  console.error('FAIL the count check misses an asserted figure, refusing to trust this run');
+  process.exit(1);
+}
+
 for (const file of walk(DOCS_DIR)) {
   const underDocs = relative(DOCS_DIR, file);
   if (GENERATED.some((g) => underDocs === g || underDocs.startsWith(`${g}/`))) continue;
@@ -471,7 +503,7 @@ for (const file of walk(DOCS_DIR)) {
   readFileSync(file, 'utf8')
     .split('\n')
     .forEach((line, i) => {
-      for (const m of line.matchAll(COUNT_CLAIM)) {
+      for (const m of assertedText(line).matchAll(COUNT_CLAIM)) {
         const n = Number(m[1]);
         if (!allowedCounts.has(n)) {
           fail(`${rel(file)}:${i + 1} claims "${m[0].trim()}", and ${n} is not a pinned count (${[...allowedCounts].sort((a, b) => a - b).join(', ')})`);

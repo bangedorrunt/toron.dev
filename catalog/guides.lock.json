@@ -68,8 +68,8 @@
       "path": "docs/guides/cli-reference.mdx",
       "title": "chiebukuro CLI reference",
       "transform": "mdx-safe-v1",
-      "source_sha256": "380ddeaef5c9c2a261f87f504e602dc3c01d5218d728586849947f4c6c0c7185",
-      "render_sha256": "380ddeaef5c9c2a261f87f504e602dc3c01d5218d728586849947f4c6c0c7185"
+      "source_sha256": "1146431369973931dd513194fe27544f79e6ad22bff632cec8a1ba0c97a453f6",
+      "render_sha256": "1146431369973931dd513194fe27544f79e6ad22bff632cec8a1ba0c97a453f6"
     },
     {
       "plane": "chiebukuro",
