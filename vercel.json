@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "node scripts/vercel-chromium.mjs && node scripts/generate-tool-docs.mjs && playwright install chromium && next build",
-  "ignoreCommand": "ROOT=$(git rev-parse --show-toplevel) && if git -C \"$ROOT\" diff --quiet HEAD^ HEAD -- apps packages catalog pnpm-lock.yaml pnpm-workspace.yaml vercel.json package.json; then echo 'no site-relevant changes, skipping build'; exit 0; else echo 'site-relevant changes, building'; exit 1; fi"
+  "ignoreCommand": "cd \"$(git rev-parse --show-toplevel)\" && git diff --quiet HEAD^ HEAD -- apps packages catalog pnpm-lock.yaml pnpm-workspace.yaml vercel.json package.json"
 }
