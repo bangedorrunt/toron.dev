@@ -1,0 +1,6 @@
+torondev-site-linear-redesign-xo2 live verification
+commit=159d26b6aa82a466485c4f6f2041e433bbd5992c
+guide-gate=green (node apps/toron-dev/scripts/check-guides.mjs exit 0, 46 ok / 0 FAIL across toron+flywheel+br+chie surfaces, both self-test probes ok)
+build=green (npx pnpm@11.21.0 --filter toron-dev build exit 0)
+lint=green (npx pnpm@11.21.0 --filter toron-dev lint exit 0)
+routes=green (61/61 HTTP 200 against next start on this build: every marketing route, all guide pages, all generated tool pages, sitemap.xml and robots.txt)
