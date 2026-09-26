@@ -52,6 +52,19 @@ const TOOLS_DIR = join(DOCS_DIR, 'tools');
 const COUNT_CLAIM = /\b(\d+)[\s-]+(?:MCP\s+)?(tools|resources|CLI commands|commands)\b/gi;
 const TITLE_LINE = /^title:\s*(.+?)\s*$/m;
 
+// What this gate does NOT check, declared in the checker rather than left for a
+// reader to infer. herdr's config_reference_check.py keeps the same discipline
+// with its SKIPPED_SUBTREES list, so an open-ended surface is an explicit skip
+// instead of a silent gap. Keep this list short and true: an item that moves
+// into the checked set above must leave this list in the same change.
+const NOT_CHECKED = [
+  'product-repo prose: only files named in canonical.json are checked for existence and frontmatter title, never their content',
+  'translation parity: the site is English only (ADR-0001 D3), so there is no second locale to compare',
+  'toron config keys: no config reference page is published yet, so the config model is not compared against anything',
+  'rendered page text: tool names, counts, and the catalog surface are pinned, the prose a generator emits around them is not diffed',
+  'upstream surface where no product binary or checkout is reachable: on Vercel the live comparison is skipped, not passed',
+];
+
 const rel = (p) => relative(REPO_ROOT, p);
 const name = (entry) => String(entry?.name ?? '');
 
@@ -179,12 +192,16 @@ function walk(dir, out = []) {
 }
 
 let failed = 0;
+let skipped = 0;
 const fail = (msg) => {
   console.error(`FAIL ${msg}`);
   failed = 1;
 };
 const ok = (msg) => console.log(`ok   ${msg}`);
-const skip = (msg) => console.warn(`skip ${msg}`);
+const skip = (msg) => {
+  console.warn(`skip ${msg}`);
+  skipped += 1;
+};
 
 // ------------------------------------------------------------------- self-test
 
@@ -357,5 +374,11 @@ for (const [plane, list] of byRepo) {
   }
   ok(`${list.length} canonical source(s) in ${plane} verified against ${repo.path} (${repo.how})`);
 }
+
+console.log(
+  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
+);
+console.log('not checked by this gate:');
+for (const line of NOT_CHECKED) console.log(`  - ${line}`);
 
 process.exit(failed);
