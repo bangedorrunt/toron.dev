@@ -1,0 +1,5 @@
+torondev-k03 live verification
+commit=370031073a308e9b10566ca3be4e46b8226f0b92
+toolchain=green (mise install: node@26.10.0 and pnpm@11.21.0 already installed, both resolved from mise.toml)
+versions=green (mise exec -- node -v -> v26.10.0, mise exec -- pnpm -v -> 11.21.0)
+build=green (mise exec -- pnpm build exit 0: 38 tools / 9 groups generated, check-guides all ok, next build Compiled successfully)
