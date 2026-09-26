@@ -1,0 +1,59 @@
+bead: torondev-juw
+sha: 7510d37516441c140fca53f89479dd801a015177
+agent: QuietHarbor
+deployed: https://toronmail.vercel.app
+deployment: toron-ic9i6p9z8-bangedorrunts-projects.vercel.app (Ready)
+
+== local build ==
+pnpm build (apps/toron-dev)
+  Compiled successfully in 4.2s
+  freshness gate: summary: 1 pinned catalog(s), 17 canonical source entries, 4 plane(s),
+    44 projected guide(s), 3 origin/sitemap/markdown check(s), 0 skip(s), green
+
+== payload, measured before and after ==
+  first visit to /, gzipped JS transferred
+    before: 232.2 KB across 12 files
+    after:  232.6 KB across 13 files   (+0.4 KB, one file = the CycleGate chunk)
+  whole-site static bundle: 400.7 KB gzipped across 30 files, unchanged
+  motion would have added ~34 KB gz = 15% of a first visit. Declined, ADR-0007 D6.
+
+== live section titles, all HTTP 200 ==
+  /docs/toron       <title>Toron | toron.dev</title>
+  /docs/flywheel    <title>Flywheel | toron.dev</title>
+  /docs/beads       <title>Beads | toron.dev</title>
+  /docs/chiebukuro  <title>Chiebukuro | toron.dev</title>
+
+== live capitalised labels ==
+  docs sidebar: Toron, Flywheel, Beads, Chiebukuro
+  guide sidebar group labels: Toron guides, Flywheel guides, Beads guides, Chiebukuro guides
+  homepage stack strip: Toron, Flywheel, Beads, Chiebukuro
+  8 of 8 surfaces capitalised. Upstream guide titles deliberately untouched:
+  check-freshness.mjs binds those rows to the product repos' frontmatter.
+
+== live motion CSS, read back from the shipped stylesheet ==
+  @view-transition{navigation:auto}                                    present
+  @supports (animation-timeline:view())                                present
+  .toron-hero[data-cycle=idle] :is(...)  {animation-play-state:paused} present
+  toron-reveal, toron-veil, toron-cycle-crash, toron-cycle-restart,
+  toron-cycle-resume, toron-dur-base                                    all present
+  prefers-reduced-motion neutralising block                             present
+  CycleGate client chunk shipped, IntersectionObserver in the JS bundle  present
+
+== live regression sweep ==
+  /llms.txt 200   /llms-full.txt 200   /docs/toron.md 200
+  /docs/guides/toron/mail.md 200      /sitemap.xml 200
+
+== verified locally in Chrome before commit ==
+  typeof document.startViewTransition === 'function'  true
+  CSS.supports('animation-timeline: view()')          true
+  .toron-tile computed: animation-name toron-reveal, timeline view(),
+    duration 0.38s, range "entry cover 30%", fill both
+  veil on all four surfaces: parent isolation isolate + position relative,
+    transition-property opacity duration 0s; ::after opacity 0 at rest, 1px
+    border, correct per-surface wash, z-index -1, own opacity 0.15s ease
+  stepped scroll walk 0..8000px in 350ms steps: 61 reveal targets, 0 below 0.9 opacity
+  paint transitions on /, audited by computed style: 2 ours and intentional
+    (.toron-home__pill color, .toron-toggle colour set), 13 inside Fumadocs'
+    docs shell, 1 transform. Recorded in ADR-0007 as out of scope.
+
+BYPASS: none in this bead.
