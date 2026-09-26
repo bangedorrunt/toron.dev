@@ -3,13 +3,22 @@ import { lucideIconsPlugin } from "fumadocs-core/source/lucide-icons";
 import { docsContentRoute, docsRoute } from "./shared";
 import { defineDocs } from "fumadocs-mdx/macro";
 import { metaSchema, pageSchema } from "fumadocs-core/source/schema";
+import { markdownComponents } from "./markdown";
 
 const docs = defineDocs({
   dir: "content/docs",
   docs: {
     schema: pageSchema,
     postprocess: {
-      includeProcessedMarkdown: true,
+      // governed-by: ADR-0005 D2
+      //
+      // `output: "function"` keeps JSX as JSX through stringification instead of
+      // writing it back as source text. The string form is what leaked raw
+      // `<Step>` and `<Fail>` tags into every agent-facing representation; the
+      // function form hands the components to `markdownComponents`, which gives
+      // each one a Markdown form. The build-time mermaid pass is unaffected
+      // either way: a mermaid fence is a code block, not a component.
+      includeProcessedMarkdown: { output: "function" },
     },
   },
   meta: {
@@ -34,7 +43,7 @@ export function getPageMarkdownUrl(page: (typeof source)["$inferPage"]) {
 }
 
 export async function getLLMText(page: (typeof source)["$inferPage"]) {
-  const processed = await page.data.getText("processed");
+  const processed = await page.data.getText("processed", { components: markdownComponents });
 
   return `# ${page.data.title} (${page.url})
 

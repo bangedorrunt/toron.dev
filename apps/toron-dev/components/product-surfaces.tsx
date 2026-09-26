@@ -217,7 +217,10 @@ export function BoardSurface() {
 
 type LogLine = { text: string; tone?: "key" | "ok" | "warn" | "bad" | "accent" | "dim" };
 
-const LOOP: LogLine[] = [
+// Exported so the Markdown form in lib/markdown.tsx renders the same lines the
+// figure shows. A second copy of this data would drift from the figure, and a
+// reader comparing the two would be reading fiction in one of them.
+export const LOOP: LogLine[] = [
   { text: '$ flywheel briefing "ship the change" --project torondev --json', tone: "key" },
   { text: "  vehicle: none (raw) — no catalog route, no live fleet", tone: "dim" },
   { text: "  ready_beads: 4 · held_paths: 0 · dispatcher: absent", tone: "dim" },

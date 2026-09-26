@@ -303,6 +303,87 @@ function sitemapProblems({ marketing, staticRoutes }) {
 // The docs pages advertise a Markdown URL. That URL is a promise, and a
 // promise with no route behind it is a dead button on every page. This is the
 // check that would have caught the missing llms.mdx route.
+// ------------------------------------------------- Markdown component coverage
+//
+// governed-by: ADR-0005 D2
+//
+// The page tools and the `.md` routes read the *processed* document, which
+// still contains JSX until each component declares a Markdown form. A component
+// with no form is written back out as raw source text, so an agent calling
+// `get_page` receives `<Step n="1" title="...">` instead of a heading. That is
+// silent: the request succeeds, the page renders, and the text is unusable.
+//
+// The check is the pair of sets, not a regex over prose. `used` is every
+// capitalized MDX tag outside a fenced block, `covered` is every key in
+// `markdownComponents`. A tag in `used` and not in `covered` is the defect.
+//
+// Fenced blocks AND inline code spans are excluded, because a shell example
+// legitimately writes `--as <Pin>` and the reference tables are full of
+// `--project <PROJECT>`. Those are placeholders inside backticks, and reading
+// them as components would demand a Markdown form for a CLI argument.
+function componentCoverageProblems({ used, covered }) {
+  const out = [];
+  const uncovered = [...used].filter((tag) => !covered.has(tag)).toSorted();
+  if (uncovered.length > 0) {
+    out.push(
+      `MDX component(s) used in content with no Markdown form in lib/markdown.tsx: ${uncovered.join(", ")}. ` +
+        "A component without a form is serialized as raw JSX into /docs/<slug>.md, /llms-full.txt, and the MCP get_page tool",
+    );
+  }
+  const unused = [...covered].filter((tag) => !used.has(tag)).toSorted();
+  if (unused.length > 0) {
+    out.push(
+      `lib/markdown.tsx has a Markdown form no content uses: ${unused.join(", ")}. ` +
+        "Either a page stopped using it or the name is misspelled, and a misspelling is the same defect in reverse: the real component has no form",
+    );
+  }
+  return out;
+}
+
+/**
+ * Capitalized MDX tags in a file, ignoring fenced code blocks and inline code
+ * spans. Both are excluded because a docs page is full of `--as <Pin>` and
+ * `--project <PROJECT>`, and a placeholder is not a component.
+ */
+function mdxComponentsIn(source) {
+  const names = new Set();
+  let fence = null;
+  for (const line of source.split("\n")) {
+    const trimmed = line.trimStart();
+    const marker = trimmed.match(/^(?:```|~~~)/);
+    if (marker) {
+      if (fence === null) fence = marker[0];
+      else if (trimmed.startsWith(fence)) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+    // Blank out inline code spans before looking for tags. The span pattern is
+    // deliberately simple: a backtick run, its contents, the same run.
+    const prose = line.replace(/(`+)(?:(?!\1)[\s\S])*?\1/g, (span) => " ".repeat(span.length));
+    for (const match of prose.matchAll(/<\/?([A-Z][A-Za-z0-9]*)/g)) names.add(match[1]);
+  }
+  return names;
+}
+
+/**
+ * Keys of the exported markdownComponents object, read rather than duplicated.
+ *
+ * The closing brace is matched loosely on purpose. The map is `as const`, and a
+ * formatter may or may not keep the assertion on the same line; a regex that
+ * demanded a bare `};` reported "no map" on a map that plainly exists, which
+ * reads as a broken site rather than a broken check.
+ */
+function markdownFormNames(markdownModule) {
+  const block = markdownModule.match(/export const markdownComponents = \{([\s\S]*?)\n\}[^;\n]*;/);
+  if (!block) return null;
+  return new Set(
+    block[1]
+      .split("\n")
+      .map((line) => line.trim().replace(/[,:]$/, ""))
+      .filter((line) => /^[A-Za-z_$][\w$]*$/.test(line)),
+  );
+}
+
 function markdownRouteProblems({ docsContentRoute, appDir, nextConfig }) {
   const out = [];
   const routeFile = join(
@@ -441,8 +522,70 @@ function selfTest() {
     rmSync(fixture, { recursive: true, force: true });
   }
 
+  // The component-coverage check must catch an uncovered component, and it must
+  // stay quiet on a set where every form is used. The "used" set has to name
+  // every covered component, or the quiet case is really the orphan case.
+  const covered = new Set(["Step", "Callout"]);
+  if (componentCoverageProblems({ used: new Set(["Step", "Callout"]), covered }).length !== 0) {
+    console.error(
+      "FAIL the component-coverage check fires on a fully covered set, refusing to trust this run",
+    );
+    process.exit(1);
+  }
+  if (
+    !componentCoverageProblems({ used: new Set(["Step", "Callout", "Fail"]), covered }).some((p) =>
+      p.includes("Fail"),
+    )
+  ) {
+    console.error(
+      "FAIL the component-coverage check misses an uncovered component, refusing to trust this run",
+    );
+    process.exit(1);
+  }
+  if (
+    !componentCoverageProblems({ used: new Set(["Step"]), covered }).some((p) =>
+      p.includes("no content uses"),
+    )
+  ) {
+    console.error(
+      "FAIL the component-coverage check misses an orphaned Markdown form, refusing to trust this run",
+    );
+    process.exit(1);
+  }
+  if (
+    mdxComponentsIn('text\n\n```bash\ntoron mail send --as <Pin>\n```\n\n<Step n="1" />\n').size !==
+    1
+  ) {
+    console.error(
+      "FAIL mdxComponentsIn reads a fenced shell placeholder as a component, refusing to trust this run",
+    );
+    process.exit(1);
+  }
+  if (mdxComponentsIn("| `react` | `--to <TO>, --as <Pin>` | a post |\n").size !== 0) {
+    console.error(
+      "FAIL mdxComponentsIn reads an inline-code shell placeholder as a component, refusing to trust this run",
+    );
+    process.exit(1);
+  }
+  if (mdxComponentsIn('A <Callout title="x">body</Callout> inline.\n').size !== 1) {
+    console.error("FAIL mdxComponentsIn misses a component in prose, refusing to trust this run");
+    process.exit(1);
+  }
+  if (markdownFormNames("export const markdownComponents = {\n  Step,\n  Fail,\n};")?.size !== 2) {
+    console.error("FAIL markdownFormNames cannot read the component map");
+    process.exit(1);
+  }
+  if (markdownFormNames("export const markdownComponents = {\n  Step,\n} as const;")?.size !== 1) {
+    console.error("FAIL markdownFormNames cannot read an `as const` map");
+    process.exit(1);
+  }
+  if (markdownFormNames("// no map here") !== null) {
+    console.error("FAIL markdownFormNames pretends to find a map that is absent");
+    process.exit(1);
+  }
+
   console.log(
-    "ok   self-test: a removed entry, an in-place edit, a hash change, a hostname literal, an unlisted route, a duplicate sitemap URL, an absent markdown route, and a missing rewrite are all caught",
+    "ok   self-test: a removed entry, an in-place edit, a hash change, a hostname literal, an unlisted route, a duplicate sitemap URL, an absent markdown route, a missing rewrite, an uncovered MDX component, an orphaned Markdown form, and a fenced shell placeholder are all handled",
   );
 }
 
@@ -903,8 +1046,42 @@ if (!contentRoute) {
   }
 }
 
+// ADR-0005 D2: every MDX component used in content needs a Markdown form, or
+// the agent-facing text carries raw JSX. The sets are read from the content and
+// from lib/markdown.tsx, so neither side is a hand-maintained list.
+const MARKDOWN_MODULE_PATH = join(LIB_DIR, "markdown.tsx");
+const usedComponents = new Set();
+for (const file of walk(DOCS_DIR)) {
+  for (const tag of mdxComponentsIn(readFileSync(file, "utf8"))) usedComponents.add(tag);
+}
+if (usedComponents.size === 0) {
+  fail(
+    `no MDX component was found under ${rel(DOCS_DIR)}, so the component-coverage check examined nothing`,
+  );
+} else {
+  const coveredComponents = existsSync(MARKDOWN_MODULE_PATH)
+    ? markdownFormNames(readFileSync(MARKDOWN_MODULE_PATH, "utf8"))
+    : null;
+  if (coveredComponents === null) {
+    fail(
+      `${rel(MARKDOWN_MODULE_PATH)} exports no markdownComponents map, so every MDX component serializes as raw JSX`,
+    );
+  } else {
+    const coverageFaults = componentCoverageProblems({
+      used: usedComponents,
+      covered: coveredComponents,
+    });
+    for (const fault of coverageFaults) fail(fault);
+    if (coverageFaults.length === 0) {
+      ok(
+        `every MDX component in ${rel(DOCS_DIR)} has a Markdown form (${usedComponents.size} in use, ${coveredComponents.size} defined)`,
+      );
+    }
+  }
+}
+
 console.log(
-  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), ${lockedGuides.length} projected guide(s), 3 origin/sitemap/markdown check(s), ${skipped} skip(s), ${failed === 0 ? "green" : "RED"}`,
+  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), ${lockedGuides.length} projected guide(s), 4 origin/sitemap/markdown/component check(s), ${skipped} skip(s), ${failed === 0 ? "green" : "RED"}`,
 );
 console.log("not checked by this gate:");
 for (const line of NOT_CHECKED) console.log(`  - ${line}`);

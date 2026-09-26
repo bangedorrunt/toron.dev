@@ -37,9 +37,13 @@ The site serves three machine-readable representations of the docs:
 
 `/docs/<slug>.md` is a rewrite onto `/llms.mdx/docs/<slug>/content.md`, which is the route `getPageMarkdownUrl` already builds. **The rewrite and `getPageMarkdownUrl` are the same contract**, so the button and the route cannot drift apart: the URL the page advertises is the URL the rewrite serves.
 
-Markdown is rendered from the *processed* document, not the raw file, so MDX components and the build-time mermaid pass are already resolved when an agent reads a page. A `docsLlms` renderer is exported from `lib/source.ts` and is the single implementation behind all three routes and the MCP tools.
+Markdown is rendered from the *processed* document, not the raw file, so the build-time mermaid pass is already resolved when an agent reads a page. A `docsLlms` renderer is exported from `lib/source.ts` and is the single implementation behind all three routes and the MCP tools.
+
+MDX components need one more step. A processed document still holds JSX, and a component only becomes text if it declares a Markdown form, so `lib/markdown.tsx` holds that form for every component the content uses. `includeProcessedMarkdown` is set to `output: "function"`, which keeps JSX as JSX through stringification and hands the components to that map. The string form writes them back out as source text instead, which is how `<Step n="1" title="...">` reached every agent-facing representation.
 
 **Forbidden:** a docs page control whose target has no route behind it. A dead affordance is worse than an absent one, because it advertises a capability the site does not have.
+
+**Also forbidden:** an MDX component used in content with no Markdown form. The failure is silent, because the request succeeds and the page still renders, so `scripts/check-freshness.mjs` fails the build when the two sets differ in either direction. An orphaned form is the same defect reversed: a misspelled name means the real component has no form.
 
 ### D3 — The sitemap derives docs URLs from the source tree
 
