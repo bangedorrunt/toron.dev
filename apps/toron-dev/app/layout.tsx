@@ -3,6 +3,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import type { Metadata } from 'next';
 import { themeInitScript } from '@toron/tokens/theme-init';
+import { siteUrl } from '@/lib/shared';
 import './global.css';
 
 // ADR-0004 D2: Inter carries display and body. Space Grotesk is gone, which
@@ -16,7 +17,7 @@ const jsonLd = [
     '@type': 'WebSite',
     name: 'toron.dev',
     description: 'The autonomous agent stack: signed mail, orchestration, work evidence, and memory.',
-    url: 'https://toron.dev',
+    url: siteUrl,
   },
   {
     '@context': 'https://schema.org',
@@ -41,13 +42,14 @@ const jsonLd = [
 ] as const;
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://toron.dev'),
+  // governed-by: ADR-0005 D1 — the origin is the one constant in lib/shared.
+  metadataBase: new URL(siteUrl),
   title: { default: 'toron.dev — the autonomous agent stack', template: '%s | toron.dev' },
   description: 'The mailbox is the transport. The stack is what keeps autonomous work moving.',
   keywords: ['autonomous agents', 'multi-agent workflows', 'Nostr', 'MCP', 'agent coordination', 'durable workflows', 'signed mail'],
   openGraph: {
     type: 'website',
-    url: 'https://toron.dev',
+    url: siteUrl,
     siteName: 'toron.dev',
     title: 'toron.dev — the autonomous agent stack',
     description: 'Signed mail, orchestration, work evidence, and memory for autonomous multi-agent workflows.',

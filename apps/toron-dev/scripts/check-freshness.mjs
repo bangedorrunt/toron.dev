@@ -27,11 +27,17 @@
 // A pin is never auto-rewritten. The failure prints the new hash so the diff can
 // be reviewed first; bumping a pin is the operator saying yes, on purpose.
 //
+// ADR-0005 adds three more, all in-repo and fail-closed: the site origin is one
+// constant and no other file may hardcode a hostname, the sitemap must list every
+// route that renders and must not list a docs URL twice, and the Markdown URL
+// the docs pages advertise must have a route behind it.
+//
 // Run via `prebuild` / `predev` and by the Vercel buildCommand.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +50,10 @@ const PINS_PATH = join(CATALOG_DIR, 'pins.json');
 const CANONICAL_PATH = join(GUIDES_DIR, 'canonical.json');
 const PLANES_PATH = join(DOCS_DIR, 'planes.json');
 const DOCS_META_PATH = join(DOCS_DIR, 'meta.json');
+const APP_DIR = join(APP_ROOT, 'app');
+const LIB_DIR = join(APP_ROOT, 'lib');
+const SHARED_PATH = join(LIB_DIR, 'shared.ts');
+const NEXT_CONFIG_PATH = join(APP_ROOT, 'next.config.mjs');
 
 const GROUPS = ['tools', 'resources', 'cli_commands'];
 // Generated from the catalogs on every build, so their counts are checked
@@ -68,6 +78,7 @@ const NOT_CHECKED = [
   'toron config keys: no config reference page is published yet, so the config model is not compared against anything',
   'rendered page text: tool names, counts, and the catalog surface are pinned, the prose a generator emits around them is not diffed',
   'upstream surface where no product binary or checkout is reachable: on Vercel the live comparison is skipped, not passed',
+  'machine-readable output: the llms, markdown, and MCP routes are checked for existing behind the URLs the site advertises, their rendered text is not diffed',
 ];
 
 const rel = (p) => relative(REPO_ROOT, p);
@@ -196,6 +207,80 @@ function walk(dir, out = []) {
   return out;
 }
 
+// ------------------------------------------------------- origin, sitemap, llms
+//
+// Three checks added by ADR-0005, each written as a pure function over plain
+// data so the self-test can mutate its inputs and prove the check still bites.
+
+// `walk` above collects MDX only, so it returns nothing for app/ and lib/. The
+// first version of the origin check used it and reported "0 sources scanned",
+// green, having checked nothing: a gate that cannot fail is theater, which is
+// the same lesson the diff self-test above records. This walker exists so that
+// mistake is not available, and the check below refuses to pass on an empty
+// scan.
+const SOURCE_EXT = /\.(ts|tsx|mjs|js)$/;
+const SOURCE_SKIP = new Set(['node_modules', '.next', '.source', '.git']);
+
+function walkSources(dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.') && entry.isDirectory()) continue;
+    const p = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!SOURCE_SKIP.has(entry.name)) walkSources(p, out);
+    } else if (SOURCE_EXT.test(entry.name)) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
+// A hostname literal. `toron.dev` as a BRAND is fine and appears in titles,
+// alt text, and JSON-LD names; `toron.dev` as a HOST is the defect, because
+// that domain serves an unrelated product rather than this site.
+const ORIGIN_LITERAL = /https?:\/\/(?:www\.)?toron\.dev\b/;
+
+function originLiterals(text) {
+  return [...text.matchAll(new RegExp(ORIGIN_LITERAL.source, 'g'))].map((m) => m[0]);
+}
+
+// The sitemap is a merge of a hand-written marketing list and the docs pages
+// the source exposes. Two things can go wrong that reading neither list alone
+// would show: a route that exists but was never listed, and a URL that both
+// halves produce, which renders as a duplicate entry for a crawler.
+function sitemapProblems({ marketing, staticRoutes }) {
+  const out = [];
+  // The root is written `''` in the hand list and derived as `/` from the
+  // filesystem. They are one URL, so compare them as one; otherwise the check
+  // would report a phantom failure and train everyone to ignore it.
+  const norm = (route) => (route === '' || route === '/' ? '/' : route.replace(/\/$/, ''));
+  const listed = new Set(marketing.map(norm));
+
+  for (const route of staticRoutes) {
+    if (!listed.has(norm(route))) out.push(`${route} renders a page but is absent from the sitemap`);
+  }
+  for (const route of marketing) {
+    if (norm(route).startsWith('/docs')) {
+      out.push(`${route} is listed by hand, but docs URLs are derived from the source tree and this will duplicate`);
+    }
+  }
+  return out;
+}
+
+// The docs pages advertise a Markdown URL. That URL is a promise, and a
+// promise with no route behind it is a dead button on every page. This is the
+// check that would have caught the missing llms.mdx route.
+function markdownRouteProblems({ docsContentRoute, appDir, nextConfig }) {
+  const out = [];
+  const routeFile = join(appDir, ...docsContentRoute.split('/').filter(Boolean), '[[...slug]]', 'route.ts');
+  if (!existsSync(routeFile)) {
+    out.push(`${docsContentRoute} is advertised by getPageMarkdownUrl but no route serves it (expected ${rel(routeFile)})`);
+  }
+  if (!/source:\s*'\/docs\/:slug\*\.md'/.test(nextConfig)) {
+    out.push('next.config.mjs has no /docs/:slug*.md rewrite, so the pretty Markdown URL 404s even though the route exists');
+  }
+  return out;
+}
+
 let failed = 0;
 let skipped = 0;
 const fail = (msg) => {
@@ -228,7 +313,63 @@ function selfTest() {
     console.error('FAIL the surface hash ignores a removed entry, refusing to trust this run');
     process.exit(1);
   }
-  console.log('ok   self-test: a removed entry, an in-place edit, and a hash change are all caught');
+
+  // ADR-0005 self-tests. A brand mention must NOT trip the origin check, or
+  // the rule gets weakened into uselessness by the first title that says
+  // "toron.dev"; a hostname literal must trip it.
+  if (originLiterals("siteName: 'toron.dev'").length !== 0) {
+    console.error('FAIL the origin check flags the brand name, refusing to trust this run');
+    process.exit(1);
+  }
+  if (originLiterals("url: 'https://toron.dev'").length !== 1) {
+    console.error('FAIL the origin check misses a hostname literal, refusing to trust this run');
+    process.exit(1);
+  }
+
+  const healthy = { marketing: ['/', '/architecture'], staticRoutes: ['/', '/architecture'] };
+  if (sitemapProblems(healthy).length !== 0) {
+    console.error('FAIL the sitemap check fires on a consistent pair, refusing to trust this run');
+    process.exit(1);
+  }
+  if (!sitemapProblems({ marketing: ['/'], staticRoutes: ['/', '/architecture'] }).some((p) => p.includes('/architecture'))) {
+    console.error('FAIL the sitemap check misses an unlisted route, refusing to trust this run');
+    process.exit(1);
+  }
+  if (!sitemapProblems({ marketing: ['/', '/docs/guides'], staticRoutes: ['/'] }).some((p) => p.includes('duplicate'))) {
+    console.error('FAIL the sitemap check misses a hand-listed docs route, refusing to trust this run');
+    process.exit(1);
+  }
+
+  // The fixture is built here rather than pointed at the real app/, so that
+  // deleting a route in the repo fails the CHECK with a message about the
+  // route, instead of failing this self-test with a message about the
+  // self-test. Both are red, but only one of them tells anyone what to fix.
+  const fixture = mkdtempSync(join(tmpdir(), 'freshness-selftest-'));
+  try {
+    mkdirSync(join(fixture, 'llms.mdx', 'docs', '[[...slug]]'), { recursive: true });
+    writeFileSync(join(fixture, 'llms.mdx', 'docs', '[[...slug]]', 'route.ts'), '');
+    const wired = {
+      docsContentRoute: '/llms.mdx/docs',
+      appDir: fixture,
+      nextConfig: "{ source: '/docs/:slug*.md' }",
+    };
+    if (markdownRouteProblems(wired).length !== 0) {
+      console.error('FAIL the markdown-route check fires on a wired site, refusing to trust this run');
+      process.exit(1);
+    }
+    if (!markdownRouteProblems({ ...wired, appDir: join(fixture, 'no-such-dir') }).some((p) => p.includes('no route serves it'))) {
+      console.error('FAIL the markdown-route check misses an absent route, refusing to trust this run');
+      process.exit(1);
+    }
+    if (!markdownRouteProblems({ ...wired, nextConfig: '{}' }).some((p) => p.includes('rewrite'))) {
+      console.error('FAIL the markdown-route check misses a missing rewrite, refusing to trust this run');
+      process.exit(1);
+    }
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
+
+  console.log('ok   self-test: a removed entry, an in-place edit, a hash change, a hostname literal, an unlisted route, a duplicate sitemap URL, an absent markdown route, and a missing rewrite are all caught');
 }
 
 // ----------------------------------------------------------------- the checks
@@ -444,8 +585,66 @@ for (const plane of planes) {
   ok(`plane ${plane.plane}: ${actual.length} canonical guide(s) listed on ${plane.page}.mdx (${repo.how})`);
 }
 
+// ADR-0005 D1: the origin is one constant, and a hostname literal anywhere
+// else is a defect. toron.dev is a live domain belonging to another product, so
+// a stray literal here misdirects crawlers rather than merely being untidy.
+const originFiles = [...walkSources(APP_DIR), ...walkSources(LIB_DIR)];
+let originHits = 0;
+for (const file of originFiles) {
+  if (file === SHARED_PATH) continue;
+  for (const literal of originLiterals(readFileSync(file, 'utf8'))) {
+    fail(`${rel(file)} hardcodes the origin ${literal}, which is not the host that serves this site. use siteUrl from ${rel(SHARED_PATH)}`);
+    originHits += 1;
+  }
+}
+if (originFiles.length === 0) {
+  fail(`no source file was found under ${rel(APP_DIR)} or ${rel(LIB_DIR)}, so the origin check examined nothing`);
+} else if (originHits === 0) {
+  ok(`no file outside ${rel(SHARED_PATH)} hardcodes an origin (${originFiles.length} app/lib source(s) scanned)`);
+}
+
+// ADR-0005 D3: the sitemap must list every route that renders, and must not
+// list a docs URL twice. Static routes are read off the filesystem rather than
+// a second hand-maintained list, which is the whole point of the check.
+const staticRoutes = walkSources(APP_DIR)
+  .filter((f) => f.endsWith(`${sep}page.tsx`))
+  .map((f) => `/${relative(APP_DIR, f).replace(/\\/g, '/').replace(/\/?page\.tsx$/, '')}`)
+  // Route groups are organisational, and a catch-all stands for its whole
+  // subtree, so neither names one URL this check can require by name.
+  .map((route) => route.replace(/\/\([^/]+\)/g, ''))
+  .filter((route) => !route.includes('[') && route !== '/docs')
+  .map((route) => route.replace(/\/$/, '') || '/');
+
+const sitemapSource = readFileSync(join(APP_DIR, 'sitemap.ts'), 'utf8');
+const marketingRoutes = [...sitemapSource.matchAll(/^\s*\[\s*'([^']*)'/gm)].map((m) => m[1]);
+if (marketingRoutes.length === 0) fail('app/sitemap.ts lists no routes, so the sitemap is empty');
+const sitemapFaults = sitemapProblems({ marketing: marketingRoutes, staticRoutes });
+for (const fault of sitemapFaults) fail(`app/sitemap.ts: ${fault}`);
+if (sitemapFaults.length === 0) {
+  ok(`the sitemap lists all ${staticRoutes.length} static route(s) and no hand-listed docs URL`);
+}
+
+// ADR-0005 D2: the Markdown URL the docs pages advertise must have a route
+// behind it. This is the check that would have caught the dead Copy page and
+// View as Markdown controls.
+const sharedSource = readFileSync(SHARED_PATH, 'utf8');
+const contentRoute = sharedSource.match(/docsContentRoute\s*=\s*'([^']+)'/)?.[1];
+if (!contentRoute) {
+  fail(`${rel(SHARED_PATH)} declares no docsContentRoute, so getPageMarkdownUrl has no target to promise`);
+} else {
+  const mdFaults = markdownRouteProblems({
+    docsContentRoute: contentRoute,
+    appDir: APP_DIR,
+    nextConfig: readFileSync(NEXT_CONFIG_PATH, 'utf8'),
+  });
+  for (const fault of mdFaults) fail(fault);
+  if (mdFaults.length === 0) {
+    ok(`the advertised Markdown route ${contentRoute} exists and /docs/:slug*.md rewrites onto it`);
+  }
+}
+
 console.log(
-  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
+  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), 3 origin/sitemap/markdown check(s), ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
 );
 console.log('not checked by this gate:');
 for (const line of NOT_CHECKED) console.log(`  - ${line}`);

@@ -1,4 +1,4 @@
-import { loader } from 'fumadocs-core/source';
+import { llms, loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docsContentRoute, docsRoute } from './shared';
 import { defineDocs } from 'fumadocs-mdx/macro';
@@ -40,3 +40,10 @@ export async function getLLMText(page: (typeof source)['$inferPage']) {
 
 ${processed}`;
 }
+
+// governed-by: ADR-0005 D2
+// One renderer behind every machine-readable representation of the docs:
+// /llms.txt, /llms-full.txt, /docs/<slug>.md, and the MCP page tools. Reading
+// the *processed* document is what makes mermaid and MDX components already
+// resolved for the agent instead of shipping as source.
+export const docsLlms = llms(source, { renderPage: getLLMText });
