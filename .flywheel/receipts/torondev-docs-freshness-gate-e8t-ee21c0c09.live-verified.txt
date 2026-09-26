@@ -1,0 +1,18 @@
+torondev-docs-freshness-gate-e8t live verification
+sha=ee21c0c093afd05a475b2b9037a047c0916f0cac (tip: gate landed in e71dfe1, declared skips in ee21c0c)
+gate=apps/toron-dev/scripts/check-freshness.mjs, wired into prebuild, predev, and the Vercel buildCommand
+pins=catalog/pins.json (counts + canonical surface hash 91dbe7839785, tools=38 resources=25 cli_commands=29)
+sources=apps/toron-dev/content/docs/guides/canonical.json, 17 entries across toron, flywheel, beads, chiebukuro
+drift-found=the committed catalog was 6 weeks stale: 19 CLI commands against 29 live, toron_version 1.1.0 against 1.5.0, 30 of 38 tool bodies changed
+drift-fixed=scripts/sync-catalogs.sh with TORON_SYNC_TORON_REPO pointing at the local clone, then pinned
+rendering-bug=MDX parsed `--to <names>` from a catalog description as an unclosed tag and the build died on 5 pages. generate-tool-docs.mjs now escapes MDX-significant characters in prose and leaves code spans literal
+negative-tests=10 cases each fail the gate: pin count, pin hash, upstream drift, unpinned count claim in prose, retitled canonical source, deleted canonical source, missing site page, pinned catalog removed, unpinned catalog added, tool page removed
+self-test=the gate refuses to run if its own diff logic stops catching a removed entry, an in-place edit, or a hash change
+local=exit 0, 1 pinned catalog, 17 canonical source entries, 0 skips (live surface matched, 4 sibling clones read)
+vercel-like=exit 0, same in-repo checks, 5 loud skips, summary line green
+deploy=e71dfe1 -> dpl_FAMaWpKEt2yAA3nXt4JX9vomSYeB READY, build log shows the gate inside the buildCommand with the pin and hash ok
+deploy=ee21c0c -> dpl_6ccCnnMh6nD5uwDzJm2pqtpYCLUm READY, build log ends "summary: 1 pinned catalog(s), 17 canonical source entries, 5 skip(s), green" plus the not-checked list
+live=/ /docs /docs/reference /docs/guides/remember-and-recall all 200
+live-content=/docs/reference now reads Tools (38), Resources (25), CLI commands (29), and the buzz commands (ack-sla, presence, watch) are present
+bypass=commit guard blocked unattributed bd-* tokens carried inside the generated catalog. One incident, operator-authorized, recorded as a BYPASS comment on this bead before the gated action. The token list lives in that comment and is not restated here, because a receipt carrying them would trip the same guard.
+follow-up=the toron extractor still appends implementing bead ids to public schema field descriptions. That is a product-repo fix (ADR-0002 D4), not a site fix, and is tracked as a bead.
