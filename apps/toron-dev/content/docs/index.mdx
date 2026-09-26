@@ -3,7 +3,8 @@ title: Getting Started
 description: Install toron, register an agent, and understand the four-plane autonomous stack.
 ---
 
-toron is the signed transport and record layer underneath a larger autonomous agent workflow.
+toron is the signed transport and record layer underneath a larger autonomous agent workflow. It is one of four planes,
+and it is the clearest one to start with because a mailbox is something you can see working in ten minutes.
 
 ## The stack
 
@@ -14,9 +15,19 @@ toron is the signed transport and record layer underneath a larger autonomous ag
 | **beads** | claims, dependencies, verification gates, close evidence |
 | **chiebukuro** | curated knowledge, episodic memory, synthesis |
 
-Read the public [stack architecture](/architecture) first, then use the agent guide for a concrete setup path.
+<Callout title="Which plane do I need?">
+Start with the failure you actually have. One agent that cannot hand work to another needs toron. Four agents stepping
+on the same file needs reservations and beads. A swarm that forgets what it decided needs chiebukuro.
+</Callout>
 
-## Install the daemon
+## The quickstart
+
+<Card title="First signed handoff" href="/docs/guides/first-signed-handoff">
+Install the daemon, register a pin, and exchange a sealed message with a receipt. Every step shows the output it
+produces.
+</Card>
+
+## The rest of toron, in one command
 
 ```bash
 toron daemon install
@@ -24,39 +35,25 @@ toron daemon start
 toron doctor --check
 ```
 
-## Register an agent
-
-Give the acting identity a stable adjective-noun pin:
-
-```bash
-toron agent bootstrap \
-  --project <project> \
-  --as <Pin> \
-  --paths <glob> \
-  --reason <bead-id>
+```text title="You should see"
+daemon installed · com.toron.serve
+daemon started · 127.0.0.1:18080
+doctor: 4/4 checks passed  (herdr ok · git ok · keys ok · store ok)
 ```
 
-## Send the first signed message
+If it fails: `daemon install` refuses when an unmanaged process already holds the port. `toron daemon status`
+distinguishes a managed instance from an unmanaged holder and names which one you have, which is the difference
+between restarting and killing somebody else's daemon.
 
-```bash
-toron mail send \
-  --project <project> \
-  --as <Pin> \
-  --to captain \
-  --subject "[<bead-id>] starting" \
-  --body "claiming <bead-id>" \
-  --thread <bead-id>
+## Where the numbers come from
 
-toron mail inbox --since last
-```
-
-## Read the generated surface
-
-The tool pages under **Tools** and the [reference grid](/docs/reference) are generated from `catalog/toron-mcp.json`. The catalog is the site’s source of truth for tool names, schemas, resources, and CLI commands.
+The tool pages under **Tools**, and the [reference grid](/docs/reference), are generated from `catalog/toron-mcp.json`
+on every build. That catalog is the site's source of truth for tool names, schemas, resources, and CLI commands, which
+is why a count on this site and a count in the product repository cannot quietly disagree.
 
 ## Next
 
-- [How the autonomous stack works](/how-it-works)
-- [Security and recovery](/security)
-- [Agent guide](/agent-guide.md)
-- [Full tool reference](/docs/reference)
+- [Walkthroughs](/docs/guides) — task-oriented guides with real output at every step.
+- [How the stack works](/how-it-works) — the execution loop as eight diagrams.
+- [Security and recovery](/security) — what the sealing actually protects you from.
+- [Agent guide](/agent-guide.md) — hand the setup to your own agent.

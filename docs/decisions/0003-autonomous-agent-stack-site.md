@@ -21,6 +21,8 @@ The previous site decisions treated flywheel as a section and explicitly deferre
 
 ### D1 — Stack-first positioning
 
+> **Amended 2026-09-26 by ADR-0004 D4.** The headline pin on “Mail for machines.” is released. The homepage headline is now `Agents that finish the job and prove it.` The mailbox remains the entry point by being the hero figure and the first numbered section, not the headline. Stack-first positioning below is unchanged.
+
 The homepage presents toron.dev as **the autonomous agent stack**. The product headline remains **“Mail for machines.”** because the mailbox is still the clearest entry point, but the supporting positioning is:
 
 > **The mailbox is the transport. The stack is what keeps the work moving.**
@@ -51,6 +53,8 @@ The ownership table is canonical:
 The public information architecture includes `/architecture`, `/how-it-works`, `/features`, `/security`, `/compare`, `/roadmap`, `/faq`, and `/agent-guide.md`. The landing page links to the full stack instead of presenting a single-product funnel.
 
 ### D4 — One canonical source per fact
+
+> **Amended 2026-09-26 by ADR-0004 D6.** The source-of-truth rule below is unchanged. The *form* of the rendered output changes: guides must be task-oriented walkthroughs (outcome, numbered steps, runnable command, shown output, failure mode, durable artifact).
 
 - Product schemas, tool names, resources, and CLI counts come from generated catalogs.
 - Product behavior and operator procedures remain canonical in each product repository, especially `toron/docs/guides`.

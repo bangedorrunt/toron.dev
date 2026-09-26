@@ -60,6 +60,12 @@ run?").
 
 ### D2 — Visual language: dark-first + Nostr violet
 
+> **Amended 2026-09-26 by ADR-0004 D1/D2.** The palette below is superseded:
+a near-black canvas (`#08090A`) with an indigo accent (`#5E6AD2`), and Inter
+for both display and body (Space Grotesk dropped). `--toron-violet` is renamed
+`--toron-accent`. The state-glyph system, the ink/paper split, the CSS-only
+motion rule, and the `--toron-*` namespace all remain in force.
+
 Dark `#0a0a0f` background, Nostr violet `#8b5cf6` primary accent. State-glyph
 system:
 
@@ -114,6 +120,10 @@ needs). The captain chose Next.js for the richer client interactivity the hero
 demo demands.
 
 ### D4 — Hero demo: kill-the-daemon (crash → resume)
+
+> **Amended 2026-09-26 by ADR-0004 D4.** The simulated daemon remains, but it is
+demoted from sole hero to the crash-recovery section figure. The hero is now a
+claim, the four-plane lede, and a rendered mailbox surface.
 
 The hero visual is a **simulated React state machine** rendering a toron serve
 terminal:
@@ -187,6 +197,11 @@ production. Nothing was lost. That's the product." · "Why the receipt is the
 proof."
 
 ### D10 — Feature visualization: the abstraction ladder
+
+> **Amended 2026-09-26 by ADR-0004 D3.** The ladder survives as information
+> architecture. What changes is the rendering: each layer is presented as a
+> numbered section carrying a server-rendered product surface. Mermaid is now
+> reserved for protocol behavior; ASCII strips are retired as a primary visual.
 
 toron's 14 features are organized into **6 layers**, one diagram per layer,
 progressive disclosure. Every page deep-links up/down the ladder. The visitor

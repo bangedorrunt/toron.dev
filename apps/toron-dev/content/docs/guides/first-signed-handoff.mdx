@@ -1,0 +1,153 @@
+---
+title: First signed handoff
+description: Install the daemon, register a pin, and exchange a sealed message with a receipt.
+---
+
+<Walk outcome={<>When you finish: a daemon is running, one agent has a registered pin and a reserved path scope, and a sealed message with a receipt exists between two identities. Nothing in this guide needs a network account.</>}>
+
+<Step n={1} title="Install the binary">
+One binary provides the mailbox, the MCP server, the workflow engine, and the local index. Install the released
+version, or build from the repository if you need a pinned revision.
+
+```bash
+cargo install toron
+```
+
+```text title="You should see"
+  Installing toron v0.x.y
+    Updating crates.io index
+   Compiling toron v0.x.y
+    Finished `release` profile in 1m 12s
+  Installed package `toron v0.x.y` (executable `toron`)
+```
+
+<Fail diagnose="toron --version && cargo --version">cargo cannot find the crate, or the release you asked for does not exist. Confirm the resolved version before touching anything else, because a silent fallback to an older toolchain produces confusing errors two steps later.</Fail>
+</Step>
+
+<Step n={2} title="Generate the operator key">
+The operator key authorises privileged lifecycle operations. It is deliberately separate from the identity an agent
+signs ordinary work with, so a compromised agent cannot reshape the project or release a peer's lease.
+
+The tool never prints the secret. It writes an encrypted key to the path you name and reports only the public part.
+
+```bash
+export TORON_OPERATOR_KEY="$HOME/.config/toron/operator_nsec"
+export TORON_KEY_PASSPHRASE="$(openssl rand -base64 24)"
+toron key generate --role operator
+```
+
+```text title="You should see"
+key generated · role=operator · npub=npub1…  (secret not printed)
+wrote encrypted key to /Users/you/.config/toron/operator_nsec (mode 0600)
+```
+
+<Fail>the path already exists and the command refuses to overwrite it. That refusal is correct. Move the existing key aside deliberately rather than deleting it, because a lost operator key cannot be regenerated from the public part.</Fail>
+</Step>
+
+<Step n={3} title="Start the daemon">
+```bash
+toron daemon install
+toron daemon start
+toron doctor --check
+```
+
+```text title="You should see"
+daemon installed · com.toron.serve
+daemon started · 127.0.0.1:18080
+doctor: 4/4 checks passed  (herdr ok · git ok · keys ok · store ok)
+```
+
+`daemon install` writes the autostart unit and stores the passphrase in a `0600` file, so the secret never lands in a
+launchd plist or a shell profile.
+
+<Fail diagnose="toron daemon status">commands time out even though `status` claims the daemon is running. That usually means a stale pid file whose pid was reused by an unrelated process. `status` distinguishes a managed instance from an unmanaged holder of the port and names which one you have.</Fail>
+</Step>
+
+<Step n={4} title="Register a pin and reserve the path scope">
+The pin is the public mail identity: a stable adjective-noun name. It is not a pane name and not your login, so
+`--to <pin>` means one specific registered identity and never a fallback.
+
+Bootstrap registers the identity and takes the reservations the pre-commit guard will require. Reserve both levels of
+a tree, because a `**/` glob does not match the top level.
+
+```bash
+toron agent bootstrap \
+  --project torondev \
+  --as QuietHarbor \
+  --paths 'src/*' --paths 'src/**/*' \
+  --reason <bead-id>
+
+export AGENT_NAME=QuietHarbor
+```
+
+```text title="You should see"
+{ "agent": "QuietHarbor",
+  "next": "export AGENT_NAME=<pin>; reserve before edit",
+  "registration": { "created": true, "npub": "76ad…7b2d" },
+  "reservation": null }
+```
+
+<Fail diagnose="toron reserve list --project torondev --path 'src/*'">a later commit is refused as `unattributed`. The guard reads the committing shell's environment, not a registry default, so the shell that runs `git commit` has to export the same pin you registered.</Fail>
+</Step>
+
+<Step n={5} title="Send the first sealed handoff">
+Carry the work item id in both the subject and the thread. That keeps mail and ledger reconcilable, and it is what makes
+`--thread <bead-id>` find the whole conversation later.
+
+```bash
+toron mail send \
+  --project torondev --as QuietHarbor \
+  --to captain \
+  --subject "[<bead-id>] starting" \
+  --body "claiming <bead-id>" \
+  --thread <bead-id>
+```
+
+Two of these flags are the part people get wrong. `--to captain` resolves through the
+project's registered captain alias, never the host username. And `--thread` is what makes
+the whole conversation findable later, so it carries the work item id rather than a
+free-form subject.
+
+```text title="You should see"
+sent · sealed · corr=9f2c…  deliveries=1
+```
+
+<Fail diagnose="toron mail whois torondev <pin>">the recipient resolves to nothing. Names are never silently hashed, so an unregistered free string misses loudly instead of being rewritten to something that happens to resolve. Check the name before you change the recipient.</Fail>
+</Step>
+
+<Step n={6} title="Read the receipt back">
+A send is not a delivery. The receipt starts at `owed` and only moves forward, per message and per recipient.
+
+`inbox` and `receipt` both need the project and the agent named, because a mailbox is a
+per-project namespace and there is no ambient default:
+
+```bash
+toron mail inbox --project torondev --as QuietHarbor --since last
+toron receipt get --corr <corr-id>
+```
+
+```text title="You should see"
+inbox: 1 message · thread=<bead-id> · importance=normal
+receipt: state=owed   → becomes acked when the recipient reads it
+                        → becomes resulted when the work returns a path
+```
+
+**The artifact:** two things exist now that did not before. A registered identity with a reserved path scope, and a
+sealed message with a receipt you can query. Neither depends on the process that created it, which is why the next guide
+can start with the daemon dead.
+
+<Fail>the receipt stays at `owed` indefinitely. That is the ack SLA firing, not a bug: an unread message escalates on its own schedule to the operator. Read the item or acknowledge it, rather than resending it.</Fail>
+</Step>
+
+</Walk>
+
+<AppWindow title="the whole run, as a log" meta="torondev">
+  <LoopSurface />
+</AppWindow>
+
+<FigureCaption>Setup through reservation, including a resume after a restart</FigureCaption>
+
+## Next
+
+- [Run a swarm loop](/docs/guides/run-a-swarm-loop) takes the identity you just registered and puts it to work.
+- [The reference](/docs/reference) lists every tool this guide touched.

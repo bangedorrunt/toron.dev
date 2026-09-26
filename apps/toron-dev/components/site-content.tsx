@@ -1,5 +1,14 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
+import type { ReactNode } from 'react';
+import Link from 'next/link';
+
+/*
+ * governed-by: ADR-0004 D3/D5/D6
+ *
+ * The marketing kit. A section is a numbered claim carrying a figure. A
+ * walkthrough is a numbered action carrying its output and its failure mode.
+ */
+
+/* ------------------------------------------------------------------ shell */
 
 export function SitePage({
   eyebrow,
@@ -26,33 +35,49 @@ export function SitePage({
 
 export function Section({
   id,
-  eyebrow,
+  index,
+  label,
   title,
-  description,
+  lede,
   children,
+  tight = false,
 }: {
   id?: string;
-  eyebrow?: string;
+  index?: string;
+  label?: string;
   title: string;
-  description?: string;
+  lede?: string;
   children: ReactNode;
+  tight?: boolean;
 }) {
+  const anchor = id ?? label?.toLowerCase().replaceAll(' ', '-') ?? undefined;
+  const headingId = `${anchor ?? 'section'}-title`;
+
   return (
-    <section id={id} className="toron-page__section" aria-labelledby={`${id ?? title.toLowerCase().replaceAll(" ", "-")}-title`}>
-      {eyebrow ? <p className="toron-page__eyebrow">{eyebrow}</p> : null}
-      <h2 id={`${id ?? title.toLowerCase().replaceAll(" ", "-")}-title`}>{title}</h2>
-      {description ? <p className="toron-page__section-description">{description}</p> : null}
-      {children}
+    <section id={anchor} className={`toron-section${tight ? ' toron-section--tight' : ''}`} aria-labelledby={headingId}>
+      {index || label ? (
+        <p className="toron-section__head">
+          {index ? <span className="toron-section__index">{index}</span> : null}
+          {label ? <span className="toron-section__label">{label}</span> : null}
+        </p>
+      ) : null}
+      <div className="toron-section__copy">
+        <h2 id={headingId} className="toron-section__claim">
+          {title}
+        </h2>
+        {lede ? <p className="toron-section__lede">{lede}</p> : null}
+      </div>
+      <div className="toron-section__body">{children}</div>
     </section>
   );
 }
 
 export function StackStrip() {
   const planes = [
-    { name: "toron", role: "transport · trust · record", href: "https://github.com/bangedorrunt/toron" },
-    { name: "flywheel", role: "orchestration · dispatch · loops", href: "https://github.com/bangedorrunt/flywheel" },
-    { name: "beads", role: "work ledger · gates · evidence", href: "https://github.com/bangedorrunt/br" },
-    { name: "chiebukuro", role: "knowledge · memory · synthesis", href: "https://github.com/bangedorrunt/chiebukuro" },
+    { name: 'toron', role: 'signed mail · identity · receipts · reservations', href: 'https://github.com/bangedorrunt/toron' },
+    { name: 'flywheel', role: 'spawn · dispatch · loops · workflows · cron', href: 'https://github.com/bangedorrunt/flywheel' },
+    { name: 'beads', role: 'work items · dependencies · gates · close evidence', href: 'https://github.com/bangedorrunt/br' },
+    { name: 'chiebukuro', role: 'curated knowledge · episodic memory · synthesis', href: 'https://github.com/bangedorrunt/chiebukuro' },
   ];
 
   return (
@@ -67,40 +92,195 @@ export function StackStrip() {
   );
 }
 
+/* ------------------------------------------------------------------- tiles */
+
 export function SurfaceCard({
   title,
   eyebrow,
+  badge,
   children,
   href,
 }: {
   title: string;
   eyebrow?: string;
+  badge?: string;
   children: ReactNode;
   href?: string;
 }) {
   const content = (
     <>
       {eyebrow ? <p className="toron-card__eyebrow">{eyebrow}</p> : null}
-      <h3>{title}</h3>
-      <div className="toron-card__body">{children}</div>
+      <span className="toron-tile__head">
+        <h3>{title}</h3>
+        {badge ? <span className="toron-badge">{badge}</span> : null}
+      </span>
+      <p className="toron-card__body">{children}</p>
+      {href ? (
+        <span className="toron-card__arrow" aria-hidden="true">
+          Read more →
+        </span>
+      ) : null}
     </>
   );
 
   return href ? (
     <Link href={href} className="toron-card toron-card--link">
       {content}
-      <span className="toron-card__arrow" aria-hidden="true">↗</span>
     </Link>
   ) : (
     <article className="toron-card">{content}</article>
   );
 }
 
-export function CodeBlock({ children, label }: { children: string; label?: string }) {
+export function StatRow({ items }: { items: [string, string][] }) {
   return (
-    <figure className="toron-code-block">
+    <div className="toron-stat-row">
+      {items.map(([value, caption]) => (
+        <div key={caption}>
+          <strong>{value}</strong>
+          <span>{caption}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function Callout({ glyph = '↻', title, children }: { glyph?: string; title: string; children: ReactNode }) {
+  return (
+    <div className="toron-callout">
+      <p className="toron-callout__glyph" aria-hidden="true">
+        {glyph}
+      </p>
+      <div>
+        <h3>{title}</h3>
+        <p>{children}</p>
+      </div>
+    </div>
+  );
+}
+
+export function CTABand({ title, body, children }: { title: string; body: string; children: ReactNode }) {
+  return (
+    <div className="toron-cta">
+      <div>
+        <h2>{title}</h2>
+        <p>{body}</p>
+      </div>
+      <div className="toron-actions" style={{ marginTop: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------- walkthrough */
+
+export function Walkthrough({ outcome, children }: { outcome: ReactNode; children: ReactNode }) {
+  return (
+    <div>
+      <p className="toron-walk__outcome">{outcome}</p>
+      <div className="toron-walk">{children}</div>
+    </div>
+  );
+}
+
+export function WalkStep({
+  n,
+  title,
+  body,
+  children,
+  fail,
+  diagnose,
+}: {
+  n: number;
+  title: string;
+  body: ReactNode;
+  children?: ReactNode;
+  fail?: string;
+  diagnose?: string;
+}) {
+  return (
+    <article className="toron-walk__step">
+      <span className="toron-walk__num" aria-hidden="true">
+        {String(n).padStart(2, '0')}
+      </span>
+      <div>
+        <h3 className="toron-walk__title">{title}</h3>
+        <p className="toron-walk__body">{body}</p>
+        {children}
+        {fail ? (
+          <p className="toron-walk__fail">
+            <strong>If it fails</strong>
+            <span>
+              {fail}
+              {diagnose ? (
+                <>
+                  {' '}
+                  Run <code>{diagnose}</code>.
+                </>
+              ) : null}
+            </span>
+          </p>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+/*
+ * MDX-facing aliases. Guides in content/docs/guides/ use these, so the
+ * walkthrough shape is enforced by the component rather than by author
+ * discipline: a step always renders a number, and a fail block is always
+ * visible rather than buried in a paragraph.
+ */
+export function Walk({ outcome, children }: { outcome: ReactNode; children: ReactNode }) {
+  return <Walkthrough outcome={outcome}>{children}</Walkthrough>;
+}
+
+// `Step` is deliberately loose about its children: a guide step interleaves
+// prose, fenced commands, and fenced output, all of which arrive as MDX nodes.
+export function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <article className="toron-walk__step">
+      <span className="toron-walk__num" aria-hidden="true">
+        {String(n).padStart(2, '0')}
+      </span>
+      <div className="toron-md-step">
+        <h3 className="toron-walk__title">{title}</h3>
+        {children}
+      </div>
+    </article>
+  );
+}
+
+// The failure mode is not optional in a walkthrough, so it gets its own
+// component and its own visual treatment instead of a trailing sentence.
+export function Fail({ diagnose, children }: { diagnose?: string; children: ReactNode }) {
+  return (
+    <p className="toron-walk__fail">
+      <strong>If it fails</strong>
+      <span>
+        {children}
+        {diagnose ? (
+          <>
+            {' '}
+            Run <code>{diagnose}</code>.
+          </>
+        ) : null}
+      </span>
+    </p>
+  );
+}
+
+/* ------------------------------------------------------------------ code */
+
+export function CodeBlock({ children, label, out = false }: { children: string; label?: string; out?: boolean }) {
+  return (
+    <figure className={`toron-code-block${out ? ' toron-code-block--out' : ''}`}>
       {label ? <figcaption>{label}</figcaption> : null}
-      <pre><code>{children}</code></pre>
+      <pre>
+        <code>{children}</code>
+      </pre>
     </figure>
   );
 }
@@ -108,7 +288,7 @@ export function CodeBlock({ children, label }: { children: string; label?: strin
 export function PageFooter() {
   return (
     <footer className="toron-page__footer">
-      <p>toron.dev · one stack for autonomous multi-agent work</p>
+      <p>toron.dev · the autonomous agent stack</p>
       <p>MIT + Apache-2.0 · the license is the pricing</p>
     </footer>
   );

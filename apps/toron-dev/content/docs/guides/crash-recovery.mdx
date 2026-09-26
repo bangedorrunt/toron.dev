@@ -1,0 +1,155 @@
+---
+title: Survive a crash
+description: Kill the daemon mid-workflow and confirm the work resumed instead of restarting.
+---
+
+<Walk outcome={<>When you finish: you have killed the daemon while work was in flight, restarted it, and confirmed from the artifacts that the claim, the lease, and the approval all survived. You will also know which evidence to read, because the recovery is only real if a command can show it.</>}>
+
+## Why this is the interesting case
+
+Restarting a process is easy. Resuming the work that process was carrying is the hard part, and it only works when
+identity, claims, and reservations live outside the process. This guide kills the process on purpose so you can see
+which half survives.
+
+<Callout title="Read the artifacts, not a run-status command">
+There is no `toron workflow status`. A workflow's state lives in the daemon journal, the ledger, and the reservation
+board, and those are what you check. A guide that showed you a single status command would be inventing a control
+surface the product does not have.
+</Callout>
+
+<Step n={1} title="Start work that is genuinely in flight">
+An idle daemon proves nothing. Lint the workflow first, because runs are fail-stop: a workflow that fails lint never
+starts, rather than starting dirty and failing halfway.
+
+```bash
+toron workflow lint approval-gate.yaml
+toron workflow invoke approval-gate.yaml --inputs '{}'
+```
+
+```text title="You should see"
+workflow lint: ok  · 4 steps · acyclic · templates resolve
+invoke: run started  · step 1/4 lint ✓
+                     · step 2/4 build ✓
+                     · step 3/4 approval gate ◉ suspended — waiting for a HumanDecision
+```
+
+<Fail diagnose="toron workflow lint approval-gate.yaml">the invoke refuses to start. Lint is a hard gate and exits non-zero on any blocking issue, so the run never creates state you would then have to unwind.</Fail>
+</Step>
+
+<Step n={2} title="Claim work and take a lease, so the crash has something to lose">
+The recovery claim is only meaningful if there was state outside the process. Nothing is lost if the process disappears
+after this step.
+
+```bash
+br update torondev-landing-grammar-xo2 --status in_progress --assignee QuietHarbor
+toron reserve acquire --project torondev --as QuietHarbor \
+  --reason torondev-landing-grammar-xo2 \
+  --paths 'apps/toron-dev/app/*' --paths 'apps/toron-dev/app/**/*'
+```
+
+```text title="You should see"
+Updated torondev-landing-grammar-xo2: status open → in_progress
+granted · conflicts: [] · reason=torondev-landing-grammar-xo2
+```
+
+<Fail diagnose="toron reserve conflicts --project torondev --as QuietHarbor --paths 'apps/toron-dev/app/*'">a hard conflict against a live lease. That is a real collision. Wait, or split the work by directory. Do not force-release a peer's lease.</Fail>
+</Step>
+
+<Step n={3} title="Kill the daemon">
+Note nothing first. The point is that you do not have to.
+
+```bash
+toron daemon stop
+toron daemon status
+```
+
+```text title="You should see"
+daemon stopped
+status: not running  (no managed instance, port 18080 free)
+```
+
+<Fail diagnose="lsof -nP -iTCP:18080 -sTCP:LISTEN">`stop` refuses because the instance is unmanaged. The CLI will not kill a process it did not start, and that refusal is deliberate rather than a bug to route around.</Fail>
+</Step>
+
+<Step n={4} title="Restart and read what survived">
+This is the step that separates a resume from a restart. Three artifacts have to agree, and each one is a separate
+command because each one is a separate fact.
+
+```bash
+toron daemon start
+toron doctor
+br list --status in_progress --json
+toron reserve list --project torondev --holder QuietHarbor
+```
+
+```text title="You should see"
+daemon started · 127.0.0.1:18080
+doctor: 4/4 checks passed  (herdr ok · git ok · keys ok · store ok)
+in_progress: 1  (torondev-landing-grammar-xo2) — unchanged across the restart
+reservations: 2 live (app/*, app/**/*) — same holder, expiry preserved, not reset
+```
+
+The distinction that matters: the lease kept its **original expiry**. A lease that came back with a fresh TTL means it
+was re-acquired, not resumed, and the recovery report should say so.
+
+<Fail diagnose="toron doctor reconstruct">the daemon starts but `doctor` reports a failing check. `reconstruct` rebuilds the index from the Git archive. If the archive is also short, the true answer is that the record was never written, and repeating the work is correct rather than a bug to patch over.</Fail>
+</Step>
+
+<Step n={5} title="Confirm no second lane picked the work up">
+The one genuinely dangerous recovery outcome is a claim that was not durable, because then two agents own the same
+item.
+
+```bash
+br list --status in_progress --json
+toron reserve list --project torondev
+```
+
+```text title="You should see"
+in_progress: 1  · assignee QuietHarbor
+reservations: 2 live · holder QuietHarbor
+```
+
+<Fail>the item is back in the ready column and a second agent has claimed it. Stop the second lane before doing anything else, then check the lease TTL rather than re-running the dispatch.</Fail>
+</Step>
+
+<Step n={6} title="Release the suspended approval">
+A `HumanDecision` closes with a verdict on the correlation, and exactly one verdict per correlation takes effect.
+
+```bash
+toron mail send --project torondev --as QuietHarbor \
+  --to captain --subject "approve <corr-id>" --body "approving <corr-id>" \
+  --thread <corr-id> --corr <corr-id> --verdict approve
+
+toron receipt get --corr <corr-id>
+```
+
+`--to`, `--subject`, `--body` and `--project` are required on every send; the
+verdict rides `extra_tags` on the same event, and `--corr` names the decision it
+closes (exactly one verdict per correlation binds).
+
+```text title="You should see"
+sent · sealed · corr=<corr-id>  verdict=approve
+receipt: state=owed → acked when the recipient reads it → resulted when the run returns
+```
+
+<Fail>the verdict is sent twice and only one takes effect. That is correct: one `HumanDecision` per correlation, and the second verdict is dropped rather than re-resuming a finished run.</Fail>
+</Step>
+
+</Walk>
+
+## What to check after any recovery
+
+<ApiSurface
+  rows={[
+    ['identity', 'the pin still resolves to the same npub — a new key is a new identity, not a recovery'],
+    ['claim', 'no work item moved back to ready while nobody was watching'],
+    ['lease', 'held by the same holder with its ORIGINAL expiry, not a refreshed one'],
+    ['journal', 'toron doctor passes, so the durable boundary was found'],
+    ['archive', 'events replay from git, or the recovery has a hole worth reporting'],
+  ]}
+/>
+
+## Next
+
+- [Close with evidence](/docs/guides/close-with-evidence) finishes the work item this run was carrying.
+- [Security](/security) covers the archive and the dual-recovery path in more depth.

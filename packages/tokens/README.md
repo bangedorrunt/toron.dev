@@ -1,6 +1,7 @@
 # @toron/tokens
 
-Design tokens + base components for toron.dev (ADR-0001 D2).
+Design tokens + base components for toron.dev (ADR-0004 D1/D2, amending
+ADR-0001 D2).
 
 ## Files
 
@@ -11,7 +12,7 @@ Design tokens + base components for toron.dev (ADR-0001 D2).
 - `tokens.ts` — TS export of the token set, paper variants, fonts, state-glyph
   metadata.
 - `components/` — React components: `TerminalPane`, `AsciiStrip`,
-  `SealedEnvelopeBadge`, `VioletGlow`, `StateGlyph`, `ThemeToggle`,
+  `SealedEnvelopeBadge`, `AccentGlow`, `StateGlyph`, `ThemeToggle`,
   `useTheme` hook + FOUC-free init script.
 
 ## Usage
@@ -46,7 +47,9 @@ In the root layout (server component — `theme-init` is client-free):
 ## Design rules
 
 - Dark is the ground truth; `--toron-*` values in `:root` are verbatim from
-  ADR-0001 D2 and must not change.
+  ADR-0004 D1 and must not change without a further ADR amendment.
+- The `--toron-*` namespace names the site, not the accent. The accent token is
+  `--toron-accent`; there is no `--toron-violet`.
 - Paper variant uses tonal variants of the same hues, verified WCAG AA
   (≥4.5:1) on the light surface.
 - State glyphs: `✉ sealed · ✓ delivered · ✓✓ acked · ○ pending · ◉ blocked ·

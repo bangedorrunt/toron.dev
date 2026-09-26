@@ -1,0 +1,10 @@
+{
+  "title": "Walkthroughs",
+  "pages": [
+    "index",
+    "first-signed-handoff",
+    "run-a-swarm-loop",
+    "crash-recovery",
+    "close-with-evidence"
+  ]
+}

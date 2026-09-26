@@ -32,6 +32,7 @@ const CONTENT_DIR = join(APP_ROOT, 'content', 'docs');
 
 const ROOT_PAGE = 'index';
 const HOW_IT_WORKS_PAGE = 'how-it-works';
+const GUIDES_PAGE = 'guides';
 const TOOLS_PAGE = 'tools';
 const REFERENCE_PAGE = 'reference';
 
@@ -83,22 +84,41 @@ function schemaTable(schema, heading) {
   if (rows.length === 0) {
     return `## ${heading}\n\nNo fields.`;
   }
-  const lines = [
-    `## ${heading}`,
-    '',
-    '| Field | Type | Required | Description |',
-    '|---|---|---|---|',
-    ...rows.map(
-      (r) =>
-        `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} | ${r.description.replaceAll('|', '\\|')} |`,
-    ),
-  ];
-  return lines.join('\n');
+  // The catalog carries no per-field descriptions. Rendering a 16-row column
+  // of empty cells looks like missing data and reads as a broken page, so the
+  // column is dropped entirely when nothing in the schema has one. It comes
+  // back automatically if the extractor starts emitting descriptions, because
+  // ADR-0002 D4 forbids inventing the text here.
+  const hasDescriptions = rows.some((r) => r.description.trim() !== '');
+  const header = hasDescriptions
+    ? '| Field | Type | Required | Description |'
+    : '| Field | Type | Required |';
+  const divider = hasDescriptions ? '|---|---|---|---|' : '|---|---|---|';
+  const body = rows.map((r) =>
+    hasDescriptions
+      ? `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} | ${r.description.replaceAll('|', '\\|')} |`
+      : `| \`${r.name}\` | \`${r.type}\` | ${r.required ? '✓' : ''} |`,
+  );
+  return [`## ${heading}`, '', header, divider, ...body].join('\n');
 }
 
+// The catalog's `example` is a null-filled skeleton of every field. Dropping
+// the nulls turns it into a minimal shape a reader can actually adapt, and
+// the caption says which it is so nobody mistakes it for a run.
 function exampleBlock(example) {
-  const json = JSON.stringify(example ?? {}, null, 2);
-  return ['## Example', '', '```json', json, '```'].join('\n');
+  const defined = Object.fromEntries(
+    Object.entries(example ?? {}).filter(([, value]) => value !== null && value !== undefined),
+  );
+  const json = JSON.stringify(defined, null, 2);
+  return [
+    '## Example',
+    '',
+    'The minimal shape. Optional fields are omitted rather than set to `null`:',
+    '',
+    '```json',
+    json,
+    '```',
+  ].join('\n');
 }
 
 function parityNote(parity) {
@@ -106,8 +126,28 @@ function parityNote(parity) {
   return ['## Parity', '', note].join('\n');
 }
 
-function toolPageMarkdown(tool) {
-  const { name, description = '', input_schema, output_schema, example, parity } = tool;
+function requiredSummary(schema) {
+  const required = schema?.required ?? [];
+  if (required.length === 0) {
+    return 'No fields are required.';
+  }
+  return `Required: ${required.map((name) => `\`${name}\``).join(', ')}`;
+}
+
+// Same-group siblings, so a reader who lands on one tool page can find the
+// rest of its cluster without going back to the index.
+function relatedTools(tool, groupTools) {
+  const siblings = groupTools.filter((t) => t.name !== tool.name);
+  if (siblings.length === 0) return '';
+  return [
+    '## Related tools',
+    '',
+    ...siblings.map((t) => `- [\`${t.name}\`](./${t.name}) — ${t.description ?? ''}`),
+  ].join('\n');
+}
+
+function toolPageMarkdown(tool, groupTools) {
+  const { name, description = '', group = '', input_schema, output_schema, example, parity } = tool;
   const parts = [
     '---',
     `title: ${JSON.stringify(name)}`,
@@ -115,6 +155,10 @@ function toolPageMarkdown(tool) {
     '---',
     '',
     description,
+    '',
+    `**Group:** ${group} · ${requiredSummary(input_schema)}`,
+    '',
+    'Task-oriented help lives in the [walkthroughs](/docs/guides). This page is the generated schema reference.',
     '',
     schemaTable(input_schema, 'Input'),
     '',
@@ -125,6 +169,8 @@ function toolPageMarkdown(tool) {
     parityNote(parity),
     '',
   ];
+  const related = relatedTools(tool, groupTools);
+  if (related) parts.push(related, '');
   return parts.join('\n');
 }
 
@@ -179,7 +225,13 @@ function referenceMarkdown(catalog) {
     `description: ${JSON.stringify('Full tool surface, parity grid, resources, and CLI commands, generated from the catalog.')}`,
     '---',
     '',
+    'Every name, schema, and count on this page is generated from `catalog/toron-mcp.json` on each build. If a field\nlooks wrong, the extractor in the product repository is the thing to fix.',
+    '',
+    'Looking for a task instead of a tool? Start with the [walkthroughs](/docs/guides).',
+    '',
     `## Tools (${tools.length})`,
+    '',
+    'One page per tool, grouped by the cluster the catalog assigns it.',
     '',
     `| ${headers.join(' | ')} |`,
     `|${headers.map(() => '---').join('|')}|`,
@@ -212,10 +264,10 @@ function referenceMarkdown(catalog) {
 // Merge root meta.json: preserve existing hand-written pages (e.g.
 // sections added by later phases), pin index first, tools + reference.
 function mergeRootMeta(existing) {
-  const known = new Set([ROOT_PAGE, HOW_IT_WORKS_PAGE, TOOLS_PAGE, REFERENCE_PAGE]);
+  const pinned = [ROOT_PAGE, HOW_IT_WORKS_PAGE, GUIDES_PAGE, TOOLS_PAGE, REFERENCE_PAGE];
+  const known = new Set(pinned);
   const kept = (existing?.pages ?? []).filter((p) => !known.has(p));
-  const pages = [ROOT_PAGE, HOW_IT_WORKS_PAGE, TOOLS_PAGE, REFERENCE_PAGE, ...kept];
-  return JSON.stringify({ ...existing, pages }, null, 2);
+  return JSON.stringify({ ...existing, pages: [...pinned, ...kept] }, null, 2);
 }
 
 function main() {
@@ -251,7 +303,7 @@ function main() {
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'meta.json'), groupMetaJson(group, groupTools));
     for (const tool of groupTools) {
-      writeFileSync(join(dir, `${tool.name}.mdx`), toolPageMarkdown(tool));
+      writeFileSync(join(dir, `${tool.name}.mdx`), toolPageMarkdown(tool, groupTools));
     }
   }
 

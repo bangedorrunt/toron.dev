@@ -1,12 +1,13 @@
 import { Analytics } from '@vercel/analytics/next';
 import { RootProvider } from 'fumadocs-ui/provider/next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import type { Metadata } from 'next';
 import { themeInitScript } from '@toron/tokens/theme-init';
 import './global.css';
 
+// ADR-0004 D2: Inter carries display and body. Space Grotesk is gone, which
+// also drops one family from the font load path.
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk', display: 'swap' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono', display: 'swap' });
 
 const jsonLd = [
@@ -59,14 +60,14 @@ export const metadata: Metadata = {
     images: ['/opengraph-image'],
   },
   icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }] },
-  other: { 'theme-color': '#0a0a0f' },
+  other: { 'theme-color': '#08090a' },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
-        <div className="toron-bg" aria-hidden="true"><div className="toron-bg__field" /><div className="toron-bg__dots" /></div>
+        <div className="toron-bg" aria-hidden="true"><div className="toron-bg__field" /><div className="toron-bg__grid" /></div>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} suppressHydrationWarning />
         {jsonLd.map((block, index) => <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }} />)}
         <RootProvider search={{ options: { type: 'static' } }}>{children}</RootProvider>

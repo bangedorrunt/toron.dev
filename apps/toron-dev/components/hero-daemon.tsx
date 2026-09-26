@@ -1,3 +1,4 @@
+import type { CSSProperties, ReactNode } from "react";
 import { SealedEnvelopeBadge } from "@toron/tokens/sealed-envelope-badge";
 import { StateGlyph } from "@toron/tokens/state-glyph";
 
@@ -43,10 +44,10 @@ function Pane({
   children,
 }: {
   title: string;
-  status: React.ReactNode;
+  status: ReactNode;
   statusClass?: string;
   className?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className={`toron-hero-pane ${className}`}>
@@ -79,7 +80,7 @@ export function HeroDaemon({ className }: { className?: string }) {
 
         <div className="toron-hero__envelopes" aria-hidden="true">
           {envelopeDelays.map((delay) => (
-            <div key={delay} className="toron-envelope-glyph" style={{ "--toron-env-delay": `${delay}ms` } as React.CSSProperties}>
+            <div key={delay} className="toron-envelope-glyph" style={{ "--toron-env-delay": `${delay}ms` } as CSSProperties}>
               <SealedEnvelopeBadge label="sealed" showLabel={false} delayMs={delay} />
             </div>
           ))}
@@ -101,12 +102,6 @@ export function HeroDaemon({ className }: { className?: string }) {
       </div>
 
       <p className="toron-sr-only">Simulated demo starts in a running state and cycles through crash, restart, and resume.</p>
-      <p className="toron-hero__task">
-        <SealedEnvelopeBadge label="self-referential" showLabel />
-        {" this mock's own task: "}
-        <code className="toron-hero__task-code">mail the site agent · ship the new build</code>
-      </p>
-      <p className="toron-hero__credit">Simulated state machine · no daemon on this page · crash → resume is the product</p>
     </section>
   );
 }

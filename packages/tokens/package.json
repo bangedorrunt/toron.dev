@@ -1,7 +1,7 @@
 {
   "name": "@toron/tokens",
   "version": "0.1.0",
-  "description": "toron.dev design tokens + base components (ADR-0001 D2)",
+  "description": "toron.dev design tokens + base components (ADR-0004 D1/D2)",
   "private": true,
   "type": "module",
   "sideEffects": [
@@ -37,9 +37,9 @@
       "types": "./components/sealed-envelope-badge.tsx",
       "default": "./components/sealed-envelope-badge.tsx"
     },
-    "./violet-glow": {
-      "types": "./components/violet-glow.tsx",
-      "default": "./components/violet-glow.tsx"
+    "./accent-glow": {
+      "types": "./components/accent-glow.tsx",
+      "default": "./components/accent-glow.tsx"
     },
     "./state-glyph": {
       "types": "./components/state-glyph.tsx",

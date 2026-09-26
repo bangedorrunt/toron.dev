@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "node scripts/generate-tool-docs.mjs",
+    "predev": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs",
     "build": "next build",
-    "prebuild": "node scripts/generate-tool-docs.mjs && playwright install chromium",
+    "prebuild": "node scripts/generate-tool-docs.mjs && node scripts/check-guides.mjs && playwright install chromium",
     "start": "next start",
     "lint": "eslint"
   },

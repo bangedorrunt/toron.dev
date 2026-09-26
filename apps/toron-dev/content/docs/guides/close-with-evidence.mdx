@@ -1,0 +1,157 @@
+---
+title: Close with evidence
+description: Take one work item from claim to a legal close, with the gate rows that authorise it.
+---
+
+<Walk outcome={<>When you finish: one work item is closed, and the close is legal — a verification run happened, the gate rows the workflow requires are satisfied, and the commit that carries the change names the item. You will also have seen the ledger refuse a close, which is the part that makes the record worth trusting.</>}>
+
+## Read the required gates before you plan the close
+
+This is the step people skip, and it is the one that decides everything else. A workflow decides which gates a close
+needs; the issue knows which those are. Ask it first, because the answer may be "none".
+
+```bash
+br gate list torondev-landing-grammar-xo2 --json
+```
+
+```text title="You should see (gated close)"
+{ "current_status": "in_progress",
+  "gated_transitions": [ { "from": "in_progress", "to": "closed",
+                           "gates": ["command-verified"], "satisfied": false } ] }
+```
+
+```text title="You should see (ungated close — the common case)"
+{ "current_status": "in_progress",
+  "gated_transitions": [ { "from": "in_progress", "to": "closed",
+                           "gates": [], "satisfied": true } ] }
+```
+
+<Fail>`br gate list` errors on an unknown id. That usually means a typo in the id rather than a missing bead; ids carry a slug plus a uniquifying hash, so a truncated id fails even when a similar-looking bead exists.</Fail>
+
+<Step n={1} title="Run the verification command the item declared">
+Do not run something else. The item recorded a specific one-line command at creation, and that is the command the
+evidence is about.
+
+```bash
+npx pnpm@11.21.0 --filter toron-dev build
+```
+
+```text title="You should see"
+  ▲ Next.js 16.3.1
+ ✓ Compiled successfully
+ ✓ Generating static pages (66/66)
+```
+
+<Fail diagnose="br show torondev-landing-grammar-xo2 --json">the command passes locally but is not the one the item declared. A different command, even a stricter one, is not evidence for this item.</Fail>
+</Step>
+
+<Step n={2} title="Record the evidence row">
+`--provider` is required and `--status` accepts only `pass` or `fail`. There is no `held` status: a gate is either
+satisfied or it is not, and an unmet gate shows up as a gate that has no pass row yet.
+
+```bash
+br gate report torondev-landing-grammar-xo2 \
+  --gate command-verified \
+  --provider QuietHarbor \
+  --status pass \
+  --note 'npx pnpm@11.21.0 --filter toron-dev build → 66 routes, 0 type errors'
+```
+
+```text title="You should see"
+gate recorded · torondev-landing-grammar-xo2 · command-verified=pass
+```
+
+Pass the `--to <status>` flag only when the row is meant to *authorise* a transition. When the close is ungated, record
+the row without it anyway: the ledger keeps the receipt even when nothing was gating on it.
+
+<Fail diagnose="br gate list torondev-landing-grammar-xo2 --json">the report is rejected because the gate name is not one the workflow knows. Gate names come from a verdict legality matrix, so they are not free-form. For a code change with a runnable verify command, `command-verified` is the one that applies.</Fail>
+</Step>
+
+<Step n={3} title="Watch the ledger refuse a close with no cited commit">
+The close needs a `--commit-sha`, and `br` resolves it read-only via `git log` to confirm the message cites the item.
+A sha from a sibling lane, a beads-only commit, or an old HEAD all fail.
+
+```bash
+br close torondev-landing-grammar-xo2 --commit-sha 0000000
+```
+
+```text title="You should see"
+close refused: commit message does not cite torondev-landing-grammar-xo2
+```
+
+That refusal is the feature. There is no flag that quietly skips it, and `--force` waives dependencies rather than
+evidence.
+
+<Fail>a close succeeds with a sha whose message does not name the item. That is a real defect worth reporting rather than working around, because every downstream reader is now trusting a record that lied.</Fail>
+</Step>
+
+<Step n={4} title="Commit, citing the item">
+The commit message carries the item id, and the committed paths must ride a live reservation under the committing pin.
+The guard checks both, so an unattributed commit fails even when the paths are correct.
+
+```bash
+export AGENT_NAME=QuietHarbor
+git add apps/toron-dev packages/tokens
+git commit -m "torondev-landing-grammar-xo2 rebuild the landing page grammar"
+git rev-parse HEAD
+```
+
+```text title="You should see"
+[main 4c9e1a2] torondev-landing-grammar-xo2 rebuild the landing page grammar
+ 14 files changed, 812 insertions(+), 305 deletions(-)
+4c9e1a2f7d…4b1c
+```
+
+<Fail diagnose="toron reserve conflicts --project torondev --as QuietHarbor --paths 'apps/toron-dev/app/*'">the commit is blocked as `unattributed`, or on a path you did not reserve. `unattributed` means the committing shell did not export the pin, because the guard reads the shell environment rather than a registry default.</Fail>
+</Step>
+
+<Step n={5} title="Close with the sha">
+```bash
+br close torondev-landing-grammar-xo2 --commit-sha 4c9e1a2f7d…4b1c --reason 'REPORT'
+br gate list torondev-landing-grammar-xo2 --json
+```
+
+```text title="You should see"
+closed torondev-landing-grammar-xo2 · commit=4c9e1a2
+{ "current_status": "closed", "history": [ { "gate": "command-verified", "status": "pass" } ] }
+```
+
+<Fail diagnose="br doctor">the close is refused because a required gate has no pass row, or because the sha does not cite the item. Both are checkable before you claim the close, which is the point: a close you have to argue for is a close the record does not support.</Fail>
+</Step>
+
+<Step n={6} title="Sync, report, and release the lease">
+The ledger is the record and mail is the conversation. A close nobody is told about is invisible to whoever is
+coordinating, so both are part of the ceremony.
+
+```bash
+br sync --flush-only
+
+toron mail send --project torondev --as QuietHarbor \
+  --to captain --thread torondev-landing-grammar-xo2 \
+  --subject "[torondev-landing-grammar-xo2] done" \
+  --body "closed on command-verified · commit=4c9e1a2 · build 66 routes green"
+
+toron reserve release-by-reason torondev-landing-grammar-xo2 \
+  --project torondev --as QuietHarbor
+```
+
+```text title="You should see"
+sync: 0 pending  (issues.jsonl up to date)
+sent · sealed · corr=3b81…  deliveries=1
+released: 2 leases for reason=torondev-landing-grammar-xo2
+```
+
+<Fail>`released: 0` is a clean no-op, not an error. It means the leases were already gone, usually because the close ran twice or the TTL expired first. Nothing is left to release, and re-running keeps returning zero.</Fail>
+</Step>
+
+</Walk>
+
+## The artifact
+
+A closed item with a pass row, a commit that cites it, two retired leases, and a mailed report. Every one of those is
+queryable a year from now by an agent that was not running when any of it happened.
+
+## Next
+
+- [Run a swarm loop](/docs/guides/run-a-swarm-loop) shows how the item you just closed got dispatched.
+- [The reference](/docs/reference) lists the gate and reservation tools this guide used.

@@ -1,0 +1,41 @@
+---
+title: Walkthroughs
+description: Task-oriented guides that take you from nothing to verifiable work, with the expected output at every step.
+---
+
+The reference tells you what each tool does. These guides tell you what to type, what you should see, and what to do when you see something else.
+
+Every walkthrough follows the same shape: one outcome, numbered steps, a runnable command per step, the output that command produces, the artifact that now exists, and the failure mode for that step.
+
+## Available walkthroughs
+
+<Cards>
+  <Card title="First signed handoff" href="/docs/guides/first-signed-handoff">
+    Install the daemon, register a pin, and exchange a sealed message with a receipt. Start here.
+  </Card>
+  <Card title="Run a swarm loop" href="/docs/guides/run-a-swarm-loop">
+    Turn a goal into claimed, dispatched, verified work without watching the pane.
+  </Card>
+  <Card title="Survive a crash" href="/docs/guides/crash-recovery">
+    Kill the daemon mid-workflow and watch the run resume instead of restarting.
+  </Card>
+  <Card title="Close with evidence" href="/docs/guides/close-with-evidence">
+    Take one work item from claim to a legal close, with the gate rows that authorise it.
+  </Card>
+</Cards>
+
+## Before you start
+
+<Callout title="What you need">
+A shell on the host that will run the daemon, and a project directory you already work in. No account, no relay
+subscription, and no outbound connection is required: federation is off by default.
+</Callout>
+
+## Why this shape
+
+A guide that shows a command without showing its output is not verified. A guide that shows the happy path without
+naming the failure mode is not honest. Both of those are cheap to write and expensive to read, so this site does not
+ship them.
+
+If a step in one of these guides cannot show its real output, the step says so explicitly rather than implying a result
+nobody ran.

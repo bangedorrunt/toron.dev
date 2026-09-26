@@ -1,4 +1,4 @@
-export function VioletGlow({
+export function AccentGlow({
   className,
   id,
 }: {

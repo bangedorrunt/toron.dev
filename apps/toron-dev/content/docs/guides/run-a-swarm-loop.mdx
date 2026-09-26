@@ -1,0 +1,130 @@
+---
+title: Run a swarm loop
+description: Turn a goal into claimed, dispatched, verified work without watching the pane.
+---
+
+<Walk outcome={<>When you finish: a goal has become work items that carry their own verify commands, a loop is dispatching them, and the loop keeps running with nobody watching the terminal. You will know it is healthy because the ledger moves, not because an agent said so.</>}>
+
+## Before the loop can run
+
+A loop dispatches work. If there is no dispatchable work, it resolves immediately and exits cleanly, which looks like a
+failure and is not. So the first two steps create work, not processes.
+
+<Step n={1} title="Open the session door before anything else">
+Arriving registers presence and tells you whether a fleet is already running. Joining a live fleet loudly is the
+difference between coordination and a second swarm fighting the first one for the same files.
+
+```bash
+flywheel arrive torondev --as QuietHarbor
+flywheel briefing "ship the landing redesign" --project torondev --json
+```
+
+```text title="You should see"
+ARRIVE  project=torondev dispatcher=absent pins=0 (no live fleet — not joining)
+OPEN DECISIONS: none — no open captain calls
+UNREAD STATUS: all read — no mail owed, no unacked wakes, digest empty
+FLEET: none live (dispatcher=absent)
+```
+
+Then the classifier answer, which is advisory and may be `none`:
+
+```text title="Classifier"
+{ "topology": "none",
+  "why": "no catalog route for \"ship the landing redesign\" — declare a trigger or compose --agent" }
+```
+
+<Fail diagnose="flywheel status">`arrive` reports a dispatcher that is absent a moment later. A workspace list can be briefly empty right after a spawn prints `swarm ready`. Trust the spawn's own verification, or read the names from `flywheel status`, rather than assuming the arrival failed.</Fail>
+</Step>
+
+<Step n={2} title="Create work that can actually be dispatched">
+The ledger refuses to hand out work it cannot check, so an item needs a description, a one-line verify command, and for
+priority work the principles the change is expected to satisfy. A title-only item sits in the backlog forever, by
+design.
+
+```bash
+br create "Landing page grammar" \
+  -t feature -p 2 --slug landing-grammar \
+  --verify 'npx pnpm@11.21.0 --filter toron-dev build' \
+  --principle 'redesign-from-first-principles — rebuilt the layout grammar rather than restyling the old blocks' \
+  -d 'Rebuild the landing page on the numbered-section grammar.'
+```
+
+```text title="You should see"
+{ "id": "torondev-landing-grammar-xo2",
+  "verify": "npx pnpm@11.21.0 --filter toron-dev build",
+  "principles": [ { "name": "redesign-from-first-principles",
+                    "decision": "rebuilt the layout grammar rather than restyling the old blocks" } ],
+  "ac_shape": "checkable", "status": "open", "priority": 2 }
+```
+
+<Fail>The create is refused with a complaint about the description or the principle. That is the fail-closed create working: without a verify command the item is not dispatchable, and without a principle clause the close will be refused later. Fix the item now rather than discovering it at close time.</Fail>
+</Step>
+
+<Step n={3} title="Claim it, then reserve the paths you will touch">
+Claiming assigns the item. Reserving is separate and is what the pre-commit guard actually checks, so a claim without a
+reservation still produces a blocked commit.
+
+Reserve both levels of each tree. A `**/` glob does not match the top level, so `src/**/*` leaves `src/*` unguarded.
+
+```bash
+br update torondev-landing-grammar-xo2 --status in_progress --assignee QuietHarbor
+
+toron reserve acquire --project torondev --as QuietHarbor \
+  --reason torondev-landing-grammar-xo2 \
+  --paths 'apps/toron-dev/app/*' --paths 'apps/toron-dev/app/**/*'
+```
+
+```text title="You should see"
+granted · conflicts: [] · reason=torondev-landing-grammar-xo2
+```
+
+<Fail diagnose="toron reserve conflicts --project torondev --as QuietHarbor --paths 'apps/toron-dev/app/*'">you get a hard conflict against a live lease. That is a real collision, not a stale row. Read the holder and either wait, or split the work by directory so the two lanes stop overlapping. Do not force-release somebody else's lease.</Fail>
+</Step>
+
+<Step n={4} title="Start the loop">
+One live loop per project. Running the command again after a crash is the correct recovery, so there is nothing special
+to do differently the second time.
+
+```bash
+flywheel loop-mode run torondev --work
+```
+
+```text title="You should see"
+poll 1 · ready=1 · dispatched torondev-landing-grammar-xo2 → QuietHarbor
+poll 2 · ready=0 · idle
+watch: QuietHarbor working · ticket in flight
+```
+
+<Fail diagnose="br ready --json">the loop parks after a single poll. That is not a crash; the loop parks when there is nothing ready to dispatch, and more than three ready items at once trips a flood guard for one poll on purpose. Confirm there is still ready work before assuming the loop died.</Fail>
+</Step>
+
+<Step n={5} title="Read the loop's state instead of the pane's">
+The pane is not the source of truth. Identity, claims, and reservations live outside it, which is the entire point of
+this stack.
+
+```bash
+flywheel loop-mode run torondev --robot-status
+br list --status in_progress --json
+toron reserve list --project torondev --holder QuietHarbor
+```
+
+```text title="You should see"
+{ "loop": { "state": "active", "in_flight": 1, "blocked": 0, "last_poll_ms": 4120 } }
+in_progress: 1  (torondev-landing-grammar-xo2, QuietHarbor)
+reservations: 2 live under QuietHarbor  (app/*, app/**/*)
+```
+
+The flag is `--robot-status`, not `--status`. The loop's status readout is one of the
+`--robot-*` machine doors, and guessing `--status` produces an argument error rather than
+a partial answer.
+
+<Fail>the loop reports an in-flight ticket but the reservation board is empty. The claim happened and the guard will still refuse the commit. Re-acquire the reservation rather than committing and reading the refusal afterwards.</Fail>
+</Step>
+
+</Walk>
+
+## Next
+
+- [Survive a crash](/docs/guides/crash-recovery) puts this same loop through a daemon kill.
+- [Close with evidence](/docs/guides/close-with-evidence) takes the item you claimed to a legal close.
+- [How it works](/how-it-works) explains the dispatch and recovery diagrams this guide exercises.
