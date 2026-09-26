@@ -93,6 +93,7 @@ const NOT_CHECKED = [
   "rendered page text: tool names, counts, and the catalog surface are pinned, the prose a generator emits around them is not diffed",
   "upstream surface where no product binary or checkout is reachable: on Vercel the live comparison is skipped, not passed",
   "machine-readable output: the llms, markdown, and MCP routes are checked for existing behind the URLs the site advertises, their rendered text is not diffed",
+  "projected guide titles: a lowercase title reaches the sidebar, the page heading, and the Markdown the MCP tools serve, and it cannot be fixed here. The guide is a byte-for-byte projection (ADR-0003 D4), so the title is the product repository's to set. Twelve of the forty-four were lowercase and are filed upstream as bd-l2cb (toron), bd-z79c (flywheel), beads_rust-o83ub (beads), and bd-meu (chiebukuro). Fixing one here fails the hash check below",
 ];
 
 const rel = (p) => relative(REPO_ROOT, p);
