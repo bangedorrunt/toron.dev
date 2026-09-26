@@ -1,9 +1,10 @@
 // Vercel's build image is Amazon Linux 2023 without the NSS libraries
 // Playwright's bundled Chromium links against, so rehype-mermaid cannot launch
 // the browser Playwright downloads there (libnspr4.so missing). @sparticuz/chromium
-// ships an AL2023-compatible Chromium plus those libraries (bin/al2023.tar.br).
-// Extract it and hand the launcher config to source.config.ts through a sidecar
-// file, which keeps that config synchronous and bundler-safe.
+// ships an AL2023-compatible Chromium plus those libraries; extracting it is not
+// enough on its own, because the package sets LD_LIBRARY_PATH in this process
+// while the browser launches in `next build`. The sidecar carries both the
+// launcher path and those environment values.
 //
 // Runs only on Vercel; local builds keep Playwright's own Chromium.
 import { writeFileSync } from 'node:fs';
@@ -20,7 +21,14 @@ if (!process.env.VERCEL) {
 
 const { default: chromium } = await import('@sparticuz/chromium');
 const executablePath = await chromium.executablePath();
-writeFileSync(sidecarPath, JSON.stringify({ executablePath, args: chromium.args }));
+// Importing the package fills these in (setupLambdaEnvironment). Without them
+// the loader cannot find the AL2023 libraries and Chromium exits 127.
+const env = {
+  LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH,
+  FONTCONFIG_PATH: process.env.FONTCONFIG_PATH,
+  HOME: process.env.HOME,
+};
+writeFileSync(sidecarPath, JSON.stringify({ executablePath, args: chromium.args, env }));
 console.log(
-  `[vercel-chromium] extracted ${executablePath} (${chromium.args.length} serverless args)`,
+  `[vercel-chromium] extracted ${executablePath} (${chromium.args.length} serverless args, LD_LIBRARY_PATH=${String(env.LD_LIBRARY_PATH)})`,
 );
