@@ -1,0 +1,15 @@
+torondev-chiebukuro-walkthrough-uhj live verification
+sha=c7fe6ae08946111557079fdfb7ecda8bf8ec338a
+guide=apps/toron-dev/content/docs/guides/remember-and-recall.mdx
+wiring=apps/toron-dev/content/docs/guides/meta.json + apps/toron-dev/content/docs/guides/index.mdx
+gate=node apps/toron-dev/scripts/check-guides.mjs exit 0, "ok content/docs/guides/remember-and-recall.mdx"
+gate=surfaces self-tested before checking: toron 110, flywheel 270, br 97, chie 94 command paths
+gate=pnpm build exit 0, route prerendered to .next/server/app/docs/guides/remember-and-recall.html (186167 bytes)
+gate=pnpm --filter toron-dev lint exit 0
+deployment=dpl_4S8vEDNL2ELXD9U6wev3zng25TLh READY buildSkipped=false target=production (push of c7fe6ae)
+live=https://toronmail.vercel.app/docs/guides/remember-and-recall http=200 bytes=186351 title="Remember and recall | toron.dev"
+live-index=https://toronmail.vercel.app/docs/guides carries the "Remember and recall" card
+diagram=build-time inline SVG on the built page, no client-side mermaid script
+commands-shown=chie status, chie qmd search, chie get, chie remember, chie memory record, chie memory recall, chie memory status (7 steps, 7 failure modes)
+outputs=every text block was captured from a live run on the authoring host, with local paths trimmed to /Users/you
+run-notes=chie qmd reindex is incremental (0.3s on an 8,436-page corpus) and is what makes a freshly remembered page visible to search and get
