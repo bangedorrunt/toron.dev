@@ -1,0 +1,81 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "react",
+    "react_perf",
+    "nextjs",
+    "jsx_a11y",
+    "import",
+    "typescript",
+    "unicorn",
+    "promise",
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true,
+  },
+  "settings": {
+    "react": {
+      "version": "19.3.0",
+    },
+    "next": {
+      "rootDir": ".",
+    },
+  },
+  "ignorePatterns": [
+    ".next/**",
+    "out/**",
+    "build/**",
+    "dist/**",
+    "node_modules/**",
+    "next-env.d.ts",
+    ".source/**",
+    "content/docs/tools/**",
+  ],
+  "rules": {
+    // Obsolete under the React 19 automatic JSX runtime. Fired 462 times
+    // before being turned off, which buried every other diagnostic.
+    "react/react-in-jsx-scope": "off",
+
+    // The architecture ownership table is a div grid carrying valid ARIA
+    // table/row/columnheader/cell roles, with a responsive 2-column collapse
+    // keyed off .toron-ownership-table__row. Turning it into real table tags
+    // needs its own CSS pass, so the roles stay until then.
+    "jsx_a11y/prefer-tag-over-role": "off",
+
+    // The gate scripts sort file-name and object-key arrays on purpose, by
+    // code unit, because that ordering is what feeds the canonical content
+    // hash in check-freshness.mjs. Adding a locale-aware comparator would
+    // change the hash and break the catalog pin.
+    "typescript/require-array-sort-compare": "off",
+
+    // proxy.ts destructures `rewritePath()` results, which are plain closures
+    // over the returned literal. There is no `this` to lose.
+    "typescript/unbound-method": "off",
+
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/static-components": "error",
+    "react/preserve-manual-memoization": "error",
+    "react/set-state-in-effect": "error",
+    "react/error-boundaries": "error",
+    "react/no-unescaped-entities": "error",
+    "react/self-closing-comp": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" },
+    ],
+    "typescript/no-floating-promises": "error",
+    "unicorn/no-null": "off",
+    "unicorn/prefer-node-protocol": "error",
+  },
+}

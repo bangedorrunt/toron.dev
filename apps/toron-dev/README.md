@@ -6,17 +6,18 @@ from here and `vercel.json` at the repo root is read for the project.
 
 ## Dev
 
-The toolchain is pinned by mise at the repo root (Node 26.10.0, pnpm 11.21.0):
+The toolchain is pinned by mise at the repo root (Node 26.10.0, bun 1.4.2):
 
 ```bash
 mise install   # once
-pnpm install
-pnpm dev       # http://localhost:3000
-pnpm build     # must be green before pushing
-pnpm lint
+bun install
+bun run dev       # http://localhost:3000
+bun run build     # must be green before pushing
+bun run lint      # oxlint
+bun run format    # oxfmt
 ```
 
-`pnpm build` runs the prebuild chain first: `scripts/generate-tool-docs.mjs`
+`bun run build` runs the prebuild chain first: `scripts/generate-tool-docs.mjs`
 (generates the tool pages from `catalog/`), `scripts/check-guides.mjs`, and
 `playwright install chromium` for build-time mermaid.
 

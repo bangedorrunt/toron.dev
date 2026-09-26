@@ -50,6 +50,7 @@ Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
 - **Pin exact versions** in `apps/toron-dev/package.json` (Next 16.2.x had a
   Turbopack font-resolution bug — pin + test font builds; fallback
   `next/font/local`).
+- **Lint and format with oxlint + oxfmt** (ADR-0008). No ESLint, no Prettier.
 - Mermaid renders at BUILD time (rehype-mermaid, inline SVG). Never ship
   client-side mermaid for static diagrams.
 - Analytics = Vercel Web Analytics only (ADR-0002 D6). No GA, no cookies,
@@ -72,8 +73,10 @@ Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
 ## COMMANDS
 
 ```bash
-pnpm install && pnpm build     # apps/toron-dev build must be green
-pnpm dev                       # local dev
+bun install && bun run build   # apps/toron-dev build must be green
+bun run dev                    # local dev
+bun run --filter toron-dev lint      # oxlint, must be green
+bun run --filter toron-dev format    # oxfmt
 scripts/sync-catalogs.sh       # refresh catalogs from product repos
 ```
 

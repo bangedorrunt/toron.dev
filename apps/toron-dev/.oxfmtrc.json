@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "//": "content/docs/guides/** is excluded because those 44 pages are byte-for-byte projections of the product repos, hash-locked in catalog/guides.lock.json. Formatting them breaks the lock and the freshness gate fails the build. content/docs/tools/** is generated from the catalog on every build. ADR-0006, ADR-0008.",
+  "ignorePatterns": [
+    ".next/**",
+    ".source/**",
+    "out/**",
+    "build/**",
+    "dist/**",
+    "node_modules/**",
+    "content/docs/tools/**",
+    "content/docs/guides/**"
+  ]
+}
