@@ -16,6 +16,7 @@ toron.dev/
 ├── catalog/                # tool/CLI surface catalogs (generated — see ADR-0002 D3)
 ├── scripts/
 │   └── sync-catalogs.sh    # pull catalogs from product repos
+├── mise.toml               # pinned dev toolchain — node + pnpm (see Dev setup)
 ├── .agents/skills/          # dogfooded agent skills (see .agents/skills/README.md)
 ├── docs/decisions/         # ADR-0001 (architecture) + ADR-0002 (repo/sync/hosting)
 └── .flywheel/              # swarm plans
@@ -26,6 +27,19 @@ toron.dev/
 Next.js 16.3.x (App Router, Turbopack, React 19.2) · Fumadocs v16 ·
 Tailwind CSS v4.3 · Mermaid at build time (rehype-mermaid → inline SVG, zero
 client JS) · Vercel Web Analytics · Vercel Hobby → Pro on triggers.
+
+## Dev setup
+
+Dev tools are pinned by [mise](https://mise.jdx.dev) in `mise.toml` — Node
+26.10.0 and pnpm 11.21.0 (the version in `packageManager`). With mise
+activated they resolve automatically; otherwise:
+
+```bash
+mise install   # node + pnpm at the pinned versions
+pnpm install   # workspace deps
+pnpm build     # apps/toron-dev build (must be green)
+pnpm dev       # local dev server
+```
 
 ## The one rule
 

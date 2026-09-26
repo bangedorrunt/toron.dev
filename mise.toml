@@ -1,0 +1,5 @@
+# Dev toolchain for toron.dev, see README "Dev setup".
+# Vercel builds use vercel.json's own runtime and buildCommand; this pins local dev.
+[tools]
+node = "26.10.0"
+pnpm = "11.21.0"
