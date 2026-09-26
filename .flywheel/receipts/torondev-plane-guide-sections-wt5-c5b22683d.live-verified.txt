@@ -1,0 +1,16 @@
+torondev-plane-guide-sections-wt5 live verification
+sha=c5b22683da4fee29e992b9832f8951a9ad608c1c
+deliverable=one docs section per plane at /docs/toron, /docs/flywheel, /docs/beads, /docs/chiebukuro. Each lists every canonical guide from that product repo with a title, a read-when line, and the source path.
+coverage=44 guides across 4 planes: toron 13, flywheel 19, beads 6, chiebukuro 6
+contract=apps/toron-dev/content/docs/planes.json declares page, repo, owns, and walkthroughs per plane. check-freshness.mjs fails the build when a guide is unlisted, listed but gone, retitled against its repo frontmatter, missing its walkthrough, or missing from the docs nav order.
+nav=meta.json order is index, how-it-works, guides, toron, flywheel, beads, chiebukuro, tools, reference
+local=pnpm build exit 0, eslint 0 problems, freshness gate green
+negative-tests=6 cases each fail the gate: a guide the page omits, a listed guide deleted from the repo, a row title that drifts from the repo frontmatter, a guide covered only in prose without a table row, a plane page dropped from the nav, a missing walkthrough
+deploy=c5b2268 -> dpl_Edxs463HDwXaNQwemCDcojtZ9CPP READY, build not skipped
+build-log=summary: 1 pinned catalog(s), 17 canonical source entries, 4 plane(s), 9 skip(s), green
+build-log=skip plane toron: 13 guide(s) listed, coverage not checked, no toron checkout at ../toron, and the same line for flywheel 19, beads 6, chiebukuro 6
+honest-limit=on Vercel the four plane-coverage checks are skipped, not passed. There is no product checkout on the build host, so the deploy proves the pages render and the counts match, it cannot catch a guide added upstream. The coverage check runs where the clones exist, which is the local and pre-push path.
+live=/docs/toron 200 (85118 bytes, 13 guide paths), /docs/flywheel 200 (87471 bytes, 19), /docs/beads 200 (80454 bytes, 6), /docs/chiebukuro 200 (80928 bytes, 6)
+live-nav=/docs links all four plane sections alongside guides, how-it-works, and reference
+drift-noted=the products own guide indexes are incomplete. toron omits tool-authoring. flywheel omits integration, jev-w2-enable, judgment-packs, and stack. The site pages are built from the repos guide files, not from those indexes, so the site is ahead of the product navigation rather than behind it.
+bypass=no new bypass for this work. The catalog sync that ran earlier in the session carries the recorded operator-authorized BYPASS comment on torondev-docs-freshness-gate-e8t, and the commit guard for c5b2268 passed on its own terms.
