@@ -13,29 +13,30 @@
   "dependencies": {
     "@toron/tokens": "workspace:*",
     "@vercel/analytics": "2.0.1",
-    "fumadocs-core": "16.14.4",
-    "fumadocs-mdx": "15.2.3",
-    "fumadocs-ui": "16.14.4",
-    "lucide-react": "1.31.0",
-    "next": "16.3.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "fumadocs-core": "16.15.14",
+    "fumadocs-mdx": "15.4.5",
+    "fumadocs-ui": "16.15.14",
+    "lucide-react": "1.48.0",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@sparticuz/chromium": "153.0.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "2.0.14",
-    "@types/node": "26.2.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@typescript/native": "npm:typescript@7.0.2",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.6",
     "mermaid-isomorphic": "3.1.0",
-    "playwright": "1.62.1",
-    "postcss": "8.5.26",
+    "playwright": "1.63.0",
+    "postcss": "8.5.28",
     "rehype-mermaid": "3.0.0",
     "tailwindcss": "4.3.3",
-    "typescript": "6.0.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "packageManager": "pnpm@11.21.0"
 }
