@@ -1,0 +1,10 @@
+torondev-deps-latest-i2z live verification
+commit=4d7678c7f0ef7e1a87c26496d6079b2df2af0abe
+verify=green (pnpm install && pnpm build exit 0, 38 tools / 9 groups generated, next build Compiled successfully)
+lint=green (pnpm --filter toron-dev lint exit 0)
+fonts=green (13 woff2 faces under apps/toron-dev/.next/static/media)
+typecheck=green (pnpm exec tsc --version -> 7.0.2, pnpm exec tsc --noEmit exit 0)
+versions=next 16.3.6 react 19.3.0 fumadocs-core+ui 16.15.14 fumadocs-mdx 15.4.5 eslint-config-next 16.3.6 lucide-react 1.48.0 playwright 1.63.0 postcss 8.5.28 @types/node 26.6.3 @types/react+dom 19.3.0
+typescript=7.0.2 stays latest under @typescript/native (bin tsc) while the typescript name aliases npm:@typescript/typescript6@6.0.2 so typescript-eslint 8.70.1 gets the TS 6 API (TS 7.0 side-by-side recipe)
+eslint=9.39.5 pinned (latest 10.11.0 crashes eslint-config-next 16.3.6 via eslint-plugin-react 7.37.5 whose peer range stops at ^9.7, and import/jsx-a11y stop at ^9)
+deployed=green (shipped in the Vercel production deploy of ee8b98d7b + 4d7678c7f, https://toron-dev.vercel.app)

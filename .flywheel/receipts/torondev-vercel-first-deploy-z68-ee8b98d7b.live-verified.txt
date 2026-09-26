@@ -1,0 +1,12 @@
+torondev-vercel-first-deploy-z68 live verification
+commit=ee8b98d7b6123abe5522b15c49619c0db30ee813
+artifact=ee8b98d7b6123abe5522b15c49619c0db30ee813 + 4d7678c7f0ef7e1a87c26496d6079b2df2af0abe (deps upgrade) uploaded by Vercel CLI 60.1.3
+deploy=green (mise exec -- vercel deploy --prod --yes exit 0, Build Completed in /vercel/output [1m], Aliased https://toron-dev.vercel.app)
+chromium=green (build log: [vercel-chromium] extracted /tmp/chromium (22 serverless args, LD_LIBRARY_PATH=/tmp/al2023/lib), no libnspr4 or "error while loading shared libraries")
+inspect=https://vercel.com/bangedorrunts-projects/toron-dev/1AW8keL9E2757C5vfgfXmQg54JE5
+verify=green (curl -sf -o /dev/null https://toron-dev.vercel.app/ exit 0)
+routes=green (/ 200, /docs 200, /how-it-works 200, /security 200, /sitemap.xml 200, /robots.txt 200)
+title=green (The autonomous agent stack | toron.dev)
+mermaid=green (curl -s https://toron-dev.vercel.app/how-it-works | grep -c '<svg' -> 18, build-time SVG)
+production=https://toron-77kdmqu3t-bangedorrunts-projects.vercel.app (302 to alias https://toron-dev.vercel.app)
+domain=note (toron.dev apex still 302-redirects to sel.toron.dev via Cloudflare until DNS is repointed)
