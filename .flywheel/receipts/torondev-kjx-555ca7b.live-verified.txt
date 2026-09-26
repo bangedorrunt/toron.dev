@@ -1,0 +1,16 @@
+torondev-kjx live verification
+sha=555ca7b
+defect-1-origin=the site named https://toron.dev in metadataBase, the JSON-LD WebSite url, openGraph.url, the sitemap base, and the robots sitemap line. That domain is not attached to the Vercel project and resolves to sel.toron.dev, a paid Mac screen-sharing product. The sitemap was instructing crawlers to index an unrelated company app. All five sites now read one exported siteUrl, and the build fails on a hostname literal anywhere else.
+defect-2-dead-buttons=every docs page rendered MarkdownCopyButton and ViewOptionsPopover aimed at /llms.mdx/docs/<slug>/content.md with no route behind it, so both controls 404 on every page. includeProcessedMarkdown and getLLMText were already in lib/source.ts, so the plumbing existed and the last mile was never wired.
+fixed=llms.txt, llms-full.txt, and a /docs/:slug*.md rewrite onto /llms.mdx/docs/:slug*/content.md, all reading one docsLlms renderer. A second rewrite covers /docs.md so the docs index is not the one page without a Markdown URL.
+mcp=/api/mcp over streamable HTTP. tools/list returns list_pages, get_page, search. The page tools read through docsLlms, so get_page is byte-identical to GET /docs/<slug>.md. Public and unauthenticated like the rest of the site, and it serves only what llms-full.txt already serves.
+sitemap=stopped hand-listing docs URLs and derives them from source.getPages(). It now carries 61 URLs where it had 17, including the four plane pages and all 38 generated tool pages.
+gate=three new checks, each with a self-test that mutates inputs: no origin literal outside lib/shared.ts, no route that renders without a sitemap entry and no hand-listed docs URL that would duplicate, and no advertised Markdown URL without a route behind it.
+negative-tests=5 deliberate violations each fail the build: a hostname literal in robots.ts, /architecture dropped from the sitemap, /docs/guides listed by hand beside the derived ones, the llms.mdx route directory deleted, and the /docs/:slug*.md rewrite removed.
+gate-bug-found=the origin check first used walk(), which collects MDX only, and reported "0 sources scanned" green having examined nothing. That is the exact "a gate that cannot fail is theater" failure this file already documents for the surface diff, so the check now uses a source walker and fails on an empty scan. The same bug hit the projected-guide reverse check and was caught the same way.
+deploy=555ca7b -> dpl_DNu2tdGvBxbab7VrNXSyV1M3xsdX READY, build not skipped
+live=/llms.txt 200 7978 bytes text/plain, /llms-full.txt 200 167174 bytes, /docs/toron.md 200 3734 bytes text/markdown, /docs.md 200 text/markdown, /robots.txt 200, /sitemap.xml 200
+live-origin=robots.txt reads Sitemap: https://toronmail.vercel.app/sitemap.xml. All 61 sitemap URLs are toronmail.vercel.app. Zero occurrences of the stale origin.
+live-mcp=POST /api/mcp tools/list returns list_pages, get_page, search
+local=pnpm build exit 0, eslint clean, 96 /docs paths
+bypass=none. Every commit in this bead passed the guard on its own terms. The one BYPASS on record for this repository is the earlier catalog sync, on torondev-docs-freshness-gate-e8t.
