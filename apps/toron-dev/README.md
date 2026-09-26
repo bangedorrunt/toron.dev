@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# toron-dev
 
-## Getting Started
+The toron.dev marketing + docs site (Next.js App Router, Fumadocs, Tailwind).
+This directory is the Vercel project's Root Directory, so Vercel commands run
+from here and `vercel.json` at the repo root is read for the project.
 
-First, run the development server:
+## Dev
+
+The toolchain is pinned by mise at the repo root (Node 26.10.0, pnpm 11.21.0):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+mise install   # once
+pnpm install
+pnpm dev       # http://localhost:3000
+pnpm build     # must be green before pushing
+pnpm lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm build` runs the prebuild chain first: `scripts/generate-tool-docs.mjs`
+(generates the tool pages from `catalog/`), `scripts/check-guides.mjs`, and
+`playwright install chromium` for build-time mermaid.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploys
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Pushes to `main` deploy production through the Vercel Git integration, and pull
+requests get preview deployments. Production serves at
+<https://toronmail.vercel.app>.
 
-## Learn More
+Two Vercel-image specifics worth knowing:
 
-To learn more about Next.js, take a look at the following resources:
+- Builds run on Amazon Linux 2023, which lacks the NSS libraries Playwright's
+  Chromium needs. `scripts/vercel-chromium.mjs` extracts `@sparticuz/chromium`
+  and leaves a sidecar that `source.config.ts` reads to launch mermaid
+  rendering.
+- `vercel.json`'s `ignoreCommand` skips builds whose diff misses the app,
+  package, and catalog paths.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Manual fallback when the Git integration is unavailable: `vercel deploy --prod`.
