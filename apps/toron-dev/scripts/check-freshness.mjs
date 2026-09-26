@@ -42,6 +42,8 @@ const DOCS_DIR = join(APP_ROOT, 'content', 'docs');
 const GUIDES_DIR = join(DOCS_DIR, 'guides');
 const PINS_PATH = join(CATALOG_DIR, 'pins.json');
 const CANONICAL_PATH = join(GUIDES_DIR, 'canonical.json');
+const PLANES_PATH = join(DOCS_DIR, 'planes.json');
+const DOCS_META_PATH = join(DOCS_DIR, 'meta.json');
 
 const GROUPS = ['tools', 'resources', 'cli_commands'];
 // Generated from the catalogs on every build, so their counts are checked
@@ -51,6 +53,8 @@ const TOOLS_DIR = join(DOCS_DIR, 'tools');
 // "38 tools", "25 resources", "19 CLI commands": a count a page asserts in prose.
 const COUNT_CLAIM = /\b(\d+)[\s-]+(?:MCP\s+)?(tools|resources|CLI commands|commands)\b/gi;
 const TITLE_LINE = /^title:\s*(.+?)\s*$/m;
+// A guide row on a plane section: | Title | Read when | `plane/docs/guides/x.mdx` |
+const GUIDE_ROW = /^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*`[^`]*?(docs\/guides\/[a-z0-9-]+\.mdx)`\s*\|\s*$/;
 
 // What this gate does NOT check, declared in the checker rather than left for a
 // reader to infer. herdr's config_reference_check.py keeps the same discipline
@@ -59,6 +63,7 @@ const TITLE_LINE = /^title:\s*(.+?)\s*$/m;
 // into the checked set above must leave this list in the same change.
 const NOT_CHECKED = [
   'product-repo prose: only files named in canonical.json are checked for existence and frontmatter title, never their content',
+  'guide bodies: every canonical guide is listed on its plane section with a read-when, never projected into the site (ADR-0003 D4)',
   'translation parity: the site is English only (ADR-0001 D3), so there is no second locale to compare',
   'toron config keys: no config reference page is published yet, so the config model is not compared against anything',
   'rendered page text: tool names, counts, and the catalog surface are pinned, the prose a generator emits around them is not diffed',
@@ -375,8 +380,72 @@ for (const [plane, list] of byRepo) {
   ok(`${list.length} canonical source(s) in ${plane} verified against ${repo.path} (${repo.how})`);
 }
 
+// Plane sections: the claim is that each plane's section lists every guide its
+// repository has, so "the docs cover the stack" is checkable instead of
+// aspirational. A guide added upstream with no row on the section page fails.
+const planeManifest = readJson(PLANES_PATH, 'the plane manifest');
+const planes = planeManifest.planes ?? [];
+if (planes.length === 0) fail(`${rel(PLANES_PATH)} declares no planes, so plane coverage is unchecked`);
+
+const navPages = readJson(DOCS_META_PATH, 'the docs page order').pages ?? [];
+for (const plane of planes) {
+  const pagePath = join(DOCS_DIR, `${plane.page}.mdx`);
+  if (!existsSync(pagePath)) {
+    fail(`${rel(PLANES_PATH)}: plane ${plane.plane} has no section page at ${rel(pagePath)}`);
+    continue;
+  }
+  if (!navPages.includes(plane.page)) {
+    fail(`${rel(PLANES_PATH)}: ${plane.page}.mdx is not in ${rel(DOCS_META_PATH)}, so the section is unreachable from the docs nav`);
+  }
+  for (const walkthrough of plane.walkthroughs ?? []) {
+    if (!existsSync(join(GUIDES_DIR, `${walkthrough}.mdx`))) {
+      fail(`${rel(PLANES_PATH)}: walkthrough ${walkthrough}.mdx named for ${plane.plane} does not exist`);
+    }
+  }
+  const pageText = readFileSync(pagePath, 'utf8');
+  // Rows, not any mention: a guide path written into prose does not count as
+  // listed, because only a row carries the read-when and the current title.
+  const rows = new Map();
+  pageText.split('\n').forEach((line, i) => {
+    const m = line.match(GUIDE_ROW);
+    if (m) rows.set(m[3], { title: m[1].trim(), line: i + 1 });
+  });
+  const listed = new Set(rows.keys());
+  const repo = resolveRepo(plane.repo);
+  if (!repo.path) {
+    skip(`plane ${plane.plane}: ${listed.size} guide(s) listed, coverage not checked, ${repo.why}`);
+    continue;
+  }
+  const guidesDir = join(repo.path, 'docs', 'guides');
+  if (!existsSync(guidesDir)) {
+    fail(`plane ${plane.plane}: ${plane.repo}/docs/guides is absent, so its section page lists nothing verifiable`);
+    continue;
+  }
+  const actual = readdirSync(guidesDir)
+    .filter((n) => n.endsWith('.mdx') && n !== 'index.mdx')
+    .map((n) => `docs/guides/${n}`);
+  for (const guide of actual) {
+    if (!listed.has(guide)) fail(`plane ${plane.plane}: ${plane.repo}/${guide} is not listed on ${plane.page}.mdx`);
+  }
+  for (const guide of listed) {
+    if (!actual.includes(guide)) {
+      fail(`plane ${plane.plane}: ${guide} is listed on ${plane.page}.mdx but absent from ${plane.repo}/docs/guides`);
+      continue;
+    }
+    const title = frontmatterTitle(join(repo.path, guide));
+    if (title === null) {
+      fail(`plane ${plane.plane}: ${guide} has no frontmatter title to compare`);
+    } else if (rows.get(guide)?.title !== title) {
+      fail(
+        `plane ${plane.plane}: ${plane.page}.mdx line ${rows.get(guide)?.line ?? '?'} lists ${guide} as "${rows.get(guide)?.title ?? 'nothing'}", and the repo titles it "${title}"`,
+      );
+    }
+  }
+  ok(`plane ${plane.plane}: ${actual.length} canonical guide(s) listed on ${plane.page}.mdx (${repo.how})`);
+}
+
 console.log(
-  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
+  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
 );
 console.log('not checked by this gate:');
 for (const line of NOT_CHECKED) console.log(`  - ${line}`);

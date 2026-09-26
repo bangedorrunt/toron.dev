@@ -1,0 +1,34 @@
+---
+title: chiebukuro
+description: Every canonical chiebukuro guide, with the read-when for each, plus the walkthrough on this site that exercises it.
+---
+
+chiebukuro is the stack's memory: a compiled knowledge wiki on one plane, episodic memory on the other, kept
+authority-distinct. A memory conclusion is not a wiki page, and a wiki page is not a recollection.
+
+## Start on this site
+
+<Card title="Remember and recall" href="/docs/guides/remember-and-recall">
+Read a wiki page instead of a gist, write one page of your own, and record a decision recall returns with its class
+labelled.
+</Card>
+
+## Every canonical guide
+
+The text lives in the chiebukuro repository and stays there. This page lists all of it and says when to read each
+one (ADR-0003 D4).
+
+| Guide | Read when | Canonical |
+|---|---|---|
+| chiebukuro quick start | First index, first search | `chiebukuro/docs/guides/quick-start.mdx` |
+| The knowledge plane | Ingest, compile, the retrieval protocol, promotion | `chiebukuro/docs/guides/knowledge-plane.mdx` |
+| The memory plane | Events, derivation, the Dreamer, recall | `chiebukuro/docs/guides/memory-plane.mdx` |
+| Configuration | Creating or revising `config.toml`, model roles and fallbacks, gates, migration | `chiebukuro/docs/guides/configuration.mdx` |
+| Health and enforcement | Enforcement hooks, diagnostics, the ops crib | `chiebukuro/docs/guides/health.mdx` |
+| chiebukuro CLI reference | The command surface | `chiebukuro/docs/guides/cli-reference.mdx` |
+
+<Callout title="Where the two planes disagree">
+Querying both is the honest default: `chie qmd search` answers from curated pages, `chie memory recall` answers
+from what was decided, and `chie qmd search --memory` spans both in one call with each hit labelled by the plane it
+came from. If an answer only exists on one side, say which side it came from.
+</Callout>

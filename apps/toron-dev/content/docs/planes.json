@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "note": "The four planes of the stack (ADR-0003 D2) and the docs section each one owns. check-freshness.mjs reads this: a section missing from the docs nav fails, a walkthrough named here that does not exist fails, and when a plane repository is reachable, a guide that exists in it but is not listed on the section page fails, as does a listed guide that is gone or retitled upstream. The section pages list every canonical guide and link nothing away from the product repository, because ADR-0003 D4 keeps the manual canonical there. Guide bodies are deliberately not projected into the site.",
+  "planes": [
+    {
+      "plane": "toron",
+      "repo": "toron",
+      "page": "toron",
+      "owns": "signed mail, identity, receipts, reservations, archive",
+      "walkthroughs": ["first-signed-handoff", "crash-recovery"]
+    },
+    {
+      "plane": "flywheel",
+      "repo": "flywheel",
+      "page": "flywheel",
+      "owns": "spawn, dispatch, loops, workflows, cron, coalitions",
+      "walkthroughs": ["run-a-swarm-loop", "crash-recovery"]
+    },
+    {
+      "plane": "beads",
+      "repo": "beads",
+      "page": "beads",
+      "owns": "work items, dependencies, verification gates, close evidence",
+      "walkthroughs": ["close-with-evidence"]
+    },
+    {
+      "plane": "chiebukuro",
+      "repo": "chiebukuro",
+      "page": "chiebukuro",
+      "owns": "curated knowledge, episodic memory, synthesis",
+      "walkthroughs": ["remember-and-recall"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+---
+title: toron
+description: Every canonical toron guide, with the read-when for each, plus the walkthroughs on this site that exercise it.
+---
+
+toron is the signed transport and record layer: mail, identity, receipts, reservations, and the durable archive
+underneath the other three planes. It is the clearest plane to start with, because a mailbox is something you can
+watch work in ten minutes.
+
+## Start on this site
+
+<Card title="First signed handoff" href="/docs/guides/first-signed-handoff">
+Install the daemon, register a pin, and exchange a sealed message with a receipt. Every step shows the output it
+produces.
+</Card>
+
+<Card title="Survive a crash" href="/docs/guides/crash-recovery">
+Kill the daemon mid-workflow and watch the run resume instead of restarting.
+</Card>
+
+## Every canonical guide
+
+The text lives in the toron repository and stays there. This page lists all of it and says when to read each one,
+so you can find the guide without this site becoming a second copy of the manual (ADR-0003 D4).
+
+| Guide | Read when | Canonical |
+|---|---|---|
+| toron quick start | First daemon, keys, and project on a host | `toron/docs/guides/quick-start.mdx` |
+| Identity | Keys, passphrases, pins, roles, contacts, the captain alias | `toron/docs/guides/identity.mdx` |
+| Planes | The five wire surfaces and what belongs where | `toron/docs/guides/planes.mdx` |
+| Mail | Send, inbox, corr, receipts, tags, urgency | `toron/docs/guides/mail.mdx` |
+| Channels and jobs | Rooms, posts, the job lifecycle, crew steering | `toron/docs/guides/channels-and-jobs.mdx` |
+| Reservations and slots | File leases, conflicts, transfers, build slots | `toron/docs/guides/reservations.mdx` |
+| The workflow engine | YAML workflows and durable approvals | `toron/docs/guides/workflow-engine.mdx` |
+| Daemon operations | Daemon lifecycle, doctor, reconstruction, federation | `toron/docs/guides/daemon-ops.mdx` |
+| The backend | The herdr client, pane primitives, agent_read sources | `toron/docs/guides/backend.mdx` |
+| Authoring an MCP tool | Writing a tool against the toron surface, its schemas, and the catalog it must publish | `toron/docs/guides/tool-authoring.mdx` |
+| toron CLI reference | The command surface | `toron/docs/guides/cli-reference.mdx` |
+| toron troubleshooting | Gotchas and failure modes | `toron/docs/guides/troubleshooting.mdx` |
+| Buzz parity | Buzz×toron Landed/Adapt/Reject/Hold decisions for any harness | `toron/docs/guides/buzz-parity.mdx` |
+
+<Callout title="What this site adds">
+The reference grid for the 38-tool MCP surface is generated from `catalog/toron-mcp.json` on every build and pinned
+by a freshness gate, so a count on this site cannot quietly disagree with the product. The guide table above is
+checked the same way: a guide added in the toron repository without a row here fails the build.
+</Callout>

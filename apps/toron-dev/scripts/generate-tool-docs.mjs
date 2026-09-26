@@ -33,6 +33,10 @@ const CONTENT_DIR = join(APP_ROOT, 'content', 'docs');
 const ROOT_PAGE = 'index';
 const HOW_IT_WORKS_PAGE = 'how-it-works';
 const GUIDES_PAGE = 'guides';
+// The four plane sections, so the docs nav reads stack-first (ADR-0003 D2). The
+// list mirrors the `planes` in content/docs/planes.json, and check-freshness
+// fails if the two disagree.
+const PLANE_PAGES = ['toron', 'flywheel', 'beads', 'chiebukuro'];
 const TOOLS_PAGE = 'tools';
 const REFERENCE_PAGE = 'reference';
 
@@ -282,7 +286,7 @@ function referenceMarkdown(catalog) {
 // Merge root meta.json: preserve existing hand-written pages (e.g.
 // sections added by later phases), pin index first, tools + reference.
 function mergeRootMeta(existing) {
-  const pinned = [ROOT_PAGE, HOW_IT_WORKS_PAGE, GUIDES_PAGE, TOOLS_PAGE, REFERENCE_PAGE];
+  const pinned = [ROOT_PAGE, HOW_IT_WORKS_PAGE, GUIDES_PAGE, ...PLANE_PAGES, TOOLS_PAGE, REFERENCE_PAGE];
   const known = new Set(pinned);
   const kept = (existing?.pages ?? []).filter((p) => !known.has(p));
   return JSON.stringify({ ...existing, pages: [...pinned, ...kept] }, null, 2);

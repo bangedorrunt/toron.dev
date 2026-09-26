@@ -1,0 +1,34 @@
+---
+title: beads
+description: Every canonical br guide, with the read-when for each, plus the walkthrough on this site that exercises it.
+---
+
+beads is the work ledger: work items, dependencies, verification gates, and the close evidence that makes a claim
+checkable later. It is the plane that decides whether work is actually finished.
+
+## Start on this site
+
+<Card title="Close with evidence" href="/docs/guides/close-with-evidence">
+Take one work item from claim to a legal close, with the gate rows that authorise it.
+</Card>
+
+## Every canonical guide
+
+The text lives in the beads repository and stays there. This page lists all of it and says when to read each one
+(ADR-0003 D4).
+
+| Guide | Read when | Canonical |
+|---|---|---|
+| br quick start | First workspace, first bead | `beads/docs/guides/quick-start.mdx` |
+| Lifecycle | States, dispatchability, claims, staleness | `beads/docs/guides/lifecycle.mdx` |
+| The close ceremony | Gates, sha citation, the done report | `beads/docs/guides/close-ceremony.mdx` |
+| Graph analysis | Dependencies, triage, plans, insights | `beads/docs/guides/graph-analysis.mdx` |
+| br CLI reference | The command surface | `beads/docs/guides/cli-reference.mdx` |
+| br troubleshooting | Anti-patterns and diagnostics | `beads/docs/guides/troubleshooting.mdx` |
+
+<Callout title="Why the ledger is not bookkeeping">
+An item closes only on a passing gate row plus a commit whose message names the item, and the close command
+resolves that commit read-only. A close you have to argue for is a close the record does not support, which is the
+whole point of the [walkthrough](/docs/guides/close-with-evidence) on this site and the reason toron reserves file
+paths for it.
+</Callout>
