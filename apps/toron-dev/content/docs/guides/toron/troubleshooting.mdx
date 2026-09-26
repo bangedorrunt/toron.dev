@@ -1,0 +1,27 @@
+---
+title: toron troubleshooting
+description: Gotchas and named failure modes, with the fix for each.
+---
+
+| Symptom | Meaning | Fix |
+|---|---|---|
+| Privileged op fails with a key error | Wrong env var | `TORON_KEY_PASSPHRASE`, never `TORON_OPERATOR_PASSPHRASE`; resolution order is env, `TORON_KEY_PASSPHRASE_FILE`, `~/.config/toron/passphrase`, dev default |
+| `create_agent_identity` refuses | Name exists (fails closed by design) | `register_agent` to upsert, or pick a new pin |
+| Renewed lease expired early | Recomputed from now | `renew` extends the stored absolute expiry; never recompute |
+| Mail silently missing | Nothing pushes | Poll `mail inbox --since last`; check `importance`; the doorbell is the wake path |
+| `since_ts` rejected | Unix integer | RFC3339 only; malformed input errors by design |
+| Room post refused | Over the 4096-character cap | `channel post --file <path>` chunks at 700 characters per post |
+| Non-member post fails loud | Join-before-post | `channel join <ch> --project <p> --as <pin>`; spawn with `--join-channel` next time |
+| Job never created despite `@Name` | Missing `p` tag | `--mention Name` on the CLI sets it |
+| `stop` refuses the daemon | Unmanaged instance | `stop` manages only its own units; use `restart --force` for an unmanaged port holder |
+| Port 18080 held by a stranger | Stale pid reused by another process | Detected via process identity and taken over with a loud log; a live toron pid still blocks |
+| `doctor --check` exits 3 | One or more health checks failed | Read the named check; reconstruct only from a surviving archive or bus |
+| `wait --corr` escalated | TTL expired without a receipt | Wedge pattern by design: chase the sender or the result path, do not re-send blindly |
+| Receipt stuck `owed` | Ack never came | `receipt list --state owed`; ack or `receipt set --state resulted` explicitly |
+| `degraded` receipt | Answer lost after durable enqueue | Never resend-inviting: duplicate over silence; chase out-of-band |
+| Federation leaks traffic | Relays configured | Default is `relays = []`; remove relays to restore zero egress |
+| `mark_message_read` had no effect downstream | Projection gap, known | Read state exists in the store; downstream application is pending |
+| Kind 40/41/42 confusion | Ingest-only kinds | Never emit 40; create/close is 39000, membership 39002 |
+| Guard blocks a commit | Pre-commit reservation guard | The guard is fail-closed; release or transfer the conflicting reservation. `TORON_GUARD_STRICT=0` is operator-only |
+
+MCP-first is the last resort: when a shell exists, the CLI is the path, and the tool schema is read before the first MCP call.

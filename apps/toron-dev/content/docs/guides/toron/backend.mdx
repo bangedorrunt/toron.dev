@@ -1,0 +1,40 @@
+---
+title: The backend
+description: How toron drives herdr. One shared client in toron-core, pane primitives, agent_read sources, and the protocol-22 gotchas.
+---
+
+The `Backend` trait abstracts process supervision. **herdr** is the default backend (protocol v22, herdr 0.9.0); tmux is on hold and returns `Unsupported`.
+
+## Why the herdr client lives in toron-core
+
+Dependency direction is one way: flywheel depends on toron, never the reverse (ADR-0003 Decision 3A). Both flywheel (spawn and dispatch) and toron (mailbox, workflow engine) need a herdr client, so the client lives on the side everyone already reaches: `toron-core::backend::herdr`. There is exactly one `fn agent_prompt` definition and one shared socket client; flywheel's old copies were deleted. A test asserts the count stays at one.
+
+## Pane primitives (no agent lifecycle needed)
+
+| Primitive | Does |
+|---|---|
+| `pane_send_text(pane_id, text)` | Raw bytes into the terminal, no Enter. Boot primes ride this: `agent.send_keys` rejects multi-char text (`invalid_key`). |
+| `pane_send_input(pane_id, keys)` | Modifier chords and named keys. |
+| `pane_run(pane_id, command)` | send_text + Enter composite (protocol 19 has no raw `pane.run`). |
+| `pane_wait_for_output(pane_id, source, match_type, pattern, timeout_ms)` | Bounded wait for output. |
+
+## agent_read sources
+
+| Source | Returns |
+|---|---|
+| `recent` | Recent rendered output, including soft wraps. |
+| `recent_unwrapped` | Soft wraps joined. Prefer for logs and transcripts. |
+| `visible` | The currently rendered viewport only (no alt-screen history). |
+| `detection` | Plain-text bottom-buffer snapshot used by agent detection. |
+
+Alt-screen TUIs (Claude Code, OpenCode, prime-agent) never write transcripts to host scrollback, so `--lines N` cannot recover them. The ladder: `recent_unwrapped`, then `agent_not_idle` wait plus one retry, then `visible`, then ask the agent to write output to a file and reply with the path.
+
+## agent_not_idle
+
+`agent.read` and `agent.prompt --wait` return `agent_not_idle` while the agent is working, blocked, or unknown. Wait with `agent_wait(target, until, timeout)` first, then read. Check `err.code()` (`BackendErrorCode::AgentNotIdle`), never the message text.
+
+## Protocol-22 gotchas (herdr 0.9)
+
+- Lifecycle subscriptions are **live-only**: subscribe before any snapshot, never after. Replay is gone once you snapshot first.
+- `workspace.close` keeps a primary with open worktree workspaces open unless `close_group: true`. Teardown callers pass true; a captain-close that should let children survive passes false.
+- `agent.prompt` gates on `effective_known_agent()`: herdr's agent enum is a closed kind set. Unknown kinds (for example `pa`) report lifecycle over the socket but cannot be prompted until herdr ships the kind; drive them with `pane_send_text`.

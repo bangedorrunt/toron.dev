@@ -1,0 +1,107 @@
+---
+title: Health and enforcement
+description: The chiebukuro-first hook, output management, diagnostics, and the ops crib.
+---
+
+## Enforcement hooks
+
+- **Chiebukuro-first.** Project shell hooks intercept research-flavored web searches and deny them. The escape is appending `bypass_chiebukuro` to the query, and only when the wiki genuinely has nothing.
+- **QMD-first discovery.** Resolve and verify document paths with `chie get` / `chie sql` before OS-level reads; deterministic access, protected context.
+- **`--agent` everywhere on reads.** Output over 2KB becomes a preview plus a file path; extract signal from the file, never re-read it whole.
+- **Rate limits.** A global LLM semaphore with desynchronization jitter queues all LLM-backed calls; callers never hand-throttle.
+- **Output style.** Terse: `[thing] [action] [reason]. [next step].`
+
+## Diagnostics
+
+```bash
+chie diagnostic           # CLI, QMD index, wiki store health
+chie diagnostic --llm     # LLM endpoint connectivity + API key validity
+chie preflight --quick    # live battery: models, MCP, worker, Resonate, index
+chie status               # knowledge-base status
+chie lint                 # knowledge-base integrity, links, metadata
+chie queue                # pending ingest work
+chie review list          # pending review entries (ACTION is required)
+```
+
+```text
+$ chie status
+  Knowledge base path │ /Users/you/workspace/notetoself
+  Raw sources      │ 275
+  Knowledge base pages │ 8436
+  Candidates       │ 242
+  Stale pages      │ 1701 (>90 days)
+  Tracked hashes   │ 377
+
+$ chie review list
+Page                                      Score  Links        Age
+----------------------------------------------------------------------
+30313733-near-linear-scaling               1.00     11         1d
+30386164-hage                              1.00     15         0h
+
+$ chie lint
+CHIEBUKURO LINT
+==================================================
+Disk usage:
+Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1   460Gi   156Gi   278Gi    36%    1.9M  2.9G    0%   /System/Volumes/Data
+```
+
+`Candidates` counts what awaits review, and `review list` is where you see them —
+`chie review` on its own is a usage error (`ACTION` is required). `Stale pages`
+is a maintenance signal, not a failure: pages older than 90 days are candidates
+for refresh, and nothing stops answering from them.
+
+If it fails: `chie lint` is slow on a large corpus (it walks disk usage as well
+as metadata), so give it minutes rather than assuming a hang. A `queue` that
+never drains means the compile worker is down — check `chie preflight`'s Worker
+row, since ingest and compile are the two verbs that depend on it.
+
+## Ops crib
+
+| Surface | Verbs |
+|---|---|
+| Setup | `init` (wizard), `auth`, `model`, `mcp` (stdio or HTTP), `integration`, `daemon` |
+| Knowledge | `ingest`, `compile`, `qmd`, `get`, `query`, `investigate`, `map`, `sql`, `graph`, `remember`, `briefing`, `docs` |
+| Review | `review`, `promote`, `reject`, `queue`, `lint`, `status`, `migrate-okf`, `raw-normalize` |
+| Memory | `memory record\|recall\|chat\|status\|promote\|dreamer\|repair` |
+| Inputs | `inbox`, `youtube`, `sessions` (mine agent-session captures) |
+| Health | `diagnostic`, `preflight` |
+
+`chie briefing` generates a briefing from recent knowledge-plane activity: useful as a session-open read alongside the flywheel `helm` drain.
+
+## Daemon and configuration
+
+```bash
+chie daemon status                        # start|stop|restart|reset also exist
+chie daemon logs --follow                 # tail the worker's log
+chie integration mcp                      # register daemon auto-launch (--dry-run inspects, --uninstall removes)
+```
+
+```text
+$ chie daemon status
+  Local Worker     │ RUNNING (PID 5899)
+  MCP Server       │ RUNNING (started outside the daemon)
+  Remote Server    │ https://resonate.example.ts.net
+    Health         │ ALIVE
+
+$ chie integration mcp --dry-run
+[dry-run] would register daemon auto-launch:
+  label  = chiebukuro-daemon
+  program = /Users/you/.cargo/bin/chie
+  args   = ["daemon", "start"]
+```
+
+`chie daemon start [--foreground]` runs it attached to the terminal; `status` is
+the read that tells you whether a detached one already exists. The dry run prints
+the label and argv it would install, which is the cheap way to check the binary
+path before writing an auto-launch entry.
+
+If it fails: `chie daemon reset` is destructive to local task state — after it,
+verify the worker (the `preflight` Worker row) before dispatching durable work,
+because a reset daemon with a dead worker queues work nothing will pick up.
+
+The daemon owns the Resonate workers and the scheduled memory drain and Dreamer work. `reset` is destructive to local task state: verify the worker before dispatching durable work after it. Configuration resolves CLI value, then process environment, then `.env`, then builtin; never print secret values.
+
+Memory variables that matter: `CHIEBUKURO_MEMORY_DUAL_WRITE` (mined sessions to SQLite, on by default), `CHIEBUKURO_MEMORY_LLM` (optional polish, off), `CHIEBUKURO_MEMORY_DEFAULT_PEER` / `_SESSION` (record targeting), `CHIEBUKURO_MEMORY_DREAMER_MAX_PEERS` (default 20) and `_BUDGET`, `CHIEBUKURO_MEMORY_DB` (SQLite path override), `CHIEBUKURO_MCP_LOCKFILE` / `CHIEBUKURO_CONCURRENCY_LOCKFILE` (lock paths), `CHIEBUKURO_RESONATE_GROUP` (worker claim isolation), `CHIEBUKURO_CLI` (MCP subprocess override).
+
+Canonical memory event kinds: `chie_remember`, `decision`, `preference_signal`, `error`, `file_edit`, `command_result`, `tool_call`, `tool_result`, `user_message`, `assistant_message`, `link_shared`, `task_completed`, `imported_document`. Integration aliases (`fact`, `insight`, `gotcha`, `observation`, `event`) normalize at the parser boundary. `chie memory status --agent --json` is the machine contract: plane totals, conclusion levels, queue state, Honcho import counts. A failed status must fail, never fall back to zeros; unknown scopes return zero rows by design.

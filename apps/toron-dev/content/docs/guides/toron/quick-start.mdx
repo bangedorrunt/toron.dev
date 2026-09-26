@@ -1,0 +1,139 @@
+---
+title: toron quick start
+description: Keys, daemon, project, and first mail in five minutes.
+---
+
+## Operator, once per host
+
+```bash
+export TORON_OPERATOR_KEY=$HOME/.config/toron/operator_nsec   # a PATH, not a key
+toron key generate --role operator
+toron daemon install && toron daemon start
+toron doctor
+toron project ensure /path/to/project
+flywheel toron setup-mcp --flywheel
+```
+
+```text
+$ toron daemon status
+running (launchd com.toron.serve)
+
+$ toron doctor
+toron doctor
+  ok   herdr — herdr socket reachable at /Users/you/.config/herdr/herdr.sock
+  ok   git — git version 2.55.0
+  ok   legacy_slug_identities — 6 leftover legacy registration(s): ...
+```
+
+`daemon status` naming the manager (`launchd com.toron.serve`) is the healthy
+readout; a bare pid means an unmanaged instance, which `stop` refuses to touch.
+`doctor` prints one line per check and only the `FAIL` lines need action.
+
+If it fails: `FAIL keys — operator_key not configured` means the operator key was
+never exported or the path is wrong **for the daemon's environment** — the
+secret is a path in `TORON_OPERATOR_KEY`, so a typo reads as "not configured"
+rather than as a bad key. `FAIL resonate` is not toron's problem to fix: the
+workflow fabric needs `http://127.0.0.1:8001` up, and the check refuses to
+invent a green (GS-037) instead of degrading silently. `doctor --check` exits 3
+when any check failed, so a wrapper can gate on the exit code alone.
+
+`daemon install` writes the launchd/systemd unit and a 0600 passphrase file, so the secret never lands in a plist or process env. The env var is `TORON_KEY_PASSPHRASE` (never `TORON_OPERATOR_PASSPHRASE`); resolution order is env, `TORON_KEY_PASSPHRASE_FILE`, `~/.config/toron/passphrase`, then the `toron` dev default.
+
+## Agent, once per project
+
+```bash
+toron agent bootstrap --project <slug> --as <Pin> --paths <glob> --reason <bead-id>
+```
+
+```text
+$ toron agent bootstrap --project toron --as QuietHarbor --json
+{
+  "agent": "QuietHarbor",
+  "next": "export AGENT_NAME=<pin> (or pass --as on every call); reserve before edit — the strict guard blocks unattributed or unreserved commits",
+  "pane_id": "wK:p2",
+  "project": "toron",
+  "registration": {
+    "created": false,
+    "key_path": ".../projects/toron/agents/QuietHarbor/key.ncryptsec",
+    "name": "QuietHarbor",
+    "npub": "86112aa8bacf5a7f0ab94e113dff52fc47108b7293638f19d756d835bf3b26a8",
+    "profile_event_id": "e8f421238ed37296fa0445923c25d77601063acc66e9d72377a1e4ac23c1e628",
+    "project_slug": "toron"
+  },
+  "reservation": null
+}
+```
+
+One step: registers (or upserts) the identity, optionally reserves paths (`--paths <glob>`
+plus `--reason <bead-id>`), and prints next steps including the `AGENT_NAME` export.
+`created: false` on a second run is the upsert working, not a failed registration.
+`create_agent_identity` fails closed on an existing name; `register_agent` upserts.
+
+If it fails: a refusal naming the pin means the name is taken by a different key
+— reuse the existing one (`flywheel mail register &lt;project> --name &lt;pin>
+--from-project &lt;other>`) instead of minting a second key for the same pin. Never
+substitute a pane slug or a captain-looking name for a taken pin.
+
+## First mail
+
+```bash
+toron mail send --project <slug> --as <Pin> --to captain \
+  --subject "[bd-z2d0] starting" --body "claiming bd-z2d0" --thread bd-z2d0
+toron mail inbox --project <slug> --as <Pin> --since last
+```
+
+```text
+$ toron mail send --project toron --as QuietHarbor --to captain \
+    --subject "[bd-f5g1] starting" --thread bd-f5g1 --body "claiming bd-f5g1"
+{
+  "count": 1,
+  "deliveries": [
+    { "payload": { "event_id": "579eaaa6…", "recipient": "SwiftHeron" }, "project": "toron" }
+  ],
+  "verified_sender": true
+}
+
+$ toron mail inbox --project toron --as QuietHarbor --since last
+{
+  "messages": []
+}
+```
+
+`--since last` reads and atomically bumps the daemon-side high-water: the crash-proof cursor. Nothing pushes; poll per work unit or let the flywheel doorbell wake you. An empty `messages` array is the healthy resting state.
+
+If it fails: `verified_sender: false` is a failed send that still printed an
+event id — the signature did not verify, so the message will not be trusted
+downstream. Check `AGENT_NAME`/`--as` against `toron mail whois` before assuming
+the recipient dropped it.
+
+## Verify
+
+```bash
+toron status --json
+toron mail whois <slug> <Pin>
+toron doctor --check    # exit 3 on any failure
+```
+
+```text
+$ toron status --json
+{
+  "backend": "herdr",
+  "data_dir": null,
+  "envelope_ttl_days": 90,
+  "operator_key": null,
+  "proof_gate_enabled": false,
+  "proof_scheme": "schnorr",
+  "relays": []
+}
+
+$ toron doctor --check ; echo $?
+3
+```
+
+`relays: []` is the default and the good default: zero egress, everything local.
+`operator_key: null` here is the same gap `doctor` reports as a FAIL.
+
+If it fails: exit 3 is `--check` telling you a check failed — read the `FAIL`
+lines, not the exit code. Exit 0 with `relays` non-empty is a deliberate
+federation choice, not drift: every event is signed, so a relay adds transport,
+never trust.

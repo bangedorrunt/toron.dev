@@ -1,0 +1,159 @@
+---
+title: flywheel quick start
+description: Bootstrap the fleet on a host, enter through the session door, and run your first dispatch — with the output each step should produce.
+---
+
+This is the shortest path from an empty host to a fleet that is doing work. Every step shows
+what the command prints, and every step names what to do when it prints something else.
+
+## Once per host
+
+```bash
+toron daemon start                      # mailbox + MCP on 127.0.0.1:18080
+flywheel toron setup-mcp --flywheel     # point flywheel and harnesses at the same daemon
+flywheel deps --ensure                  # toolchain health; starts resonate if down
+```
+
+```text
+running (launchd com.toron.serve)
+br: idle
+bv: idle
+herdr: idle
+resonate server: idle
+mail (toron): idle
+config: /Users/you/.config/flywheel/config.toml
+```
+
+`idle` means the dependency is present and reachable but not currently busy. It is the healthy
+resting state, not a warning.
+
+If it fails: a line reading `DRIFT` rather than `idle` is a real mismatch between what flywheel
+expects of a harness and what the installed harness provides — for example a plan-phase flag
+that the installed binary does not have. Read the `WARNING` line it prints, because that names
+the exact function or agent list to update. `flywheel deps --ensure` repairs missing
+dependencies, but it cannot repair drift, by design: drift needs a human to decide which side
+is right. `flywheel preflight` adds herdr socket, operator key, toron mail, and standing orders
+to the same check; fix FAILs there before any fleet work, because the loop and compose engine
+need resonate at `http://localhost:8001`.
+
+## Every session
+
+```bash
+export AGENT_NAME=DustySparrow          # adjective + noun pin
+flywheel arrive <project> --as "$AGENT_NAME"
+flywheel briefing "<goal>" --project <project> --json
+```
+
+```text
+ARRIVE  project=torondev dispatcher=absent pins=0 (no live fleet — not joining)
+OPEN DECISIONS: none — no open captain calls
+UNREAD STATUS: all read — no mail owed, no unacked wakes, digest empty
+FLEET: none live (dispatcher=absent)
+```
+
+If it fails: `arrive` reports a dispatcher that is present, which means a fleet is already
+running. Join it loudly rather than composing a second swarm — a live fleet is a join, and
+starting your own is how two crews end up fighting over the same files. `flywheel status` lists
+the workspaces and pins you would be joining.
+
+Then run the proposal's argv, or read the classifier when you want to disagree with it:
+
+```json
+{ "proposal": { "topology": "open",
+                "why": "session_topology=open sticky-held — aligned (suppressed invent topology=swarm)" },
+  "world": { "dispatcher": "absent", "pin_count": 1, "ready_beads": 0 } }
+```
+
+`topology` is a finding, not a suggestion to override. The four normal shapes:
+
+| Pattern | When | Command |
+|---|---|---|
+| **Loop work** | beads exist | `flywheel loop-mode run <p> --work --on-blocked mail` |
+| **Steer** | greenfield, autonomous | `flywheel steer "<objective>" --project <p>` |
+| **Coalition** | multi-crew, shared files | `flywheel coalition form <goal> --crews <squad> --as <captain>` |
+| **Spawn-send** | one agent, one task | `flywheel spawn <p> --profile <role>`, then `flywheel send <p> --to <name> "<msg>"` |
+
+## Confirm there is work before starting a loop
+
+A loop dispatches work. With no dispatchable beads it resolves `complete` on the first poll,
+which reads like a failure and is not.
+
+```bash
+br ready --json
+```
+
+```text
+{ "issues": [ { "id": "bd-mb0z",
+                "title": "example dispatchable bead",
+                "status": "open", "priority": 2, "pin": "brash-otter" } ],
+  "total": 1 }
+```
+
+If it fails: `total: 0` means nothing is dispatchable, and the loop will park on its first
+poll. That is correct behaviour. Create lane beads first, and remember that a bead without a
+VERIFY fence and, for priority work, a PRINCIPLES block is not dispatchable — the loop skips it
+rather than guessing what would prove it done.
+
+## First swarm
+
+```bash
+flywheel workflow compose "ship the parser fix" --parts wave-swarm --run --crew 3
+```
+
+```text
+lint: ok  · 8 phases  · crew inferred: planner:1 coder:1 reviewer:1
+spawn: 3 panes ready  ·  dispatch: wave-1 → coder
+artifacts: ~/.local/state/flywheel/runs/<run_id>/
+```
+
+Lint is fail-stop, so a compose that fails lint bails without spawning anything. `--crew N` is
+the **total** pane count, capped by `crew.max` (default 5).
+
+If it fails: the compose exits with an unknown compose-token or unknown-stage error. That means
+the installed binary predates the feature, not that your command is wrong — compose tokens
+resolve from the binary, so a stale install fails here rather than silently degrading.
+
+## First loop
+
+```bash
+flywheel loop-mode run <project> --work
+```
+
+```text
+poll 1 · ready=1 · dispatched bd-mb0z → DustySparrow
+poll 2 · ready=0 · idle
+watch: DustySparrow working · ticket in flight
+```
+
+The loop polls `br ready`, claims dispatchable beads, dispatches coders with `--stage
+ce-execute`, and mails the captain on blocks. Crash-resume is the same command, with no
+different invocation to remember.
+
+If it fails: more than three ready beads at once trips a flood guard for one poll, which is
+intentional back-pressure rather than an error. If the loop exits instead of parking, run it
+from the **parent** directory — an absolute project path fails later with `no flywheel swarm`,
+and running from inside the repo fails preflight.
+
+## Monitor and stop
+
+```bash
+flywheel watch <p> --until blocked
+flywheel loop-mode run <p> --robot-status
+flywheel runs pending
+flywheel mail digest <p> --all
+flywheel kill <p> --drain      # graceful: agents finish their VERIFY fences
+```
+
+```text
+QuietHarbor  working   pane wK:p2   bead bd-guide-walkthroughs-twke
+DustySparrow idle      pane wK:p3   no ticket
+runs pending: 0
+digest: 2 unread · 0 owed · 0 overdue
+```
+
+If it fails: `--status` is not a flag. The loop's status readout is one of the `--robot-*`
+machine doors, so `flywheel loop-mode run <p> --status` errors with `unexpected argument`.
+Use `--robot-status`, and use `flywheel watch` when you want the human view.
+
+Monitor git and the ledger for truth, not mail. `flywheel mail whois <project> captain`
+resolves the captain alias, and `flywheel mail watch <p> --thread <t>` blocks on one thread.

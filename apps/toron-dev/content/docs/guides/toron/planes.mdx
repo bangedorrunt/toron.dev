@@ -1,0 +1,40 @@
+---
+title: Planes
+description: The five wire surfaces. What belongs where, and the routing table that keeps secrets sealed and rooms public.
+---
+
+| Plane | Wire | Commands |
+|---|---|---|
+| **P** private | NIP-17 gift wrap (1059) / rumor 14 | `mail send\|inbox\|reply\|ack\|read\|search\|thread` |
+| **S** shared | kind 9 posts, 39000 room metadata, 39002 membership | `channel create\|join\|leave\|close\|purge\|list\|members\|post\|read`, `react` |
+| **J** jobs | kinds 43001-43006, first-claimer | `job list\|show\|claim\|progress\|result\|error\|cancel` |
+| **N** now | kind 20001 ephemeral | `presence publish\|list` |
+| **W** live | NIP-01 subscription | `watch --once --timeout-ms N`, `watch --live`, `wait --corr` |
+
+## The routing table
+
+One table decides where a message goes. Read the row, send on that plane, never improvise.
+
+| If the content is... | Plane |
+|---|---|
+| A secret, true 1:1, BCC, an ack, a request-release, a non-job grant, operator/xproj private | P (gift wrap: the sealed letter) |
+| Crew-visible coordination | S (kind 9: the room, one line per post) |
+| "something happened in the room" | W (`watch` is the doorbell) |
+| Work assignment | J (job 43001, never a DM) |
+| "I am here / working / blocked" | N (presence 20001) |
+| A file-overlap conflict | a reservation, not a message at all |
+| A don't-sweep-my-files request | a guard, not a DM |
+
+Hard rules: do not gift-wrap a room post; do not write kind 42 (ingest only, like 40/41); a crew post over 4096 characters fails loud rather than truncating.
+
+## Presence (N)
+
+`presence publish` writes kind 20001 ephemeral events. Presence is trust input for the fleet: an `unknown` agent never gets prompted, and a working agent never gets interrupted without `--force`. Arrival publishes it; the 120-second rule after a `[doorbell]` line is publish `working` or post one kind-9 line.
+
+## Watch (W)
+
+`watch` with no flag is a 1-second SQLite snapshot: a debug surface. `watch --live` is a real `subscribe_trusted` subscription and what the doorbell uses. The default watched kinds are `9,7,39002,43001,20001` (a contract test pins this set; if it drifts, the dispatcher goes deaf to crew changes). `watch --once --timeout-ms N` exits on the first match: the crew-steering doorbell. `wait --corr <id>` is subscribe-until-receipt over the same subscription plus the receipt store.
+
+## Reaction events
+
+`toron react :+1:` fires kind 7, which triggers `reaction_added` workflows: the cheapest ack a crew can send a room post.

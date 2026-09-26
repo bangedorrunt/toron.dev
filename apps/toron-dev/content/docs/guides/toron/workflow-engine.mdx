@@ -1,0 +1,87 @@
+---
+title: The workflow engine
+description: YAML workflows as signed events. Durable approvals, @mention triggers, and the action vocabulary.
+---
+
+toron runs YAML workflows as a standalone fabric; orchestration (catalogs, cron, crews) belongs to flywheel. Each run is a kind-46xxx event and a Resonate promise, which is what makes a suspended run survive a crash.
+
+> **ADR-0032** ([workflow-engine honesty and Jido action contracts](../decisions/0032-workflow-engine-honesty-jido-contracts.md), **proposed**, not accepted) is the design target. Its fixed point is **truthful durable orchestration under at-least-once external effects, with explicit reconciliation where the outcome is uncertain**. It is not exactly-once execution, not rollback of completed side effects, and a successful `engine.run` does not mean business completion. Docs below describe **shipped** behavior; proposed gates are labeled **(proposed)**.
+
+```bash
+toron workflow lint <file.yaml>        # static: schema, guards, refs, acyclicity
+toron workflow validate <file.yaml>    # alias of lint
+toron workflow dry-run <file.yaml>     # lint + show what would run
+toron workflow run <file.yaml>         # from a trigger event payload
+toron workflow invoke <name>           # on demand, with inputs
+```
+
+```text
+$ toron workflow lint crates/toron-workflow/tests/fixtures/playbook-lint/bugfix_ok.yaml ; echo $?
+0
+
+$ toron workflow lint crates/toron-workflow/tests/fixtures/playbook-lint/bugfix_no_repro.yaml ; echo $?
+  error bug-fix workflow has no `repro` node — a fix without a reproduction fails lint (ADR-0019 Spec 6: fix-root-causes)
+toron: error: 1 blocking lint issue(s)
+1
+
+$ toron workflow dry-run crates/toron-workflow/tests/fixtures/playbook-lint/bugfix_ok.yaml
+{
+  "graph": 4,
+  "name": "bug-fix",
+  "steps": 0,
+  "trigger": null
+}
+```
+
+A clean lint prints nothing at all — the exit code is the verdict, so gate on it
+rather than on output. `dry-run` reports `graph` nodes and `steps`; a workflow
+with a graph and no linear steps is normal for the playbook shape.
+
+If it fails: a lint that stops with `error:` lines is fail-stop, so the run never
+starts — fix the named node rather than turning the rule off. `workflow run`
+without a trigger payload and `workflow invoke` without the inputs its schema
+declares both refuse instead of dispatching a half-bound run; `dry-run` is the
+cheap way to see which ref is missing before wiring a trigger.
+
+## Durability
+
+`request_approval` suspends the run, writes state, and exits. The run resumes when the approval lands, even across a daemon restart, because the Resonate promise and the signed kind-46xxx event together reconstruct position. This is the difference between toron workflows and a shell script: the approval gate is a checkpoint, not a blocking loop.
+
+## Two stores, four states
+
+Mailbox receipts and workflow effects are **different stores**. The mailbox `ReceiptStore` tracks message lifecycle (`owed → acked → resulted`, plus `degraded`): it proves a message moved, never that a workflow effect happened. The workflow **effect_key / effect journal** (intent → dispatch → settlement, with an explicit `unknown`/reconcile state) **ships** per ADR-0032 Spec 5: the `workflow_effects` tables land in toron-core migration `0010`, and the engine's `EffectJournalMode` (`Recording` default / `Enforced`) decides what an effectful leaf with no injected runner does — `Enforced` **refuses**, `Recording` marks the bypass loudly. The engine also reports its own run lifecycle (`Started` → `Running` → `Succeeded`/`Failed`) through an injected `RunJournal`, so a run row and its effect rows agree on `run_id` (`bd-mi9n`). A workflow-originated mail **may** project `effect_key` as transport `corr`, but the receipt row never replaces the journal row. `thread_id` is conversation identity and is never `corr` or `effect_key`.
+
+Four claims that must not be conflated: **suspended** (parked on a durable promise, resumable, never failed) ≠ **terminal** (one semantic run end, published once per `terminal_digest`) ≠ **settled** (a contract-valid action outcome at the action boundary) ≠ **business completion** (the external world actually did it). `settled` never implies a human read the message or the business process finished.
+
+## Actions
+
+| Action | Shipped behavior |
+|---|---|
+| `send_message` | Project mail (kind-14 gift wrap). |
+| `send_dm` | Plane P. |
+| `dispatch_job` | Creates a plane J job (kind-43001); supports `phase:` for per-harness mechanics. |
+| `request_approval` | Durable suspension; resumes on approval. |
+| `delay` | Timed pause; a message producer, not a blocked thread. |
+| `spawn` | Engine-parked sequenced control; `await: true` parks. `no_claim_timeout` defaults to **600s**; explicit `0` is the only no-timeout spelling. |
+| `verify` | Embedding-owned `VerifySink` effect; the engine never shells out. |
+| `react` | **Deprecated, fail-closed** (bd-i6kc): parses for migration but the boundary rejects it with `unsupported_action`. It does not post kind 7. |
+| `call_webhook` | **Deprecated, fail-closed** (bd-i6kc): parses for migration but the boundary rejects it with `unsupported_action`. No webhook sink is wired; there is no SSRF guard to rely on because nothing is dispatched. |
+
+Control-flow actions (`branch`, `retry`, `foreach`, `parallel`, `call_workflow`) are engine-sequenced and never reach an effect runner; a misdispatch fails typed, never `Ok(Null)`.
+
+## Authoring contracts (shipped)
+
+- One guard evaluator for linear, graph, branch, and nested steps: false guard = explicit skip, syntax/type/ref errors fail loud, never else-branch or placeholder.
+- One decision spelling: a completed `request_approval` node publishes its decision under the node name **and** under `decision`, on the linear and graph paths alike — a consumer reading either key sees the same value. A guard skip is never a decision and never mints the alias.
+- Strict template rendering: unresolved refs fail naming workflow, node, field, and reference path.
+- Loud composites: non-list `foreach` input fails (never `[]`); invalid `parallel` count fails (never `1`, cap 32); `call_workflow` binds defaults through the same function as `invoke`.
+- One retry coordinator over the frozen `FailureKind` set; nested retry wrappers flatten. `rate_limit`/`timeout` retry only when the effect is known safe or the provider honors the stable key, otherwise reconcile.
+- CLI refuses parked-action runs when the required host/sink is unavailable, instead of parking forever.
+
+**Shipped** (ADR-0032 Spec 5/6): the normalized `ActionInvocation`/`ActionOutcome`/`ActionFailure` boundary, the per-variant contract table with parse/lint/invoke gates, canonical graph digest with stable node/iteration identity, the workflow-effect journal with crash-matrix reconciliation, and engine-side run-lifecycle rows through the injected journal. **Still open** (tracked, not a re-open): the full host-owned sink drain — the engine builds the kind-46012 terminal record and exposes the pending binding, and the host lifecycle manager per Spec 6 drives parked/pending/terminal publication. No new MCP tools or Nostr kinds are planned for any of this.
+
+## Triggers
+
+`@name` in content plus a `p` tag creates a kind-43001 job; a claimed job can drive a workflow (`reaction_added` from `toron react` is the other common trigger). The job lifecycle and the crew-steering recipe live in [channels-and-jobs](./channels-and-jobs).
+
+Author or debug YAML only with the engine reference at hand (`references/workflow-engine.md` in the toron skill); the schema is typed and linted, and `dry-run` previews without dispatch.

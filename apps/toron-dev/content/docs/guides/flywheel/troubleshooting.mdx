@@ -1,0 +1,51 @@
+---
+title: flywheel troubleshooting
+description: Named failures and their fixes. Door, spawn, loop, compose, and doorbell symptoms.
+---
+
+| Symptom | Meaning | Fix |
+|---|---|---|
+| `agent_not_ready: not an active named agent` | Pane not promptable, or kind lacks lifecycle state | Retry with the pane id; then `herdr agent prompt <pane_id>`; load the harness-integration reference if it persists |
+| `unsupported_agent_kind` | Unknown kind with no spawn recipe | Drive with `pane.send_text` until herdr ships the kind |
+| Spawn exits 1, `swarm not ready` | `launch_pending` is normal | Wait; never add a second harness. Spawn fails closed after settle on any missing/empty/wrong-named pane |
+| `flywheel status` shows `workspaces: []` right after spawn | Race between state write and status read | Trust the spawn verification; take names from the send error's `available:` list or `herdr workspace list` |
+| Send misses an idle agent | It did not miss: `prior_status: idle` means the brief landed | Only `landed: true` after `--wait`/`--confirm` counts as confirmed delivery |
+| Beadless `--work` loop resolves `complete` instantly | Nothing to claim | Create lane beads first, or drop `--work` |
+| Fresh loop parks after first poll | Resonate promise wedged | `resonate promises reject <id>`, relaunch |
+| Held beads named `WaveGate` | Wave ordering, not a stuck owner | Close the lower wave; do not nudge |
+| Flood guard pause | More than 3 ready beads | One-poll pause, then dispatch resumes; not an error |
+| `unknown compose token` / `unknown stage` | Installed binary predates the feature | Rebuild: `mbx +nightly-aarch64-apple-darwin install --path . --force`; verify from a non-repo cwd |
+| `no flywheel swarm` | Wrong cwd or absolute path | Run `loop-mode run <slug> --work` from the parent workspace directory |
+| `agent_not_ready` after agent restart, name `null` | Lost binding | `flywheel rebind` restores registered names; `recover` also respawns the dead |
+| SIGKILL on the binary | Stale signature | `codesign --force --sign - ~/.cargo/bin/flywheel` |
+| doorbell `answered by foreign owner, not child <pid>` | Port 18980 conflict | Stop the foreign holder or relocate; arrival itself was unaffected |
+| preflight `resonate ... connection refused` | Durable engine down | `flywheel deps --ensure` starts it, or run open-vehicle work and say so in the trail |
+| Mail to `captain` fails | Alias cleared by parent death or never bound | `flywheel mail whois <p> captain` to check; `recover`/`adopt` rebinds; `toron contact captain --pin <pin>` sets it |
+| `mode: standby` + `standby_with_known_workspaces` | Daemon adopted without hosts; zero wakes delivered | Arm it: `flywheel doorbell start <project>` for registry workspaces, or subscribe with `--project` and let auto-host fire within 60s |
+| `doorbell start` adopts but hosts nothing | `--host` only rides a fresh serve spawn | `doorbell stop`, then start with `--host p/w`; or subscribe and wait one reconcile tick |
+| Unit respawns hostless after `install` | launchd kept the stale loaded definition | `launchctl bootout gui/$(id -u)/com.doorbell.serve`, then `bootstrap` the plist; verify `hosted` in `/health` |
+| Fresh binary SIGKILLed under launchd | Stale/missing ad-hoc signature | `codesign --force --sign - ~/.cargo/bin/doorbell ~/.cargo/bin/flywheel` |
+| `doorbell`/`flywheel` behave like an older build | mise shims shadow `~/.cargo/bin` | Symlink shims at the fresh binaries, or remove the orphan shims |
+| `mode: hosted`, nothing ever rings | The daemon cannot exec its CLIs. Under launchd `PATH` is `/usr/bin:/bin:/usr/sbin:/sbin`, so a bare `toron`/`herdr` spawn fails as a child death: the watcher respawns on the retry gate and every inbox fetch audits `toron spawn/timeout failed` | Check `/health.binaries.resolved`; the daemon self-resolves `PATH` → `~/.cargo/bin` → `~/.local/bin` → beside its exe → mise shims (last). Pin with `DOORBELL_TORON_BIN`/`DOORBELL_HERDR_BIN`, reinstall, restart the unit |
+| `/health.binaries.toron` points at a `mise/shims` path | A shim is a dispatcher: under launchd it dies with `mise ERROR No version is set for shim: toron` | Install the real binary (`~/.cargo/bin`) or set `DOORBELL_TORON_BIN` to it |
+| `/health.degraded` shows `watch_restart_loop` | The watcher restarts far faster than its designed cadence (a quiet watcher idle-exits every ~109s) | Fix the CLI resolution above; confirm `ps ax | grep 'toron watch'` shows one live child per hosted workspace |
+| `/health.degraded` shows `inbox_fetch_failing` | An `inbox_error` audit row in the last 120s: the sweep is failing | Read the `error` field in `doorbell/<ws>.audit.jsonl`; it names the cause |
+| A subscribed identity never rings | A subscription buys the **sweep and an address, not a route**: it is now inbox-swept and `SelfIndex`-visible, but with no pane its wake is digest-bound, never a prompt | Read `doorbell digest <project> --identity <pin>`; to get a prompt, bind it to a spawned pin |
+| `ack_sla_fired` audit row every 60s with the same `count` | Pre-fix behavior: the beat re-fired an unchanged backlog every scan | Fixed: the beat fires only on a **change** (new overdue ids, or `ack_sla_cleared`); a recurring row now means the backlog really is growing |
+| A blocked agent keeps getting pinged (T0 → T1 → T2 → T3, then the loop halts) although it acked | Pre-fix behavior: the escalation climbed on elapsed time alone — the ack was never read, so an agent that answered looked identical to one that ignored the ping | Fixed: `notify_blocked` reads the agent's own `health-<name>` lane through `__ack-overdue --sla-secs 0` before each step; an ack resets the ladder. Still climbing? Run `flywheel __ack-overdue <project> <herdr-name> --thread health-<name> --sla-secs 0` — `ok:false` means the read could not answer (no index, unregistered target, `[mail.toron] url` remote), and an unavailable read deliberately keeps the time ladder rather than silently stopping |
+| Audit/journal unreadable — the ring's own evidence is buried | Usually one repeating producer, not many faults | Grep by `kind`: a pre-fix `inbox_error` storm, `registry_pin_stale` (each reaped pin, once), or a re-firing beat. Sweep fetches stop for registry pins whose pane herdr no longer has (`herdr pane list`) after a 120s grace |
+| `mode: hosted`, `degraded: []`, yet no prompt ever lands | `herdr agent list` knows none of the registry pins' panes, so no wake can be injected — the ring's last hop is structurally impossible here | Read `/health.injection.prompt_hop` (`no_pane_in_herdr`); start agents (`herdr agent start`) or fix the stale registry. Now also named as `no_injectable_panes` in `degraded` |
+| `/health` accepts but never responds | Wedged runtime (seen: lock held across a reconcile loop) | `sample <pid>` for `lock_slow` parks; restart; the class is fixed, report a recurrence with the sample |
+| `/health.wake.pipe.class` is `Deaf` (or `NeverStamped`) | Deaf: no event/hb frame inside `deaf_ceiling_ms` (default 60s) on the worst hosted workspace. NeverStamped: never observed a stamp (empty hosted / watch never wrote) — unknown ≠ deaf | Read `wake.workspace` (worst-of winner), `wake.last_event_ms` / `last_heartbeat_ms`, and `ps`/audit for that workspace's watch child; empty `wake.hosted` → re-arm with `--host`. Do not treat NeverStamped as Deaf |
+| `/health.wake` Quiet but `watch.last_event_age_s` looks "alive", or Live when only heartbeats flow | Stamp-split lie: `.event` and `.hb` are separate (`watch-<ws>.event` / `.hb`); stuffing `max(event,hb)` into the event stamp collapses Quiet→Live | Trust `/health.wake`: `last_event_ms` is `.event` only, `last_heartbeat_ms` is `.hb` only; Quiet = hb live + no recent events |
+| 20+ `spawn-*` subscriptions, `subscribers: 0` | Dead spawns never unsubscribed (pre-fix graveyard) | `flywheel doorbell unsubscribe <id>` each; `kill` now drops its own rows, daemon reaps week-silent ones |
+| `flywheel mail …` fails: `migration N was previously applied but is missing in the resolved migrations` | The store was written by a newer embedded toron, or by the standalone `toron` on the same revision — this binary is behind. The message now names the store path and carries no destructive step | Reinstall at the current revision (`mbx +nightly-aarch64-apple-darwin install --path . --force`), or run the standalone `toron mail …` against the same project. The store is never dropped or rewritten |
+| `briefing --commit` refuses: crew-confirm gate | Spawn-class topology without `--yes` (non-TTY) | Present the proposal to the operator, remix, rerun with `--yes` (or `--crew N`) |
+
+## Escape costs
+
+A raw `spawn --escape` forfeits SIGNOFF and artifacts. If you escape, you write the trail (timeline, beads) or it does not exist. Raw briefs drop the stage scaffold; the missing-close stalls observed in the fleet are the direct result, so `--raw` stays reserved for nudges and mail wakes.
+
+## Where to look deeper
+
+`flywheel timeline <p>` and `flywheel audit <p>` reconstruct events; `flywheel doorbell why --seq <n> --corr <id>` folds a tick from default; `flywheel artifacts <run_id>` lists typed records and `artifacts stitch` merges them. Fleet forensics references live in the flywheel skill's `references/forensics.md`.

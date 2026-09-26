@@ -14,17 +14,20 @@ Take one work item from claim to a legal close, with the gate rows that authoris
 
 ## Every canonical guide
 
-The text lives in the beads repository and stays there. This page lists all of it and says when to read each one
-(ADR-0003 D4).
+Every guide below is read here in full. The text is projected from `beads/docs/guides/` into this site and hashed on both sides, so the beads
+repository stays the only place it is written and a copy edited here instead of there fails the build (ADR-0006).
+Those guides are written as plain Markdown, and this site compiles MDX, so the projection escapes the two
+characters that mean something else in MDX and quotes one frontmatter value. Commands, flags, and shown output are
+untouched. The Canonical column names the file each page came from.
 
 | Guide | Read when | Canonical |
 |---|---|---|
-| br quick start | First workspace, first bead | `beads/docs/guides/quick-start.mdx` |
-| Lifecycle | States, dispatchability, claims, staleness | `beads/docs/guides/lifecycle.mdx` |
-| The close ceremony | Gates, sha citation, the done report | `beads/docs/guides/close-ceremony.mdx` |
-| Graph analysis | Dependencies, triage, plans, insights | `beads/docs/guides/graph-analysis.mdx` |
-| br CLI reference | The command surface | `beads/docs/guides/cli-reference.mdx` |
-| br troubleshooting | Anti-patterns and diagnostics | `beads/docs/guides/troubleshooting.mdx` |
+| [br quick start](/docs/guides/beads/quick-start) | First workspace, first bead | `beads/docs/guides/quick-start.mdx` |
+| [Lifecycle](/docs/guides/beads/lifecycle) | States, dispatchability, claims, staleness | `beads/docs/guides/lifecycle.mdx` |
+| [The close ceremony](/docs/guides/beads/close-ceremony) | Gates, sha citation, the done report | `beads/docs/guides/close-ceremony.mdx` |
+| [Graph analysis](/docs/guides/beads/graph-analysis) | Dependencies, triage, plans, insights | `beads/docs/guides/graph-analysis.mdx` |
+| [br CLI reference](/docs/guides/beads/cli-reference) | The command surface | `beads/docs/guides/cli-reference.mdx` |
+| [br troubleshooting](/docs/guides/beads/troubleshooting) | Anti-patterns and diagnostics | `beads/docs/guides/troubleshooting.mdx` |
 
 <Callout title="Why the ledger is not bookkeeping">
 An item closes only on a passing gate row plus a commit whose message names the item, and the close command

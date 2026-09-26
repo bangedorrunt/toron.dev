@@ -1,0 +1,40 @@
+---
+title: chiebukuro CLI reference
+description: The command surface, one line each. Read commands take --agent; research starts at qmd search.
+---
+
+Global flags: `--install [<shell>]`, `--completion <shell>`, `--agent` (agent-native output management on reads), `-h/-V`.
+
+| Command | Purpose |
+|---|---|
+| `init` | Interactive onboarding wizard |
+| `daemon` | Daemon and task management |
+| `diagnostic` | CLI, index, store health; `--llm` adds endpoint and key checks |
+| `preflight` | Live readiness: models, MCP, worker, Resonate, index |
+| `ingest` | File a source into `raw/` |
+| `compile` | Extract concepts into the wiki (DSPy + lambda-RLM) |
+| `review` / `promote` / `reject` | The review queue for candidates and promoted conclusions |
+| `get` | Safe unified retrieval of a document (context-window protected) |
+| `status` | Knowledge-base status |
+| `lint` | Integrity, links, metadata |
+| `briefing` | Briefing from recent knowledge-plane activity |
+| `investigate` | Multi-hop RLM investigation over the knowledge base |
+| `query` | Query the knowledge base |
+| `qmd` | QMD index management (BM25 + vector) |
+| `graph` | Relationships, communities, gap analysis (`--json`) |
+| `queue` | Ingest queue status |
+| `inbox` | Process inbox.md entries |
+| `youtube` | Dual-subtitle extraction |
+| `sessions` | Mine agent sessions from extension captures |
+| `map` | Durable map-reduce over search results (Resonate) |
+| `sql` | Metadata SQL pass-through to qmd |
+| `docs` | Auto-generated agent documentation |
+| `auth` / `model` | LLM provider credentials; model selection for chie and RLM |
+| `migrate-okf` | One-time wiki migration to OKF v0.1 (additive only) |
+| `remember` | Save a fact as an OKF wiki page, hash-deduplicated |
+| `raw-normalize` | Normalize raw source filenames |
+| `memory` | `record\|recall\|chat\|status\|promote\|dreamer\|repair` |
+| `mcp` | Serve as MCP: stdio or Streamable HTTP (`127.0.0.1:18081`) |
+| `integration` | Wire chiebukuro plugins into agent/harness paths |
+
+MCP surface: 23 tools (16 knowledge + 7 memory) + 2 resources. The CLI is the path when a shell exists.

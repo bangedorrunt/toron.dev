@@ -1,0 +1,107 @@
+---
+title: Coalitions
+description: Captain-formed multi-crew coordination (ADR-0011). Steer and collab as always-on layers, the intent protocol, and the negotiation ladder.
+---
+
+A coalition is a captain-formed, per-goal grouping of pane crews that coordinates through **declared intents** instead of lock-and-block. Steer (captain to coalition: `coalition form|status|disband`) and collab (crew to crew: intents + request-release negotiation) are always-on layers; there is no mode transition. A coalition is a NIP-29 channel (the intent board; membership is access) plus a goal workflow run. Disband closes the channel and ends the run.
+
+## When a coalition
+
+- One agent, one task, you watch: `flywheel send` (no coalition).
+- A fixed daily stage sequence on a live swarm: `loop-mode run --work` (no coalition).
+- A reusable multi-step procedure: a workflow (no coalition).
+- Multi-crew, shared files, needs coordination: `coalition form <GOAL> --crews <CREWS> --as <agent>`.
+
+The form verb takes the goal positionally and both `--crews` and `--as` as
+required flags; `--as` is the captain the coalition mails.
+
+Coalitions are **pane-crew-only**. Headless cron crews are a separate autonomous world.
+
+## Lifecycle
+
+```bash
+flywheel coalition register <NAME> --project <project>   # members must be REGISTERED agents; profiles are not agents
+flywheel coalition form <goal-workflow> --crews <squad|profile> --as <captain> [--project <p>] [--beads <ids>]
+flywheel coalition status <id>     # manifest + run + channel + intents + reservations + bead gate
+flywheel coalition list
+flywheel coalition disband <id>    # beads-closed gate first; auto-fallback on run terminal/timeout
+```
+
+```text
+beads-20260810002826-310488000 [active] goal beads members 2
+beads-20260810103343-941824000 [closed] goal beads members 1
+```
+
+Register before forming, always: a member must already be a registered agent in
+the coalition's toron project, and a profile is not an agent. `register` takes
+the name positionally and the project with `--project`, so the common mistake is
+reaching for `--as` and getting an argument error instead.
+
+If it fails: `coalition form` refuses because a member is not registered. That
+is a hard gate rather than a warning, because the channel's membership is its
+access control — an unregistered member would have no identity to be a member
+under. Register it, then form.
+
+Formation has two paths: captain-formed, or **auto-coalesce** (the detector merges two unaffiliated crews overlapping on non-trivial source paths; README/config/docs do not count).
+
+## The intent protocol
+
+Crews declare intents (kind-30031 `status:intent`) before acquiring: a TTL-bounded (about 5 minutes) plan to edit a path set. Intents are advisory; the atomic reservation is the enforcement floor.
+
+- Acquire against someone's **intent** (in TTL): **SOFT conflict** — freeze and propose, never a hard block.
+- Acquire against someone's **held** lease: **HARD conflict** — blocked. This floor is never removed; two agents can never hold the same exclusive path.
+- An acquire on the declarer's **own** intent converts it to held at the same coordinate (NIP-33 supersession). Intents auto-expire unless converted, so a speculative `src/**` intent cannot freeze peers.
+
+## Detector and proposer
+
+When intents overlap, a detector (workflow-as-reaction on intent declaration) drives a tiered proposer:
+
+1. Deterministic rules first: split by directory boundary or bead dependency, sequence by dependency, merge when same bead.
+2. LLM planner only on dispute: a rejected rule-split escalates to a headless planner run.
+3. Auto-coalesce: flag and form ad-hoc coalitions for non-trivial overlaps (`coalition detect`, `coalition auto-coalesce`).
+
+## Disputes: the negotiation ladder
+
+```bash
+flywheel coalition negotiate-request <ID> --as <asker> --target <holder> \
+  --reservation-id <reservation> --ask "<question>"
+flywheel coalition negotiate-respond <ID> --as <holder> \
+  --request-message <request-id> --decision agreed|denied|deferred:<secs>
+flywheel coalition negotiate-status <ID> --as <agent> --request-message <request-id>
+flywheel coalition negotiate-escalate <ID> --as <agent> --request-message <request-id>
+```
+
+```text
+$ flywheel coalition list
+beads-20260809231032-620210000 [closed] goal beads members 2
+beads-20260810002826-310488000 [active] goal beads members 2
+
+$ flywheel coalition status
+
+error: the following required arguments were not provided:
+  <ID>
+
+Usage: flywheel coalition status <ID>
+```
+
+Every verb after the request needs the request's own id: `--request-message`
+on respond/status/escalate, and `--decision` on respond. `status` addresses one
+coalition (`<ID>`), not the list — `coalition list` is the list.
+
+```text
+pending           · request sent, holder has not answered
+responded         · holder answered (agreed | denied | deferred:<secs>)
+escalation-due    · SLA elapsed with no answer — escalate, do not wait
+```
+
+`negotiate-request` addresses a **reservation**, not a path: it takes
+`--reservation-id` and `--ask`, plus `--as` and `--target`. The request is a
+sealed 1:1, never a room post.
+
+If it fails: `escalation-due` is not a failure of the negotiation, it is the
+ladder telling you the holder is not answering. Escalate to the captain rather
+than resending the request or working around the lease. A granted release comes
+back as a `transfer`, and the target then commits under its own name — nobody
+commits on behalf of somebody else.
+
+`flywheel mail force-unlock` stays the operator's last resort. File overlap between two agents is always a reservation question; the intent tier exists so contention is negotiated before it becomes a block.

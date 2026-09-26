@@ -1,0 +1,81 @@
+---
+title: Cron
+description: First-class scheduled primitives (ADR-0012). A cron is not a workflow with a schedule trigger; it owns its own body, policy, and fixer loop.
+---
+
+A **cron** is a scheduled primitive, distinct from a workflow. It has its own multi-step body that composes workflows via `call_workflow`, plus cron-specific policy (owner, scope, repeat escalation, no-claim timeout). Both run on the same toron-workflow engine; the cron manager is a Resonate durable-sleep loop (`ctx.sleep` until the next tick), not systemd. Missed ticks follow `catchup: latest` (run the most recent due tick on wake), so a flywheel restart loses nothing.
+
+## The 5-minute author
+
+```yaml
+# ~/.config/flywheel/crons/weekly-upgrade.yaml  (or <project>/.flywheel/crons/)
+name: weekly-upgrade
+schedule: "30 3 * * 0"          # 5-field Vixie cron
+owner: housekeeper              # owning profile (the fixer's identity)
+scope: host                     # host (operator identity) | project (scoped agent)
+mode: headless                  # headless (default) | pane
+policy:
+  on_failure: bead              # log | bead | escalate
+  on_repeat_failure: escalate   # after repeat_threshold consecutive failures
+  repeat_threshold: 3
+  on_success: log
+  max_retries: 1
+  no_claim_timeout: 600         # abort a spawn-await after 10m unclaimed
+  catchup: latest               # latest | skip
+steps:
+  - { name: probe,   action: call_workflow, workflow: health-check }
+  - { name: upgrade, action: call_workflow, workflow: docker-upgrade, if: "{{steps.probe.healthy}}" }
+  - { name: verify,  action: call_workflow, workflow: health-check }
+```
+
+Schema: `name` and `schedule` are required; `owner` is required (the owning profile); `scope` defaults `host`; `mode` defaults `headless`. The body uses the same step DSL as workflows (`call_workflow`, `delay`, `branch`, `spawn`, `dispatch_job`, `send_message`, `request_approval`) with `{{steps.x}}` templating and `if:` guards.
+
+## Commands
+
+```bash
+flywheel cron list                    # catalog: builtin | global | project
+flywheel cron status                  # one line per cron: due | paused | running
+flywheel cron lint weekly-review      # fail-stop gate; run always
+flywheel cron run weekly-review       # on demand (25s dry-run default; --live fires once)
+flywheel cron history weekly-review   # NAME is required here, not optional
+flywheel cron start                   # start or resume the durable cron loops
+```
+
+```text
+$ flywheel cron list
+NAME                         OWNER                  SCHEDULE         SCOPE   SOURCE   STATUS    STEPS  STATE
+awareness-digest             flywheel               */15 * * * *     project builtin  due       1      on
+weekly-review                oracle                 0 4 * * 0        host    global   due       1      on
+
+$ flywheel cron status
+NAME                         STATUS    STATE    NEXT_DUE     SOURCE
+awareness-digest             due       on       1790379900 builtin
+weekly-review                due       on       1790481600 global
+```
+
+`NEXT_DUE` is a unix second. `weekly-review` is this host's global-tier cron; use
+whatever `cron list` prints instead of copying a name out of a guide.
+
+`cron lint` prints nothing when the file is clean — the exit code is the signal.
+`cron run` without `--live` is a dry arm: it performs no effect, so it writes no
+effect-journal row and mints no run. That is why a dry run looks like nothing
+happened — nothing did, on purpose.
+
+If it fails: `cron lint` refuses a schedule whose `owner` profile does not
+exist, because a cron with no owner has no diagnosis workflow to fall back on
+and would fail silently into human-in-the-loop. `lint` always runs first, before
+`start`.
+
+Sources and precedence: built-ins (compiled-in), global (`~/.config/flywheel/crons/`), per-project (`<project>/.flywheel/crons/`). Per-project wins over global wins over built-in.
+
+## The self-reporting loop (never "self-healing")
+
+A failing step (one with `on_error: fail_run`, kind-46012 `status=failed`) triggers policy:
+
+1. `on_failure: bead` files a failure bead carrying the run id, cron name, owner, error, and last-known-good.
+2. The **defined fixer** is the owner profile's diagnosis workflow, if you authored one; otherwise it is human-in-the-loop.
+3. `repeat_threshold` consecutive failures escalate to the captain (kind-14 DM).
+
+The loop closes only when a defined fixer consumes the failure bead and the next tick succeeds. Authoring rule: the step that must fail the run needs `on_error: fail_run`; the default `continue` means the failure never reaches `on_failure: bead`.
+
+Legacy systemd sagas keep running but are not the model; new scheduled work is cron YAML.

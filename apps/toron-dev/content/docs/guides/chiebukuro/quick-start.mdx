@@ -1,0 +1,182 @@
+---
+title: chiebukuro quick start
+description: Onboard, index a corpus, and run the retrieval loop correctly.
+---
+
+## Onboard
+
+```bash
+chie init          # interactive wizard
+chie preflight     # models, MCP, worker, Resonate, index
+chie diagnostic    # CLI, QMD index, wiki store health
+```
+
+```text
+$ chie diagnostic
+  chie CLI         │ PASS
+  qmd CLI          │ PASS
+  Knowledge base pages │ PASS (8436 pages)
+  QMD search       │ PASS
+  Knowledge base path │ /Users/you/workspace/notetoself
+
+$ chie preflight --quick
+  Wiki path        │ PASS /Users/you/workspace/notetoself
+  LLM keys         │ PASS ZAI_API_KEY, OPENCODE_GO_API_KEY, OPENROUTER_API_KEY
+  Jev gates        │ PASS key set, model jev-1.13.0, gates: rerank, ingest_triage, rag_classify, ...
+  Config file      │ PASS ~/.config/chiebukuro/config.toml (15 keys applied, 12 shadowed by env)
+  Worker           │ PASS PID 5899
+  MCP server       │ WARN running, started outside the daemon (no pid or address recorded)
+  Resonate         │ PASS remote ALIVE
+✅ Preflight green.
+```
+
+Both are PASS-gated readouts: read the `WARN` row rather than the summary line,
+because `Preflight green` still prints with a warning above it (the MCP server
+here is running outside the daemon). The diagnostic's credentials section prints
+masked keys — prefixes and lengths, never the value.
+
+If it fails: a `FAIL` row names the subsystem, and `preflight` is the one that
+matters before any durable work (worker and Resonate). "Model not called
+(--quick)" means the key exists but no request was made — add `--quick` off when
+you want the endpoint actually exercised.
+
+## Save knowledge
+
+```bash
+chie remember "Retry budget for mailbox sends is 2 with jitter; 3 wedges the daemon." --kind gotcha
+chie ingest https://example.com/spec
+chie compile
+```
+
+```text
+$ chie review list
+Page                                      Score  Links        Age
+----------------------------------------------------------------------
+30313733-near-linear-scaling               1.00     11         1d
+30353936-dynamic-model-routing-with-a-decision-model   1.00      9         0h
+30383965-state-based-routing-and-launch-as-query   0.85      1         4h
+```
+
+`remember` writes an OKF wiki page immediately, deduplicated by content hash. `ingest` queues a raw source; `compile` extracts concepts (DSPy + lambda-RLM) into wiki pages. Compiled candidates pass the review queue (`chie review list`, `chie review show <page>`, `chie promote <page>`, `chie reject <page>`); they never reach the live wiki by side door.
+
+If it fails: `chie review` with no action is a usage error — the verb is
+`chie review <ACTION> [PAGE]`, and `list` is the read you want. A candidate that
+never appears in `review list` was not compiled into the queue; check
+`chie queue` for pending ingest before assuming a review was lost.
+
+## Search it right
+
+```bash
+chie qmd search "retry budget" --agent
+# L0: scan the gists (~350 chars each). A gist is a summary, not an answer.
+chie get <path> --agent
+# L1: fetch the top hit's full content before answering.
+```
+
+```text
+$ chie qmd search "retry budget" --agent
+chie_qmd_search:
+== reranked by jev (jev-1.13.0) ==
+33613962-bounded-iteration-and-anti-spin-controls | bounded iteration and anti-spin controls | 0.91 | jev 0.50
+  gist: Production-safe loops carry explicit stop machinery: hard iteration caps, no-progress detection, flip-flop detection and budgets
+  path: 33613962-bounded-iteration-and-anti-spin-controls.md
+
+[... Large output truncated: 4005 bytes, 31 lines. Full output saved to /var/folders/.../T/chiebukuro-outputs/output-a484982d.txt. Use ctx_execute_file or read_file to analyze it programmatically.]
+
+$ chie get 33613962-bounded-iteration-and-anti-spin-controls.md --agent
+chie_get:
+---
+type: concept
+title: 'bounded iteration and anti-spin controls'
+kind: concept
+
+[... Large output truncated: 2220 bytes, 39 lines. Full output saved to ...]
+```
+
+The truncation notice is the feature: you get the head, the byte count, and a
+path to read the rest from, so a broad search cannot flood the context. Always
+`--agent` on read commands. Resolve paths with `chie get`/`chie sql` before any
+OS-level read.
+
+If it fails: no hits at all means the corpus does not hold the term rather than
+a broken index — check `chie status` (pages count) and `chie diagnostic` (QMD row)
+before re-running. The first lines of a search on macOS are llama.cpp Metal
+initialisation on **stderr**; they are not results, so read stdout (`2>/dev/null`
+when scripting).
+
+## Recall what was decided
+
+```bash
+chie memory record "Chose MDX guides over MD: user asked for mdx"
+chie memory recall "docs structure decision"
+chie qmd search --memory "docs structure"   # both planes, labeled
+```
+
+```text
+$ chie memory status --agent --json
+{
+  "db_path": "/Users/you/.local/share/chiebukuro/memory/memory.db",
+  "peers": 71,
+  "sessions": 444,
+  "events": 69977,
+  "conclusions": 105,
+  "explicit_conclusions": 99,
+  "summaries": 43
+}
+
+$ chie memory recall "docs structure decision"
+=== recall level: low (scope: global) ===
+== memory_event (20+ hit(s)) — raw what-happened evidence ==
+== reranked by jev (jev-1.13.0) ==
+   (top 20 of more matches — raise --limit, or narrow the query)
+```
+
+`db_path` is the authoritative answer to "where is my memory" — read it rather
+than trusting a platform default. `recall level: low` means the query matched
+loosely; narrow it or raise `--limit` before concluding nothing was recorded.
+
+If it fails: `events` counting up while `conclusions` stays flat means raw
+evidence is landing but nothing is being derived — that is the Dreamer/derivation
+side, not a memory store problem. Both planes at once (`chie qmd search --memory`)
+labels which plane a hit came from; a hit with no label is not a both-planes hit.
+
+## Deep questions
+
+```bash
+chie investigate "why does the dispatch guard match tags, not subjects" --agent
+chie map --query "ADR" --prompt "summarize every ADR" --agent --daemon   # durable map-reduce over many docs
+```
+
+```text
+$ chie investigate "why do guides need shown output" --agent
+RLM INVESTIGATION
+==================================================
+Question:    why do guides need shown output
+Max turns:   50
+Budget:      50000 tokens
+==================================================
+[investigate] Starting investigation...
+...                                  # tool turns over knowledge-base pages
+[investigate] Completed: 27 turns, 25274 tokens, finished_with_submit=true
+
+$ chie investigate "why do guides need shown output" --agent --max-turns 3
+...
+[investigate] Completed: 3 turns, 2493 tokens, finished_with_submit=false
+Error: investigation: investigation did not submit: Reached maximum of 3 turns — partial result, not a synthesis. Raise --max-turns or RLM_MAX_TURNS to let the investigation continue. Last result: [{"file_path":"few-shot-learning.md", ...
+```
+
+`investigate` runs a Rust-native tool-calling agent across wiki pages (30-120s). `map` transforms many documents with Resonate-backed durable execution (60-300s).
+
+The header is your confirmation that the run started (question, turn cap, token
+budget); the synthesis lands at the end.
+
+If it stops early: exit 1 with `did not submit` means the turn cap or the token
+budget ran out before the agent surfaced an answer. That is a partial result,
+not a failed run: the message names the lever (`--max-turns` / `RLM_MAX_TURNS`,
+or `--budget` / `RLM_TOKEN_BUDGET`) and the last result names the evidence it
+did gather — raise the cap and re-ask, or narrow the question, rather than
+re-running the same one blind. Both verbs are long-running by design, so a
+caller that gives up at 30s reports a timeout the work never had — check
+`chie queue` and the daemon before re-running, or a second run duplicates the
+first. `map` without `--daemon` runs inline in the calling process, which is the
+shape that dies with the terminal.

@@ -1,0 +1,124 @@
+---
+title: Daemon operations
+description: Lifecycle, service units, health checks, crash reconstruction, federation, and the operator surfaces.
+---
+
+## Lifecycle
+
+```bash
+toron daemon status                    # managed vs unmanaged
+flywheel deps                          # every dependency in one readout
+flywheel preflight                     # herdr socket, operator key, toron mail, orders
+```
+
+```text
+$ toron daemon status
+running (launchd com.toron.serve)
+
+$ flywheel deps
+br: idle
+bv: idle
+herdr: idle
+resonate server: idle
+mail (toron): idle
+config: /Users/you/.config/flywheel/config.toml
+```
+
+The management verbs are `toron daemon {start,stop,restart,status,install,uninstall}` —
+`status`, `install` and `uninstall` are the safe reads/one-shots, `restart` is the
+one that refuses unless a fresh daemon answers. `flywheel deps` is the readout
+that covers toron plus its neighbours in one pass.
+
+Default bind `127.0.0.1:18080`, label `com.toron.serve`. macOS runs launchd (`~/Library/LaunchAgents/com.toron.serve.plist`), Linux a systemd user unit (`~/.config/systemd/user/com.toron.serve.service`), other hosts a pidfile (`~/.local/state/toron/toron.pid`).
+
+- `status` distinguishes managed from unmanaged instances.
+- `stop` refuses an unmanaged instance.
+- `restart` fails loud unless a fresh daemon answers; `--force` removes an unmanaged holder of the port.
+- A stale `serve.pid` whose pid was recycled by a foreign process (say, the OS handed 1019 to `callservicesd`) is detected via process identity (comm/args), taken over, and logged loud. A live toron pid still blocks. A `kill -0` EPERM no longer misreads pid 1 as dead.
+
+`serve` runs the daemon in the foreground: `--mcp-stdio` for MCP over stdio, `--mcp-http <addr>` for Streamable HTTP. A no-flag serve bails rather than guessing.
+
+## Health
+
+```bash
+toron doctor [--check]     # herdr, git, keys, resonate; exit 3 on any failure with --check
+toron status --json        # quick health/config overview
+toron metrics              # in-process operator counters: tool calls, errors, latency
+toron catalog --json       # the tool / resource / CLI contract
+toron bench startup        # mailbox scenarios: startup|inbox|send|search|threads
+toron tui                  # operator dashboard (refuses non-TTY)
+```
+
+```text
+$ toron metrics
+{
+  "errors": 421,
+  "latency_us": { "count": 2267, "sum": 65763526 },
+  "tool_calls": { "mail.ack_sla": 14, "mail.inbox": 1831, "mail.send": 1 },
+  "total_calls": 2267
+}
+
+$ toron catalog --json    # shape, read with python/jq
+schema_version 1  toron_version 1.5.0
+38 tools  25 resources  29 cli_commands
+first tool: register_agent {description, example, group, input_schema, name, output_schema, parity}
+
+$ toron bench startup
+bench startup: 20 iterations, avg 59747us, p50 60583us, p95 62749us
+
+$ toron tui
+toron: error: toron tui requires a TTY (refusing to run on a pipe)
+```
+
+The catalog is a contract, not documentation: CI's catalog freshness gate fails on drift between the emitted catalog and the docs. `catalog --output PATH` snapshots it. Read the counts off the emitted catalog rather than a guide — 38 tools / 25 resources / 29 CLI verbs is what this host emits today, and the guide index's older "40 tools" is exactly the drift the gate is for.
+
+If it fails: `bench` requires a case, and `toron bench --project <slug>` fails with `unexpected argument '--project'` because the verb takes a positional and nothing else. `tui` refusing on a pipe is correct behaviour, not a broken dashboard. `doctor --check` exits 3 on any failure — read the `FAIL` lines, since the exit code alone does not say which subsystem is down.
+
+## Recovery
+
+Recovery needs exactly one of two survivors: the git archive or the bus replay. `doctor reconstruct` rebuilds SQLite from the git archive; bus replay rebuilds from events. Delete one, rebuild from the other. For install, crash, and reconstruct procedures, the daemon-ops reference in the toron skill is mandatory reading.
+
+## Federation
+
+`toron relay {list,add,remove,info}` manages relays. The default is an empty relay list: zero egress, everything local.
+
+```text
+$ toron relay list
+{
+  "relays": []
+}
+```
+
+Add relays deliberately; every event is signed, so federation exposes attribution, not authenticity risk. An empty list is the healthy default, not an unconfigured one.
+
+If it fails: a relay that accepts an event and drops it looks identical to a healthy one from here, so a relay never becomes the source of truth — publish, then read back from the bus you actually trust.
+
+## Configuration
+
+`toron config` prints the effective configuration:
+
+```text
+$ toron config
+toron config (effective)
+  backend: "herdr"
+  data_dir: null
+  envelope_ttl_days: 90
+  federation_allowlist: []
+  federation_auth: false
+  federation_pow: 0
+  git_binary: null
+  operator_key: null
+  project_ttl_days: []
+  proof_gate_enabled: false
+  proof_scheme: "schnorr"
+  proof_trusted_keys: []
+  relays: []
+```
+
+Precedence: flags, then env, then project, then user, then system. `backend list|status|default` selects the transport backend; `project ensure <slug>|list` manages kind-30010 project manifests (operator key required). `operator_key: null` is the same gap `doctor` reports as `FAIL keys`.
+
+If it fails: `toron project list` prints a **local** listing of the data dir (`/Users/you/.local/share/toron`) with the note saying so — it is not the federated project set and it includes fixture projects from test runs. `project ensure` needs the operator key; without it the publish fails loudly rather than writing a local-only manifest.
+
+## Projects and products
+
+`project ensure <slug>` publishes the kind-30010 project manifest (operator key required). A **product** (kind-30011) groups projects for cross-project fan-out: `ensure_product`, then `products_link` to attach projects, then `search_messages_product`, `fetch_inbox_product`, and `summarize_thread_product` fan the inbox and thread views across every member project. The flywheel side of the same move is `flywheel xproj` (contact + product). Privileged product ops and force-release fail loud without the operator key configured.

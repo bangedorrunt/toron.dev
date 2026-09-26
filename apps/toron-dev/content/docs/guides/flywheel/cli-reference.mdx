@@ -1,0 +1,59 @@
+---
+title: flywheel CLI reference
+description: The command surface, one line each. Details live in the topic pages.
+---
+
+Conventions: `<p>` is the project slug. The full clap surface is `flywheel --help`; this is the map, not the enum.
+
+| Command | Purpose |
+|---|---|
+| `init` | Scaffold a project: dir + `.beads` + `.flywheel/stages.toml`, standing orders, `docs/learnings/` |
+| `arrive` | Session entry: helm drain, join-loud, doorbell, FCFS captain |
+| `briefing` | Observe + propose one topology; `--commit` runs the argv (`--yes` required non-TTY on spawn-class topologies — crew-confirm gate); names `role` |
+| `decide` | The classifier leaf: one captain primitive per target, `--json` (names `role`, read from the workflow's steps) |
+| `helm <p>` | Session-start drain: open decisions, unread status, divergence |
+| `preflight` | herdr socket, resonate, operator key, toron mail, standing orders |
+| `deps` | Environment + toolchain health; `--ensure` starts a down loopback resonate |
+| `spawn` | Spawn a swarm; `--profile <role>` is the default door, bare harness flags are the escape hatch |
+| `add` | Extend a running swarm with more panes |
+| `send` | Prompt one or more agents; stage params, `--wait`, `--raw` |
+| `status`, `list`, `watch` | Swarm state, fleet list, stream until `--until`/timeout |
+| `view`, `output`, `zoom`, `attach` | Read a pane's terminal, the structured session store, zoom, attach interactively |
+| `interrupt` | Escape by default; kill keys need `--force` |
+| `crew` | `preview` + lifecycle `control` (interrupt, exit, relaunch) |
+| `rebind`, `recover` | Restore name bindings; restore or respawn agents |
+| `kill` | Close the swarm: `--force`, `--force-working`, `--drain` |
+| `doorbell` | Wake plane: status, start, stop, why, digest, events, inject, subscribe, unsubscribe, afk, re-inject |
+| `loop-mode` | `run\|status\|list\|prune\|doctor\|replay\|why`; `run --work` is the durable dispatcher |
+| `steer` | One compose call to done; `--direct` skips the tracker |
+| `workflow` | `list\|lint\|run\|compose\|new\|crew\|history`; `--parts` grammar lives in [workflows](./workflows) |
+| `stage` | Stage prompts: `list`, authoring ladder (`new`, `lint`, `promote`) |
+| `cron` | Smart-cron registry: lint, start, pause/resume, status, history |
+| `coalition` | Captain-formed multi-crew around a goal; `form`, `join`, `leave`, `list`, `disband` |
+| `debate` | N-round A/B debate + judge, threaded, ack-gated |
+| `plan-review` | Plan, review gate, implement, verify |
+| `collab` | Ask a peer over mail, block for the reply |
+| `assign` | Assign beads to agents via mail |
+| `mail`, `toron` | toron mail surfaces (args in the toron guide) |
+| `xproj` | Cross-project fan-out: contact + product |
+| `ledger` | Gate wrappers + receipts; `check` exits 0 only on a legal verdict for the current sha |
+| `judgment` | Miss ledger (`miss-list`, `--needles`, `miss-resolve`), `annotate`, `prescreen` — annotate-only, never dispatches |
+| `principles` | `list` the 21 canonical names, `show <name>` full leaf |
+| `standing-orders` | Regen the generated global file; project fences stay byte-identical |
+| `artifacts` | Typed per-run records: `<run_id> [--json]`, `stitch <run_id>` |
+| `snapshot`, `checkpoint`, `resume`, `changes`, `timeline`, `audit`, `analytics`, `history` | Fleet state forensics |
+| `runs` | Runs dashboard: state, owner, per-run cost |
+| `profile`, `squad`, `model`, `slot`, `catalog`, `backend` | Identity and routing: profiles, squads (recipes/template aliases), model registry, routing slots, TUI catalog hub, backend selection (`profile show` projects `fallback`/`model_fallback`; `subscribe --project` names the auto-host pair) |
+| `worktree` | git worktree swarms (never on loop-owned beads) |
+| `guards`, `policy`, `safety` | Active policy guards, destructive-command policy, posture |
+| `daemon`, `serve` | Daemon lifecycle over the REST + SSE surface |
+| `integration` | Generate beads + workflow + orchestration prompts per harness kind |
+| `config` | Configuration management |
+| `work` | bv/br pass-through work-graph surfaces |
+| `upgrade`, `tutorial` | Reinstall from source; interactive walkthrough |
+
+Rebuild after source changes: `mbx +nightly-aarch64-apple-darwin install --path . --force` plus `install --path crates/doorbell-cli --force` for the daemon (binary `~/.cargo/bin/{flywheel,doorbell}`; re-sign only on stale-signature SIGKILL: `codesign --force --sign -` both; reload the unit after `install`: `bootout` + `bootstrap`).
+
+## Output contract
+
+Exit codes: `0` ok, `1` herdr or server error, `2` usage error. stdout carries data (`--json` for machines); stderr carries messages and progress. `NO_COLOR` or a piped stdout disables color. `workflow list --json` rows carry `description`, `family`, `selection`, `run`, `compose_token`, and `decide_trigger`; `workflow list --brief --json` is the GS-052 hybrid: name/family/selection/run/topology/compose_token. Crew cap: `FLYWHEEL_CREW_MAX` env beats `[crew].max` in `~/.config/flywheel/config.toml`, default 5; `--crew-max` is the per-run operator override.

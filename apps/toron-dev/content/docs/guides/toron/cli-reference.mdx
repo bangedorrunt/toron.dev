@@ -1,0 +1,67 @@
+---
+title: toron CLI reference
+description: The command surface, one line each. Robot mode is the 38-tool AM-Rust parity surface plus CLI-only verbs.
+---
+
+Global flags on every command: `--json` (structured reads), `--plain` (flat tables), `--no-color`, `-q/-d`, `--dry-run`, `--no-input`, `--config`, `--robot-snapshot/--robot-status/--robot-capabilities`.
+
+| Command | Purpose |
+|---|---|
+| `serve` | Run the daemon: `--mcp-stdio` or `--mcp-http <addr>`; no-flag serve bails |
+| `daemon` | `start\|stop\|restart\|status\|install\|uninstall` |
+| `status` | Quick health/config overview |
+| `catalog` | Emit the MCP surface catalog (38 tools, 25 resources, 29 CLI verbs); freshness-gated |
+| `config` | Effective configuration (flags > env > project > user > system) |
+| `mail` | `send\|inbox\|reply\|ack\|read\|search\|thread-summarize`, `whois`; flags in [mail](./mail) |
+| `channel` | Plane S rooms: `create\|join\|leave\|close\|purge\|list\|members\|post\|read` |
+| `job` | Plane J lifecycle: `list\|show\|claim\|progress\|result\|error\|cancel` |
+| `react` | Kind 7 reaction on a channel post |
+| `presence` | Plane N: `publish\|list` (kind 20001) |
+| `watch` | Plane W: `--once` first match, `--live` real subscription |
+| `wait` | `wait --corr <id> --project <slug>`: subscribe-until-receipt, TTL-bounded |
+| `receipt` | Durable receipts: `get\|list\|set --state resulted` |
+| `reserve` | `acquire\|conflicts\|renew\|release\|force-release\|request-release\|respond\|transfer` |
+| `slot` | Build slots: `acquire\|renew\|release` |
+| `guard` | Pre-commit guard: `install\|uninstall` |
+| `contact` | `request\|respond\|list\|policy`, `captain [--pin\|--clear]` |
+| `role` | `pin\|list\|clear` via kind-30013 `role=` tags |
+| `agent` | `bootstrap`: register/upsert identity then optional reserve |
+| `key` | NIP-49: `generate --role operator\|agent\|anchor`, `inspect` (never prints the nsec) |
+| `project` | `ensure <slug>` (kind-30010 manifest, operator key), `list` |
+| `relay` | Federation: `list\|add\|remove\|info` (default empty) |
+| `backend` | Transport selection: `list\|status\|default` |
+| `workflow` | Fabric engine: `lint\|validate\|run\|invoke\|dry-run` |
+| `doctor` | Deep health (`--check` exits 3); `doctor reconstruct` rebuilds SQLite from git |
+| `metrics` | Operator counters: tool calls, errors, latency |
+| `bench` | Mailbox scenarios: startup, inbox, send, search, threads |
+| `tui` | Operator dashboard; refuses non-TTY |
+
+## MCP clusters (the emitted 38-tool surface)
+
+25 resources ride along. The table below is the emitted catalog's own grouping,
+read off `toron catalog --json` — do not hand-edit it, and do not copy the
+foreign 44-tool surface. Every tool carries
+`parity: "AM-Rust 38-tool surface"`; two names earlier revisions of this page
+counted beyond it (`release_file_reservations_by_reason`,
+`list_file_reservations`) are **not** in the emitted catalog, so 38 is the
+number this host publishes. The same mail, reservation, contact, job, and channel
+ops exist over MCP for harnesses without a shell. Prefer the CLI whenever a shell
+exists, and read the tool schema before the first MCP call.
+
+| Cluster | Tools |
+|---|---|
+| Identity (6) | `cleanup_pane_identities`, `create_agent_identity`, `list_agents`, `register_agent`, `resolve_pane_identity`, `whois` |
+| Messaging (5) | `acknowledge_message`, `fetch_inbox`, `mark_message_read`, `reply_message`, `send_message` |
+| Contacts (4) | `list_contacts`, `request_contact`, `respond_contact`, `set_contact_policy` |
+| File-reservations (5) | `check_file_reservation_conflicts`, `file_reservation_paths`, `force_release_file_reservation`, `release_file_reservations`, `renew_file_reservations` |
+| Search (2) | `search_messages`, `summarize_thread` |
+| Macros (4) | `macro_contact_handshake`, `macro_file_reservation_cycle`, `macro_prepare_thread`, `macro_start_session` |
+| Product-bus (5) | `ensure_product`, `fetch_inbox_product`, `products_link`, `search_messages_product`, `summarize_thread_product` |
+| Build-slots (3) | `acquire_build_slot`, `release_build_slot`, `renew_build_slot` |
+| Infrastructure (4) | `ensure_project`, `health_check`, `install_precommit_guard`, `uninstall_precommit_guard` |
+
+A drift gate reads the emitted catalog against these docs, so a count that moves
+in the binary fails the gate instead of aging quietly here.
+| Build slots (3) | `acquire_build_slot`, `renew_build_slot`, `release_build_slot` |
+
+Onboarding sequence: `ensure_project` -> `register_agent` (upsert) -> `file_reservation_paths` (if editing), or one `macro_start_session`. Pane identity helpers: `resolve_pane_identity` maps a herdr `pane_id` to the agent name; `cleanup_pane_identities` prunes identities whose panes are gone. Send receipts carry the rumor id, which is the same id ack and summarize take.

@@ -1,0 +1,101 @@
+---
+title: Fleet operations
+description: Crew lifecycle control, monitoring, intervention recipes, harness integration, and teardown.
+---
+
+## Crew control
+
+`flywheel crew control <project> <pin> interrupt|exit|relaunch` exposes lifecycle verbs only. Text the worker reads is not a lifecycle verb; control-plane prompts carry the `U+2063 FLYWHEEL_OP:` marker, and captain stage payloads stay unmarked.
+
+| Verb | Semantics |
+|---|---|
+| `interrupt` | Sends Escape only. Cancel is `confirmed` when the composer is provably empty (agent idle), `UNCONFIRMED` when working. Kill-style keys stay off this plane. |
+| `exit` | Closes the pane. Agent gone; toron reservations and dirty files preserved (leases are never released). |
+| `relaunch` | Journaled transaction: checkpoint the spawn record, stop, relaunch the same pin with an incarnation token (`relaunch-<n+1>-<unix>`), roll back the durable record if the launch fails. Profile-row panes only. |
+
+Plain `flywheel interrupt <project> --to <name>` sends Escape by default and refuses kill-style keys unless `--force`, because they terminate the agent process and drop the pane to a shell.
+
+## Monitor
+
+```bash
+flywheel watch <p> --until blocked        # stream state changes
+flywheel loop-mode run <p> --robot-status # NOT --status; the loop's readout is a --robot-* door
+flywheel runs pending                     # runs dashboard: state, owner, per-run cost
+flywheel mail digest <p> --all            # at session start and each task boundary
+flywheel snapshot <p>                     # fleet snapshot contract (flywheel-snapshot.v1)
+flywheel timeline <p>; flywheel audit <p> # event trail; full log
+```
+
+```text
+QuietHarbor   working  pane wK:p2   bead bd-guide-walkthroughs-twke
+DustySparrow  idle     pane wK:p3   no ticket
+runs pending: 0
+digest: 2 unread · 0 owed · 0 overdue
+
+{ "afk": 0, "coalitions": [], "decisions": [], "degraded": [] }
+```
+
+A non-empty `degraded` array in the snapshot is the one field to read before
+trusting any other line in this block: it means a subsystem is up but not
+healthy, which is exactly the state that looks fine while wakes are not being
+delivered.
+
+If it fails: `--status` is not a flag. The loop's readout is one of the
+`--robot-*` machine doors, so `loop-mode run <p> --status` dies with
+`unexpected argument` rather than printing a partial answer. Use
+`--robot-status` for machines and `flywheel watch` for humans.
+
+Monitor git and beads for truth, not mail. Address the captain by pin: `flywheel mail whois <project> captain` resolves the alias. `flywheel mail watch <p> --thread <t>` blocks on one thread.
+
+## Intervene
+
+| Situation | Action |
+|---|---|
+| Needs a peer | `flywheel collab <p> --to <peer> --subject S --body B` (sends urgent, blocks for the in-thread reply) |
+| Wrong path | `flywheel interrupt <p> --to <name>`, then `send` |
+| Context over 80 percent | loop auto-respawns; else `kill --force-working`, then re-spawn |
+| File conflict | `coalition` intent or `flywheel mail force-unlock` |
+| Dead pane | `flywheel recover <p>` |
+| Adversarial decision | `flywheel debate "<proposition>" --rounds 3 --agent-a oc --agent-b oc2 --judge gk` (threaded, ack-gated) |
+| Plan approval | `flywheel plan-review <p> "<feature>"` (plan, review gate, implement, verify) |
+| Assignment | `flywheel assign` assigns beads to agents via mail |
+
+## Harness integration
+
+Lifecycle-authority kinds (idle/working/blocked from hook events): pi, omp, kimi, opencode, kilo, mastracode, grok. `pa` reports via built-in socket but has no herdr kind: spawn via recipe fallback and drive with `pane.send_text`. Unknown kinds fail `agent.start` with `unsupported_agent_kind`; kinds with a spawn recipe fall back to `pane.run`.
+
+Symptom `agent_not_ready: not an active named agent`, or a pane without lifecycle state in `herdr agent list`: load the harness-integration reference (env injection, boot prime, preflight, pane primitives, alt-screen ladder) before prompting.
+
+## Teardown
+
+```bash
+flywheel kill <p> --force                 # hard stop
+flywheel kill <p> --force-working         # include working agents
+flywheel kill <p> --drain                 # graceful two-phase stop
+flywheel coalition disband <id>
+```
+
+```text
+drain: requested on active loop · 2 working agents
+drain: grace 1/3 · QuietHarbor finishing VERIFY fence
+drain: grace 3/3 · force-stop DustySparrow (bead bd-guide-walkthroughs-twke)
+stopped · 2 panes closed · reservations preserved
+```
+
+The three-phase readout is the contract: a drain that reaches phase three is
+telling you an agent did not finish in time and was stopped while its work is
+still unverified. The close is skipped in that case, deliberately.
+
+If it fails: `kill` refuses while an agent is `working` unless you pass
+`--force-working` or `--drain`. That refusal exists because Escape and kill
+keys drop a pane to a shell and lose whatever the agent was mid-way through.
+`--force-working` is not the upgrade path from a failed drain, it is the
+abandonment path.
+
+`--drain` asks each working agent to finish its VERIFY fence, records the drain on the active loop, enforces a 3-poll grace, then force-stops with the bead id; the close is skipped. Do not kill working agents casually.
+
+Orphan crews follow `on_captain_death` in config: `stop` (default) kills attributed children; `continue` keeps crews and the doorbell and clears the `captain` alias (mail to `captain` fails until `recover` or `adopt` rebinds); `--reap-crews` overrides unconditionally.
+
+## Forensics
+
+`flywheel timeline` and `flywheel audit` answer "what happened"; `flywheel checkpoint`/`resume`/`changes` answer "what moved since"; `flywheel analytics` aggregates counters. `flywheel ledger check` exits 0 only on a legal verdict for the **current** sha, and a verdict counts only when the gate row's `--note` carries `sha=<that sha>` **in full, 40 hex** (bd-u5yr) — a note-less or abbreviated row is unbound, not wrong, so it reports clean-false. Two consequences: the check is green exactly at the revision it verified (the next commit flips it back, by design), and historic unbound rows cannot be repaired in place, because br refuses a gate write on a closed bead. `flywheel ledger receipt` writes the receipt file (workers never write verdicts).

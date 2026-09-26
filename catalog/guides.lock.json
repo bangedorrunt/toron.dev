@@ -1,0 +1,445 @@
+{
+  "schema_version": 1,
+  "guides": [
+    {
+      "plane": "beads",
+      "page": "guides/beads/cli-reference",
+      "repo": "beads",
+      "path": "docs/guides/cli-reference.mdx",
+      "title": "br CLI reference",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "374f5c76cd10fd126145a7757b32528c08341a7e35585eeab638e8a341b6f629",
+      "render_sha256": "374f5c76cd10fd126145a7757b32528c08341a7e35585eeab638e8a341b6f629"
+    },
+    {
+      "plane": "beads",
+      "page": "guides/beads/close-ceremony",
+      "repo": "beads",
+      "path": "docs/guides/close-ceremony.mdx",
+      "title": "The close ceremony",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "6755ad234ee43fc65a31e8a82a4e29cb0f51ab4cf6351e28b8530e3accea09a9",
+      "render_sha256": "3b3cbf45b93dd87d18c887e0023e40218ad1925de026dcb9c5ed3f34a362b731"
+    },
+    {
+      "plane": "beads",
+      "page": "guides/beads/graph-analysis",
+      "repo": "beads",
+      "path": "docs/guides/graph-analysis.mdx",
+      "title": "Graph analysis",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "e17828eafe0ee6807c84fb63911ef758bdfff1847bf43383595d76c0a5f0c1ba",
+      "render_sha256": "bb0f871bb38dc05e057d77cd56211f7e9df4db43b73a366e4984904bb7af5fb3"
+    },
+    {
+      "plane": "beads",
+      "page": "guides/beads/lifecycle",
+      "repo": "beads",
+      "path": "docs/guides/lifecycle.mdx",
+      "title": "Lifecycle",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "4bd216f0a41a8baf68feafcdbe525746cc8cf1b2370eec9a637660aa8310257a",
+      "render_sha256": "343fb331eb682df63a9d07ad7a07441e2d945387275c340e8180591a034719e3"
+    },
+    {
+      "plane": "beads",
+      "page": "guides/beads/quick-start",
+      "repo": "beads",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "br quick start",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "4a2f36e8f0c0cadeb1e2b3d7945746d27dccd869b7cef78146b1c470f3d250f5",
+      "render_sha256": "cb3b12de5d24dae6ac86c5c76056e38815f79aec4190bf03a9728446606b965e"
+    },
+    {
+      "plane": "beads",
+      "page": "guides/beads/troubleshooting",
+      "repo": "beads",
+      "path": "docs/guides/troubleshooting.mdx",
+      "title": "br troubleshooting",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "69cd599da454c622d41522245ff5d51639f22ece2930e86972b66ffcc9eacaf5",
+      "render_sha256": "69cd599da454c622d41522245ff5d51639f22ece2930e86972b66ffcc9eacaf5"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/cli-reference",
+      "repo": "chiebukuro",
+      "path": "docs/guides/cli-reference.mdx",
+      "title": "chiebukuro CLI reference",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "380ddeaef5c9c2a261f87f504e602dc3c01d5218d728586849947f4c6c0c7185",
+      "render_sha256": "380ddeaef5c9c2a261f87f504e602dc3c01d5218d728586849947f4c6c0c7185"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/configuration",
+      "repo": "chiebukuro",
+      "path": "docs/guides/configuration.mdx",
+      "title": "Configuration",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "0c65ea4af54d865d1e2ca596628990b5f902d074482424c402e26556a83c3066",
+      "render_sha256": "0c65ea4af54d865d1e2ca596628990b5f902d074482424c402e26556a83c3066"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/health",
+      "repo": "chiebukuro",
+      "path": "docs/guides/health.mdx",
+      "title": "Health and enforcement",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "0f2c948d6e093b14e4ece05dac56819fa40f571d09065b29e622a81b4f820660",
+      "render_sha256": "0f2c948d6e093b14e4ece05dac56819fa40f571d09065b29e622a81b4f820660"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/knowledge-plane",
+      "repo": "chiebukuro",
+      "path": "docs/guides/knowledge-plane.mdx",
+      "title": "The knowledge plane",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "a704f175de98d10ec29bf9859a9ea9bf68c406b06a3f0d27a9667b5db280c59a",
+      "render_sha256": "a704f175de98d10ec29bf9859a9ea9bf68c406b06a3f0d27a9667b5db280c59a"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/memory-plane",
+      "repo": "chiebukuro",
+      "path": "docs/guides/memory-plane.mdx",
+      "title": "The memory plane",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "efe3c1aa96b1cf849c87be6ffb6dd33d92568fdfdfbfe38a0ae2ef6e8f3c0e44",
+      "render_sha256": "82c5d2a0c55020024b30ac6fc3eb9ce96d442d033ff4d2ea115e6e3dfce58444"
+    },
+    {
+      "plane": "chiebukuro",
+      "page": "guides/chiebukuro/quick-start",
+      "repo": "chiebukuro",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "chiebukuro quick start",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "64a1d08aa508f32aecbcad6dc29a87ee88836259f497be1c1f0c2b9c9b0b2d02",
+      "render_sha256": "64a1d08aa508f32aecbcad6dc29a87ee88836259f497be1c1f0c2b9c9b0b2d02"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/cli-reference",
+      "repo": "flywheel",
+      "path": "docs/guides/cli-reference.mdx",
+      "title": "flywheel CLI reference",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "db14e0add94462d482ae75201fcb0e6aad06a0b9537947fb1543d351067d906d",
+      "render_sha256": "db14e0add94462d482ae75201fcb0e6aad06a0b9537947fb1543d351067d906d"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/coalition",
+      "repo": "flywheel",
+      "path": "docs/guides/coalition.mdx",
+      "title": "Coalitions",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "06495d9ab6864cc684ee32d5935a1efa027b464dfeb06845ae6eac6d76ac1714",
+      "render_sha256": "06495d9ab6864cc684ee32d5935a1efa027b464dfeb06845ae6eac6d76ac1714"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/compound-engineering",
+      "repo": "flywheel",
+      "path": "docs/guides/compound-engineering.mdx",
+      "title": "Compound Engineering deep dive",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "2986a85e8766e090babffd41ce778305c090efc83ce55ff2bd2eaf2f5315057f",
+      "render_sha256": "2986a85e8766e090babffd41ce778305c090efc83ce55ff2bd2eaf2f5315057f"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/cron",
+      "repo": "flywheel",
+      "path": "docs/guides/cron.mdx",
+      "title": "Cron",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "e790850d4dff412a77457919ae765e10a6a19215efabc53293104dd6e13d9ab5",
+      "render_sha256": "e790850d4dff412a77457919ae765e10a6a19215efabc53293104dd6e13d9ab5"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/doorbell",
+      "repo": "flywheel",
+      "path": "docs/guides/doorbell.mdx",
+      "title": "The doorbell",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "345b2b56960caa28e13be605ebf08aa6868d18611282c43b9bd9b9eda5834aa0",
+      "render_sha256": "c23d771d78977326adc5acd936a9e57700ea17da9ff34ef9df7ddfc2c1a38988"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/effect-kernel",
+      "repo": "flywheel",
+      "path": "docs/guides/effect-kernel.mdx",
+      "title": "Functional effect kernel",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "eff984ffda82a31ee4453d2e6b0d9104109be122a949e5bd9b3125e8bc2a32c3",
+      "render_sha256": "eff984ffda82a31ee4453d2e6b0d9104109be122a949e5bd9b3125e8bc2a32c3"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/fleet-ops",
+      "repo": "flywheel",
+      "path": "docs/guides/fleet-ops.mdx",
+      "title": "Fleet operations",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "3be5756ec40f3fd54405fda95bad542f4b9d1e6af0f60026ad05764a6f64c9ac",
+      "render_sha256": "3be5756ec40f3fd54405fda95bad542f4b9d1e6af0f60026ad05764a6f64c9ac"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/integration",
+      "repo": "flywheel",
+      "path": "docs/guides/integration.mdx",
+      "title": "Integration",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "b8d73b705a014719f91eb2a1941db09149bf5e4454c4d823d68363784d566915",
+      "render_sha256": "b8d73b705a014719f91eb2a1941db09149bf5e4454c4d823d68363784d566915"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/jev-w2-enable",
+      "repo": "flywheel",
+      "path": "docs/guides/jev-w2-enable.mdx",
+      "title": "Jev W2 enable procedure",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "e3041c6bf225afd3884ee89b50ae866e5a55fb724be0adc227534688e2eaeda1",
+      "render_sha256": "e3041c6bf225afd3884ee89b50ae866e5a55fb724be0adc227534688e2eaeda1"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/judgment-packs",
+      "repo": "flywheel",
+      "path": "docs/guides/judgment-packs.mdx",
+      "title": "Judgment packs",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "34013dd298ad30e4ca6e5fa4a62aa5bd2927ea06e241a1ebf1a5220da8437468",
+      "render_sha256": "565bda71234720f7e39d04cfd80417eaf87ad3c7aeb1bc10bba0d2741d0001a4"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/loop",
+      "repo": "flywheel",
+      "path": "docs/guides/loop.mdx",
+      "title": "The loop",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "77221c7cf078484b5f30ba6ba1611dd7b16a5f6dc8c34ec85b1ee60b8e0ad95d",
+      "render_sha256": "557a4d1f88a53cada0d3e489db580dda18300a8c88fc59e0590161e2ceb7782d"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/pstack",
+      "repo": "flywheel",
+      "path": "docs/guides/pstack.mdx",
+      "title": "pstack deep dive",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "643331b21dd604583624ca0767dad40c35e69881cb855813352622a6769dcf58",
+      "render_sha256": "643331b21dd604583624ca0767dad40c35e69881cb855813352622a6769dcf58"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/quick-start",
+      "repo": "flywheel",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "flywheel quick start",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "d7e03a1e23240d8bfff26add97e415d791d823d0f3a621a0c2d300c166302989",
+      "render_sha256": "d7e03a1e23240d8bfff26add97e415d791d823d0f3a621a0c2d300c166302989"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/session-door",
+      "repo": "flywheel",
+      "path": "docs/guides/session-door.mdx",
+      "title": "The session door",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "baf2c5ce3405a31a077e96569c2521024f38bddda7cd3cad8d806e65299ada82",
+      "render_sha256": "baf2c5ce3405a31a077e96569c2521024f38bddda7cd3cad8d806e65299ada82"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/spawn-and-send",
+      "repo": "flywheel",
+      "path": "docs/guides/spawn-and-send.mdx",
+      "title": "Spawn and send",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "e769652531aa74537c65cb075e12d4d1ada39346a1e6e563689d6f4f8dbccd98",
+      "render_sha256": "e769652531aa74537c65cb075e12d4d1ada39346a1e6e563689d6f4f8dbccd98"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/stack",
+      "repo": "flywheel",
+      "path": "docs/guides/stack.mdx",
+      "title": "The Stack",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "36528becca472133a872befda5454b2a928ca4335f7ce98b3eb5514fc7181f4a",
+      "render_sha256": "36528becca472133a872befda5454b2a928ca4335f7ce98b3eb5514fc7181f4a"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/troubleshooting",
+      "repo": "flywheel",
+      "path": "docs/guides/troubleshooting.mdx",
+      "title": "flywheel troubleshooting",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "a2a9059d1e254c49e29f27647eea23bfd55eec278582f4529ce6c4361e89129a",
+      "render_sha256": "a2a9059d1e254c49e29f27647eea23bfd55eec278582f4529ce6c4361e89129a"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/workflow-catalog-review",
+      "repo": "flywheel",
+      "path": "docs/guides/workflow-catalog-review.mdx",
+      "title": "Built-in workflow catalog review",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "8b96a3f5175714a54ac14b0535e62a28e6c7f0138af9283644da73628055686f",
+      "render_sha256": "623feeb8dac70d1801437d632bcebb123433132a5c76266a79762832b8e8a06b"
+    },
+    {
+      "plane": "flywheel",
+      "page": "guides/flywheel/workflows",
+      "repo": "flywheel",
+      "path": "docs/guides/workflows.mdx",
+      "title": "Workflows and compose",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "645366e951d015defad20d5f0548a612053c2f8b84b53a622c65bb2d3f9209b6",
+      "render_sha256": "ebacd3cdc6bd3560c9a2e0973ff32767bae2d5493299d88c122a9f8640bb472d"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/backend",
+      "repo": "toron",
+      "path": "docs/guides/backend.mdx",
+      "title": "The backend",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "b243c171a68c73939eab6e248684f134bbadac365784ace38ccc7cfaa846eade",
+      "render_sha256": "b243c171a68c73939eab6e248684f134bbadac365784ace38ccc7cfaa846eade"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/buzz-parity",
+      "repo": "toron",
+      "path": "docs/guides/buzz-parity.mdx",
+      "title": "Buzz parity",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "72d2a4f738a144beda2836c2ce20dc2033745a6b02ce33b9c38cb8781b12a0ea",
+      "render_sha256": "24a4e776ac98be923648cc04f5d0a029ef5ad253800e312a8e882e81f7685fc0"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/channels-and-jobs",
+      "repo": "toron",
+      "path": "docs/guides/channels-and-jobs.mdx",
+      "title": "Channels and jobs",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "56de1336edbf11cdec7172670ff4798ede46be98f82c4467bcc076bf49c0102d",
+      "render_sha256": "23531620669335c9fe9a0055ce8311762635e7d1fb650b94c4275fd862a5a340"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/cli-reference",
+      "repo": "toron",
+      "path": "docs/guides/cli-reference.mdx",
+      "title": "toron CLI reference",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "fe44f475b0e13f821bdb554a1ef3ec7ca9063391d683858e7028da355f51f999",
+      "render_sha256": "fe44f475b0e13f821bdb554a1ef3ec7ca9063391d683858e7028da355f51f999"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/daemon-ops",
+      "repo": "toron",
+      "path": "docs/guides/daemon-ops.mdx",
+      "title": "Daemon operations",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "7d52c67359ed93f7890a820526731b4c28a15d5d1fa01672777c27d169ab3620",
+      "render_sha256": "7d52c67359ed93f7890a820526731b4c28a15d5d1fa01672777c27d169ab3620"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/identity",
+      "repo": "toron",
+      "path": "docs/guides/identity.mdx",
+      "title": "Identity",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "a58d7fa479b93ebebd8a9ddc7bd2db461fc355f1214edf004c835319d8a39aab",
+      "render_sha256": "0dae129b4dc88002edf6a2b133317139d2ee02e9f97d0d148875e271e2dc33b4"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/mail",
+      "repo": "toron",
+      "path": "docs/guides/mail.mdx",
+      "title": "Mail",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "452c82eb25ff05c54339fbebe864b7975a8da2f31b55b7b89cba1801cf02fc9b",
+      "render_sha256": "452c82eb25ff05c54339fbebe864b7975a8da2f31b55b7b89cba1801cf02fc9b"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/planes",
+      "repo": "toron",
+      "path": "docs/guides/planes.mdx",
+      "title": "Planes",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "febfaed9277a1b42f556cff618b523c1d5442a2c88468e08b4066a494826734c",
+      "render_sha256": "febfaed9277a1b42f556cff618b523c1d5442a2c88468e08b4066a494826734c"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/quick-start",
+      "repo": "toron",
+      "path": "docs/guides/quick-start.mdx",
+      "title": "toron quick start",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "3df9070e1e287f94b83985dcee2741d529bf16c27d72120850fb08eabce12f45",
+      "render_sha256": "cfb04e1a7eb810787f0074d5a4d44a7cfd5790bf1fc6c9a10d8afd0b93dea350"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/reservations",
+      "repo": "toron",
+      "path": "docs/guides/reservations.mdx",
+      "title": "Reservations and slots",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "ca33157071584f4bd3ca3e043f550bea6b7384e15e4990e3abf58c8a8a145407",
+      "render_sha256": "e7f8a46c19d787fba10b55bacb48242bce361994f7c849c2ce8915af74182f5f"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/tool-authoring",
+      "repo": "toron",
+      "path": "docs/guides/tool-authoring.mdx",
+      "title": "Authoring an MCP tool",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "e8e9ee911e0d1dd0ab04ad7da92a6441e3957b24fe51a807c8960e1adddfaa1c",
+      "render_sha256": "e8e9ee911e0d1dd0ab04ad7da92a6441e3957b24fe51a807c8960e1adddfaa1c"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/troubleshooting",
+      "repo": "toron",
+      "path": "docs/guides/troubleshooting.mdx",
+      "title": "toron troubleshooting",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "705de680230fdf97542efd1ba0ba1a526c8bbbaabd47b2f08baa775ffe1f3756",
+      "render_sha256": "705de680230fdf97542efd1ba0ba1a526c8bbbaabd47b2f08baa775ffe1f3756"
+    },
+    {
+      "plane": "toron",
+      "page": "guides/toron/workflow-engine",
+      "repo": "toron",
+      "path": "docs/guides/workflow-engine.mdx",
+      "title": "The workflow engine",
+      "transform": "mdx-safe-v1",
+      "source_sha256": "046eee28cd0525a4583017a4a9a078f23a0f94a91f6e1e7496744e3b7ff7afa8",
+      "render_sha256": "046eee28cd0525a4583017a4a9a078f23a0f94a91f6e1e7496744e3b7ff7afa8"
+    }
+  ]
+}

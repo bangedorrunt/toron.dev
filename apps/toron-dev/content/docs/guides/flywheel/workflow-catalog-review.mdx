@@ -1,0 +1,146 @@
+---
+title: Built-in workflow catalog review
+description: One-by-one review of the built-in workflows, with Compound Engineering and pstack selection guidance.
+---
+
+The built-in catalog currently contains **40 workflows**. This is not 40 independent ideas: it is a small set of lifecycle primitives, phase contracts, operational doors, and purpose-specific playbooks. The catalog keeps distinct behaviors separate where their evidence or supervision contract differs, while `workflow list --brief` gives agents a bounded selection surface.
+
+## Selection rule
+
+Use the smallest workflow that owns the contract you need:
+
+1. **One phase or one operation:** choose a `phase-*` or operations workflow.
+2. **A delivery path:** choose `goal` (bead-backed), `goal-direct` (explicitly no bead), `bug-fix`, `feature`, or `refactoring`.
+3. **A comparison:** choose `prototype` for one model family, `arena` for model races, `debate` for a small adversarial synthesis, or `interrogate` for N-model review.
+4. **A durable multi-step run:** choose a compose token: `wave-swarm`, `repair-until-verified`, or `beads-lifecycle`.
+5. **Learning maintenance:** choose `ce-compound`, `ce-sweep`, or `reflect`.
+
+Compound Engineering supplies the understand → plan → execute → review → verify → compound spine. pstack/poteto-mode supplies pickup, pause, babysit, shipping, and evaluation discipline. Neither justifies a second workflow engine or a prompt-only proof path.
+
+## One-by-one review
+
+| # | Workflow | Family | Keep/reduce decision |
+|---:|---|---|---|
+| 1 | `arena` | design-space | Keep: model-race selection is materially different from same-model exploration. |
+| 2 | `autonomous-work` | operations | Keep: owns durable loop resumption, then delegates shipping to `ship-beads`. |
+| 3 | `awareness-digest` | operations | Keep: read-only captain digest; do not fold into pickup or weekly review. |
+| 4 | `babysit-bead` | operations | Keep: one-bead supervision; never create work or self-close. |
+| 5 | `beads` | lifecycle | Keep as the low-level plan-to-tracker step; larger flows call it. |
+| 6 | `beads-lifecycle` | lifecycle | Keep as a compose token; it is the authored lifecycle, not a duplicate runner. |
+| 7 | `bug-fix` | repair | Keep as the canonical reproduce → bounded repair → independent proof path. |
+| 8 | `captain-audit` | review | Keep: scoped read-only report; its no-edit contract differs from weekly review. |
+| 9 | `ce-brainstorm` | compound | Keep: requirements reduction before planning. |
+| 10 | `ce-compound` | compound | Keep: standalone learning capture after verified work. |
+| 11 | `ce-plan` | compound | Keep: plan plus approval; `plan-direct` is the explicit no-approval variant. |
+| 12 | `ce-plan-review` | compound | Keep: bead-by-bead plan gate, not a generic code review. |
+| 13 | `ce-sweep` | compound | Keep: corpus maintenance; do not run it as a delivery workflow. |
+| 14 | `debate` | review | Keep as the cheap/small adversarial default; route N-model work to `interrogate`. |
+| 15 | `feature` | delivery | Keep: domain-shaping and acceptance contract are feature-specific. |
+| 16 | `forensics` | review | Keep diagnosis-only; hand accepted changes to `bug-fix` or `refactoring`. |
+| 17 | `goal` | delivery | Keep as the bead-backed canonical objective path. |
+| 18 | `goal-direct` | delivery | Keep as an explicit no-bead arm; never silently merge it into `goal`. |
+| 19 | `hillclimb` | measurement | Keep. One `loop` capped by `inputs.max_iters`. Stops only when the reply JSON has `improved: true`. |
+| 20 | `interrogate` | review | Keep for N-model adversarial review; it extends rather than replaces `debate`. |
+| 21 | `onboard` | operations | Keep as cold-start context seeding; pickup assumes an existing run. |
+| 22 | `pause` | operations | Keep: checkpoint and handoff without killing working panes. |
+| 23 | `perf` | measurement | Keep for one keep/discard branch on `steps.measure.improved`. A measure reply with no `improved` field fails the run. |
+| 24 | `phase-implement` | phase | Keep: host phase contract and acceptance evidence. |
+| 25 | `phase-plan` | phase | Keep: bead and dependency evidence. |
+| 26 | `phase-resolve` | phase | Keep: machine-checkable goal reduction. |
+| 27 | `phase-review` | phase | Keep: adversarial fanout contract. |
+| 28 | `phase-verify` | phase | Keep: named gate execution; host verdict remains authoritative. |
+| 29 | `pickup` | operations | Keep: resume and ledger-gap inspection. |
+| 30 | `plan-direct` | delivery | Keep as the explicit approval-free planning arm. |
+| 31 | `prototype` | design-space | Keep for same-family exploration; `arena` owns model comparison. |
+| 32 | `refactoring` | delivery | Keep: invariant-preserving simplification is not feature delivery. |
+| 33 | `reflect` | compound | Keep: recurring corrections become durable structure. |
+| 34 | `repair-until-verified` | repair | Keep as the bounded compose-token repair loop with `ce-evaluate`. |
+| 35 | `ship` | phase | Keep: five-link gated chain and parent-run evidence. |
+| 36 | `ship-beads` | operations | Keep: ledger predicate; it must not become a general ship alias. |
+| 37 | `triage` | operations | Keep: reactive message workflow. |
+| 38 | `triage-deep` | operations | Keep: explicit backlog triage; it is not the reactive `triage` path. |
+| 39 | `wave-swarm` | delivery | Keep as the parallel compose token with review, verify, compound, and signoff. |
+| 40 | `weekly-review` | review | Keep as the scheduled scoped review with one follow-up bead. |
+
+## Operator overlays and freshness
+
+`flywheel workflow seed` copies every compiled-in workflow, including the three
+compose tokens, and every compiled-in stage into the user tier. It never
+overwrites an existing user file, so an operator can edit a copy without
+changing source. Resolution remains one path: built-ins &lt; user &lt; project.
+
+`flywheel workflow drift` compares the user tier with the current built-ins and
+labels each entry `missing`, `current`, `stale`, or `custom`. A stale copy is
+still authoritative, by design, but it is visible rather than silently mistaken
+for the new builtin.
+
+## Failure policy
+
+The R-E2 `error_kinds` declaration and its lint rule have been removed. The
+field was never read by the engine, so retaining it made policy look
+configurable while runtime behavior stayed centralized.
+
+Retry and escalation now have one authority:
+`FailureKind::is_retry_candidate()` retries `rate_limit` and `timeout`, while
+`blocked`, `auth`, `cancelled`, and `unknown` escalate. Per-step retry overrides
+require a real toron-workflow runtime contract and tests; they must not return as
+YAML-only metadata.
+
+## What was reduced
+
+- **Discovery context:** `workflow list --brief` returns the GS-052 **hybrid** contract: **name / family / selection / run / topology / compose_token** (single live projection; topology kept for sticky-open). Bare `workflow list --json` adds full description, source, crew, inputs, steps/graph_nodes, and **decide_trigger**. `workflow show` emits name/source/description/run/compose_token/trigger/guard/crew/inputs/steps/graph/graph_nodes — **not** decide_trigger (or family/selection/topology).
+- **Prompt authority:** stages carry reusable Compound/pstack contracts; workflow steps carry only local inputs, artifact paths, and control flow. A worker's `done` claim never replaces host verification.
+- **Overlap:** similar workflows remain separate only when their supervision/evidence contract differs. The catalog now states those boundaries instead of asking an agent to infer them from long descriptions.
+- **Long-running safety:** pickup, pause, babysit, autonomous work, and ship-beads remain operationally distinct; none creates a second loop or tracker.
+
+Use:
+
+```bash
+flywheel workflow list --brief --json
+flywheel workflow show <name>
+flywheel workflow lint <name>
+flywheel workflow seed --json
+flywheel workflow drift --json
+```
+
+```text
+$ flywheel workflow list --brief --json            # trimmed to the first entry
+{
+  "workflows": [
+    {
+      "compose_token": false,
+      "family": "design-space",
+      "name": "arena",
+      "run": "workflow run arena --execute",
+      "selection": "compare model arms; choose selection rule up front",
+      "topology": "swarm"
+    },
+    …
+  ]
+}
+
+$ flywheel workflow seed --json                    # trimmed
+{
+  "created_stages": [],
+  "created_workflows": [],
+  "kept_stages": ["baseline-measure", "bv-triage", "ce-brainstorm", …]
+}
+
+$ flywheel workflow lint wave-swarm ; echo $?      # clean lint is silent
+0
+$ flywheel workflow lint no-such-workflow-xyz ; echo $?
+flywheel: unknown workflow "no-such-workflow-xyz" (flywheel workflow list)
+1
+```
+
+`lint` printing nothing is the pass signal, so gate it on the exit code. `seed`
+reporting empty `created_*` arrays with populated `kept_*` means the catalog was
+already complete — the one state you want on a re-run.
+
+If it fails: `unknown workflow` from `lint`/`show` means the name you have is
+not in this host's catalog (stage names and workflow names come from the same
+catalog, so check which you are holding). `drift --json` rows carry one of three
+statuses per name — `current` (user tier matches the builtin byte for byte),
+`missing` (no user copy; the builtin resolves), `stale` (a user copy shadows the
+builtin and differs). `stale` is the one to stop on: a user copy always wins
+resolution, so the guide you would follow from the builtin is not what runs.

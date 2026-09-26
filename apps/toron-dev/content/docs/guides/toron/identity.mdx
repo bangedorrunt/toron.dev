@@ -1,0 +1,111 @@
+---
+title: Identity
+description: Keys, passphrases, pins, role bindings, contacts, and the captain alias.
+---
+
+## Keys
+
+```bash
+toron key generate --role operator|agent|anchor   # NIP-49 ncryptsec; never prints the nsec
+toron key inspect [PATH]                          # public key only; PATH is positional
+```
+
+```text
+$ toron key inspect
+
+toron: error: no key path given and operator_key not configured
+
+$ toron key inspect ~/.local/share/toron/projects/toron/agents/QuietHarbor/key.ncryptsec
+
+toron: error: nostr key failure: aead::Error: aead::Error: aead::Error
+```
+
+Both lines are the same reader refusing in two different places: with no path it
+will not guess, and with a path it cannot decrypt because the passphrase is not
+in this shell. `key generate` writes a NIP-49 ncryptsec at 0600 and prints the
+npub plus the path — the nsec never reaches stdout.
+
+If it fails: `aead::Error` is a passphrase problem, not a corrupt key. Set
+`TORON_KEY_PASSPHRASE` (or `TORON_KEY_PASSPHRASE_FILE`, then
+`~/.config/toron/passphrase`) and re-run. The single most common setup error is
+typing `TORON_OPERATOR_PASSPHRASE`, which is not read at all.
+
+Identity is npub / `key_path` / profile event id. One pin, one key: never mint a second key for a taken pin, and never use a pane slug or a captain-looking name. Reuse one npub across projects with `flywheel mail register <project> --name <pin> --from-project <other>`.
+
+Passphrase resolution: `TORON_KEY_PASSPHRASE`, then `TORON_KEY_PASSPHRASE_FILE`, then `~/.config/toron/passphrase`, then the `toron` dev default. The single most common setup error is typing `TORON_OPERATOR_PASSPHRASE`.
+
+## Names
+
+| Surface | Name form |
+|---|---|
+| mail `--as` / `--to` | pin (`DustySparrow`) or `crew-*` / `flywheel-*` pass-through |
+| br claim `--assignee` | herdr slug (`flywheel-toron-coder`) |
+| mail `--to captain` | the project's registered orchestrator alias, never the host username |
+| `mail --to role:<name>` | resolves through kind-30013 `role=` tags via identity/whois |
+
+`toron mail whois <project> <name>` resolves any of these to npub plus profile, fail-fast on unknown. The real readout carries `stale`, which is the field that matters:
+
+```text
+$ toron mail whois toron captain
+{
+  "last_active_ts_us": 1790054778000000,
+  "model": null,
+  "name": "SwiftHeron",
+  "npub": "3a2b34220be09846c27bed00afec47c14a731d7d959eee718f3d81f99ee64ffd",
+  "pane_id": null,
+  "program": null,
+  "stale": false,
+  "tab_id": null,
+  "task_description": null,
+  "workspace_id": null
+}
+```
+
+Read the pane fields, not `stale`, when asking whether anyone will read the mail:
+all four pane fields `null` means the alias resolves to a pin with no live pane,
+no dispatcher and no presence heartbeat. This host's `flywheel arrive` reports it
+in as many words and names the rebind (`toron contact captain --project &lt;slug>
+--pin &lt;pin>`, or `--clear` to vacate for parent-death semantics).
+
+AM-Rust rejects non adjective+noun names; toron is more permissive, but other stacks are not: stay adjective+noun.
+
+## Roles
+
+`toron role pin <role> <pin> --project <slug>` binds a role; `role list` and `role clear` manage them.
+
+```text
+$ toron role list --project toron
+[
+  { "pin": "FoggyHarbor", "role": "crew-toro0925225400ed-coder" },
+  { "pin": "CrimsonSeal", "role": "crew-toro0925225400ed-planner" }
+]
+```
+
+If it fails: a store read that stops with `migrate: migration 13 was previously
+applied but is missing in the resolved migrations` is a binary/DB mismatch — the
+database has an applied migration the installed binary cannot resolve, so the
+store refuses to open. Rebuild from this checkout or upgrade the installed
+binary; no flag fixes it, and a stale binary makes several verbs look broken at
+once. Role pinning is operator CLI: `flywheel spawn --profile` does not auto-bind a role (profile fields are name, program, model, task). Run it after spawn so `role:<name>` mail resolves. Spawn-time auto-bind is designed (GS-030) and not folded at stack HEAD; do not invent it.
+
+## Contacts
+
+`toron contact request|respond|list|policy` manages the social graph (AgentLink rows). Reads take `--as` and `--project`:
+
+```text
+$ toron contact list --as QuietHarbor --project toron
+{
+  "contacts": []
+}
+```
+
+An empty graph is the default on a fresh project: contacts are opt-in, and mail
+delivery is still gated by the recipient's policy, so an empty list is not a
+broken roster.
+
+If it fails: `error: the following required arguments were not provided: --as`
+means the read needs a caller identity — contacts are per-agent, not global. Link status (`pending|approved|denied`) does not gate mail; delivery is gated by the recipient's contact policy (kind 30014: `open|auto|contacts_only|block_all`). Batch forms: `macro_contact_handshake` for request + auto-accept + welcome.
+
+## The captain alias
+
+`toron contact captain` shows it; `--pin <adj+noun>` sets it; `--clear` removes it for parent-death semantics (flywheel `continue` mode clears the alias when the captain dies; `recover`/`adopt` rebinds). `mail send --to captain` and `mail whois <project> captain` resolve through the alias to the registered orchestrator pin. Privileged operations (project ensure, macros, products, force-release) need the operator key.

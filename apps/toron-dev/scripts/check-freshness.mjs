@@ -50,6 +50,7 @@ const PINS_PATH = join(CATALOG_DIR, 'pins.json');
 const CANONICAL_PATH = join(GUIDES_DIR, 'canonical.json');
 const PLANES_PATH = join(DOCS_DIR, 'planes.json');
 const DOCS_META_PATH = join(DOCS_DIR, 'meta.json');
+const GUIDE_LOCK_PATH = join(CATALOG_DIR, 'guides.lock.json');
 const APP_DIR = join(APP_ROOT, 'app');
 const LIB_DIR = join(APP_ROOT, 'lib');
 const SHARED_PATH = join(LIB_DIR, 'shared.ts');
@@ -63,8 +64,13 @@ const TOOLS_DIR = join(DOCS_DIR, 'tools');
 // "38 tools", "25 resources", "19 CLI commands": a count a page asserts in prose.
 const COUNT_CLAIM = /\b(\d+)[\s-]+(?:MCP\s+)?(tools|resources|CLI commands|commands)\b/gi;
 const TITLE_LINE = /^title:\s*(.+?)\s*$/m;
-// A guide row on a plane section: | Title | Read when | `plane/docs/guides/x.mdx` |
-const GUIDE_ROW = /^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*`[^`]*?(docs\/guides\/[a-z0-9-]+\.mdx)`\s*\|\s*$/;
+// A guide row on a plane section: | [Title](/docs/guides/<plane>/<slug>) | Read when | `<repo>/docs/guides/x.mdx` |
+// The title is a link because ADR-0006 projects the guide body into the site,
+// so the row is a way in, not a way out. Four captures: title text, href, and
+// the canonical source path. The href is checked too, so a row cannot point at
+// a page that does not exist while still naming a real guide.
+const GUIDE_ROW =
+  /^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|\s*([^|]+?)\s*\|\s*`[^`]*?(docs\/guides\/[a-z0-9-]+\.mdx)`\s*\|\s*$/;
 
 // What this gate does NOT check, declared in the checker rather than left for a
 // reader to infer. herdr's config_reference_check.py keeps the same discipline
@@ -73,7 +79,7 @@ const GUIDE_ROW = /^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*`[^`]*?(docs\/guides\/[
 // into the checked set above must leave this list in the same change.
 const NOT_CHECKED = [
   'product-repo prose: only files named in canonical.json are checked for existence and frontmatter title, never their content',
-  'guide bodies: every canonical guide is listed on its plane section with a read-when, never projected into the site (ADR-0003 D4)',
+  'projected guide freshness where no product checkout is reachable: on Vercel the committed copies are hash-checked against the lock, but comparing them against the real repositories is skipped, not passed',
   'translation parity: the site is English only (ADR-0001 D3), so there is no second locale to compare',
   'toron config keys: no config reference page is published yet, so the config model is not compared against anything',
   'rendered page text: tool names, counts, and the catalog surface are pinned, the prose a generator emits around them is not diffed',
@@ -419,13 +425,24 @@ for (const [file, pin] of Object.entries(catalogs)) {
 }
 
 // A catalog that nothing pins renders pages with no freshness contract at all.
-// pins.json is the manifest, not a surface, so it is not one of them.
+// Two files are exempt, and both are manifests rather than surfaces: pins.json
+// is the pin manifest itself, and guides.lock.json is a per-file hash manifest
+// whose whole job is to pin the projected guides. Neither renders a page, and
+// the lock is checked entry by entry against the files it names.
+const NOT_A_SURFACE = new Set(['pins.json', 'guides.lock.json']);
 for (const entry of readdirSync(CATALOG_DIR)) {
-  if (entry === 'pins.json') continue;
+  if (NOT_A_SURFACE.has(entry)) continue;
   if (entry.endsWith('.json') && !pinNames.includes(entry)) {
     fail(`catalog/${entry} is not pinned in ${rel(PINS_PATH)}, so its drift would go unnoticed`);
   }
 }
+
+// The plane manifest is read here rather than beside the plane-coverage checks
+// because the count-claim rule below needs to know which folders under
+// content/docs/guides hold projected pages.
+const planeManifest = readJson(PLANES_PATH, 'the plane manifest');
+const planes = planeManifest.planes ?? [];
+if (planes.length === 0) fail(`${rel(PLANES_PATH)} declares no planes, so plane coverage is unchecked`);
 
 // The generated pages are the catalog rendered, so their number is the pin.
 // They are gitignored build artifacts, so a clean checkout has none yet. That is
@@ -441,10 +458,16 @@ if (toolPages === null) {
   ok(`content/docs/tools holds ${toolPages} pages for ${pinnedTools} pinned tools`);
 }
 
-// A hand-written page may not quote a count the pin does not carry.
+// A hand-written page may not quote a count the pin does not carry. A PROJECTED
+// page is exempt: it is the product's own claim about its own surface, written
+// in that product's repository and checked by that product's gate. Holding this
+// site's pin against another project's numbers would fail the build on prose
+// this repo does not own and cannot fix.
 for (const file of walk(DOCS_DIR)) {
   const underDocs = relative(DOCS_DIR, file);
   if (GENERATED.some((g) => underDocs === g || underDocs.startsWith(`${g}/`))) continue;
+  const [, planeSegment] = underDocs.split('/');
+  if (underDocs.startsWith('guides/') && planes.some((p) => p.plane === planeSegment)) continue;
   readFileSync(file, 'utf8')
     .split('\n')
     .forEach((line, i) => {
@@ -524,10 +547,6 @@ for (const [plane, list] of byRepo) {
 // Plane sections: the claim is that each plane's section lists every guide its
 // repository has, so "the docs cover the stack" is checkable instead of
 // aspirational. A guide added upstream with no row on the section page fails.
-const planeManifest = readJson(PLANES_PATH, 'the plane manifest');
-const planes = planeManifest.planes ?? [];
-if (planes.length === 0) fail(`${rel(PLANES_PATH)} declares no planes, so plane coverage is unchecked`);
-
 const navPages = readJson(DOCS_META_PATH, 'the docs page order').pages ?? [];
 for (const plane of planes) {
   const pagePath = join(DOCS_DIR, `${plane.page}.mdx`);
@@ -549,7 +568,7 @@ for (const plane of planes) {
   const rows = new Map();
   pageText.split('\n').forEach((line, i) => {
     const m = line.match(GUIDE_ROW);
-    if (m) rows.set(m[3], { title: m[1].trim(), line: i + 1 });
+    if (m) rows.set(m[4], { title: m[1].trim(), href: m[2].trim(), line: i + 1 });
   });
   const listed = new Set(rows.keys());
   const repo = resolveRepo(plane.repo);
@@ -568,6 +587,16 @@ for (const plane of planes) {
   for (const guide of actual) {
     if (!listed.has(guide)) fail(`plane ${plane.plane}: ${plane.repo}/${guide} is not listed on ${plane.page}.mdx`);
   }
+  // Every row must be a way IN to a page that exists, not a way out to the
+  // repository. A row that still points at the repo while the body is
+  // projected is a stale page, and a row pointing at a missing slug is a 404.
+  for (const [guide, row] of rows) {
+    const slug = guide.split('/').pop().replace(/\.mdx$/, '');
+    const want = `/docs/guides/${plane.plane}/${slug}`;
+    if (row.href !== want) {
+      fail(`plane ${plane.plane}: ${plane.page}.mdx line ${row.line} links ${guide} to ${row.href}, expected ${want}`);
+    }
+  }
   for (const guide of listed) {
     if (!actual.includes(guide)) {
       fail(`plane ${plane.plane}: ${guide} is listed on ${plane.page}.mdx but absent from ${plane.repo}/docs/guides`);
@@ -583,6 +612,85 @@ for (const plane of planes) {
     }
   }
   ok(`plane ${plane.plane}: ${actual.length} canonical guide(s) listed on ${plane.page}.mdx (${repo.how})`);
+}
+
+// ADR-0006: the guide bodies projected from the product repositories. Two
+// checks that run everywhere, and one that runs only where a clone is
+// reachable. The first is the one that matters on Vercel, where no product
+// repository exists: the committed copies must still match the lock, so a page
+// edited on this site instead of in its repository is caught even by a build
+// that has never heard of toron.
+const guideLock = readJson(GUIDE_LOCK_PATH, 'the projected guide lock');
+const lockedGuides = guideLock.guides ?? [];
+if (lockedGuides.length === 0) fail(`${rel(GUIDE_LOCK_PATH)} locks no guides, so no projection is checked`);
+
+const pageFile = (entry) => join(DOCS_DIR, `${entry.page}.mdx`);
+// `walk` collects MDX and walkSources does not. The first version of this check
+// used walkSources, found zero files, and reported green for a page that had
+// been dropped from the lock entirely, which is the exact case the check exists
+// to catch.
+const vendored = new Map();
+for (const file of walk(join(DOCS_DIR, 'guides'))) {
+  const under = relative(DOCS_DIR, file).replace(/\\/g, '/');
+  // A plane folder holds projected guides only. The walkthroughs beside them
+  // are ours and are checked elsewhere.
+  const [, planeSegment] = under.split('/');
+  if (!under.startsWith('guides/') || !planes.some((p) => p.plane === planeSegment)) continue;
+  vendored.set(under.replace(/\.mdx$/, ''), file);
+}
+if (vendored.size === 0) {
+  fail(`no projected guide page was found under ${rel(join(DOCS_DIR, 'guides'))}, so the reverse check examined nothing`);
+}
+
+for (const entry of lockedGuides) {
+  const path = pageFile(entry);
+  if (!existsSync(path)) {
+    fail(`${rel(GUIDE_LOCK_PATH)} projects ${entry.page} but ${rel(path)} is absent. run: node scripts/sync-guides.mjs`);
+    continue;
+  }
+  const hash = createHash('sha256').update(readFileSync(path)).digest('hex');
+  if (hash !== entry.render_sha256) {
+    fail(
+      `${rel(path)} does not match the rendered hash in ${rel(GUIDE_LOCK_PATH)}. it was edited on this site, or its repository copy changed without a re-sync.\n` +
+        `     fix: edit ${entry.repo}/${entry.path}, then run node scripts/sync-guides.mjs`,
+    );
+  }
+  vendored.delete(entry.page);
+}
+for (const page of vendored.keys()) {
+  fail(`${rel(join(DOCS_DIR, `${page}.mdx`))} is projected but absent from ${rel(GUIDE_LOCK_PATH)}, so nothing vouches for it`);
+}
+if (failed === 0) {
+  ok(`${lockedGuides.length} projected guide(s) match the rendered hash in ${rel(GUIDE_LOCK_PATH)}`);
+}
+
+// Where the repository is reachable, the lock can only prove the copy has not
+// changed since the last sync. Comparing against the repository is the check
+// that catches a guide edited upstream and never projected.
+for (const plane of planes) {
+  const repo = resolveRepo(plane.repo);
+  if (!repo.path) {
+    skip(`projected ${plane.plane} guides not compared against ${plane.repo}: ${repo.why}`);
+    continue;
+  }
+  let compared = 0;
+  for (const entry of lockedGuides.filter((g) => g.plane === plane.plane)) {
+    const upstream = join(repo.path, entry.path);
+    if (!existsSync(upstream)) {
+      fail(`projected ${entry.page} but ${plane.repo}/${entry.path} is gone upstream`);
+      continue;
+    }
+    const hash = createHash('sha256').update(readFileSync(upstream)).digest('hex');
+    if (hash !== entry.source_sha256) {
+      fail(
+        `${plane.repo}/${entry.path} has changed since the last sync, so ${rel(pageFile(entry))} is stale.\n` +
+          `     fix: node scripts/sync-guides.mjs, then review the diff`,
+      );
+      continue;
+    }
+    compared += 1;
+  }
+  ok(`projected ${plane.plane} guide(s) match ${plane.repo}/docs/guides (${repo.how})`);
 }
 
 // ADR-0005 D1: the origin is one constant, and a hostname literal anywhere
@@ -644,7 +752,7 @@ if (!contentRoute) {
 }
 
 console.log(
-  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), 3 origin/sitemap/markdown check(s), ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
+  `\nsummary: ${pinNames.length} pinned catalog(s), ${entries.length} canonical source entries, ${planes.length} plane(s), ${lockedGuides.length} projected guide(s), 3 origin/sitemap/markdown check(s), ${skipped} skip(s), ${failed === 0 ? 'green' : 'RED'}`,
 );
 console.log('not checked by this gate:');
 for (const line of NOT_CHECKED) console.log(`  - ${line}`);

@@ -6,6 +6,10 @@
     "run-a-swarm-loop",
     "crash-recovery",
     "close-with-evidence",
-    "remember-and-recall"
+    "remember-and-recall",
+    "toron",
+    "flywheel",
+    "beads",
+    "chiebukuro"
   ]
 }

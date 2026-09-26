@@ -1,0 +1,65 @@
+---
+title: Jev W2 enable procedure
+description: Arming checklist for the reclassify enricher behind FLYWHEEL_JEV. Key custody, spend ceiling, pack re-validation CI, latency mining, rollback.
+---
+
+Default state is **on when `TYPESAFE_API_KEY` is present** (bd-0glq P7
+operator order: Jev on by default). Key absent (flag unset) = unconfigured
+lane: table passthrough with a loud `jev: unconfigured` reason marker,
+never escalate, never audit. Explicit `FLYWHEEL_JEV=1` forces on (deny
+escalates even keyless); explicit `0/false/no` forces off (byte-identical
+passthrough). Do not "enable" anything else — there is no other switch;
+the arming work below is custody, ceiling, packs, and thresholds.
+
+## Key custody (mikasa-only)
+
+- `TYPESAFE_API_KEY` lives in mikasa's environment only. Never committed,
+  never in eren/box envs, never in pack YAML.
+- Unset flag + missing/empty key = unconfigured lane (loud marker, no
+  escalate). Explicit `FLYWHEEL_JEV=1` + missing key = configured lane
+  failing: loud deny (escalate + audit), never a silent skip.
+- Rotation: replace the env value, no code change; in-flight reclassifies
+  fail over to deny on the next tick.
+
+## Spend ceiling (TBD captain)
+
+No ceiling is set. Before arming, the captain locks: monthly cap, per-tick
+POST budget (one POST per MaterialContext today — no batching), and who gets
+paged on 429 streaks.
+
+## Pack re-validation CI
+
+Model pin is `jev-1.13.0` — never `jev-latest`. On any pin bump or pack edit:
+
+1. `QuestionPack::parse_yaml` rejects `jev-latest`, empty ids, Choice with
+   fewer than 2 options, Score with fewer than 2 levels.
+2. Re-run `test --bin flywheel judgment` (pack + confidence + merge suite).
+3. Re-validate thresholds against fresh traffic before keeping them
+   (`FLYWHEEL_JEV_THRESHOLDS` is provisional, captain-tunable).
+4. Highest `reclassify.vN.yaml` in `.flywheel/judgment-packs/` wins; old
+   versions stay on disk for audit.
+
+## Latency mining (S8 duty)
+
+Every `JudgmentEffect` audit row carries `latency_ms` (measured POST time;
+`0` means no POST ran). Before enabling per-message surfaces (mail
+guardrails), mine the distribution from a shadow period and set the timeout
+(5s today) and batch policy from data, not vendor claims.
+
+The doorbell screen battery (`doorbell-screen` pack: injection/credential
+Nouls + urgency Score) runs as a second POST beside reclassify when the flag
+is on. Detections annotate routing and escalate; the table leaf still wins.
+It doubles per-expand POST cost — include it in the spend math.
+
+## Arming checklist
+
+1. Judgment suite green: `test --bin flywheel judgment`.
+2. Reclassify path green: `test --bin flywheel workspace`.
+3. Clippy gate clean: `scripts/verify-clippy.sh`.
+4. Thresholds reviewed (`FLYWHEEL_JEV_THRESHOLDS` or provisional defaults).
+5. Key present on mikasa only; spend ceiling locked.
+6. Enrichment runs by default (no flag flip needed). Observe `kind=judgment`
+   audit rows (parent effect key, pack version, confidence, `latency_ms`,
+   escalated); unconfigured hosts show the `jev: unconfigured` marker.
+7. Rollback: set `FLYWHEEL_JEV=0`. The path returns to byte-identical
+   passthrough; no journal migration, no cleanup.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "The four planes of the stack (ADR-0003 D2) and the docs section each one owns. check-freshness.mjs reads this: a section missing from the docs nav fails, a walkthrough named here that does not exist fails, and when a plane repository is reachable, a guide that exists in it but is not listed on the section page fails, as does a listed guide that is gone or retitled upstream. The section pages list every canonical guide and link nothing away from the product repository, because ADR-0003 D4 keeps the manual canonical there. Guide bodies are deliberately not projected into the site.",
+  "note": "The four planes of the stack (ADR-0003 D2) and the docs section each one owns. check-freshness.mjs reads this: a section missing from the docs nav fails, a walkthrough named here that does not exist fails, and when a plane repository is reachable, a guide that exists in it but is not listed on the section page fails, as does a listed guide that is gone or retitled upstream. Since ADR-0006 the guide bodies themselves are projected into the site under content/docs/guides/<plane>/, hashed on both sides, so each row links to the guide as it is read here rather than away to a repository. The repository stays the only place a guide is written.",
   "planes": [
     {
       "plane": "toron",

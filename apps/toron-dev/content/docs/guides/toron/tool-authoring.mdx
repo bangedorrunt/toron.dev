@@ -1,0 +1,46 @@
+---
+title: Authoring an MCP tool
+description: The ADR-0033 replacement discipline for additive tools, worked once (ask_judgment), as a checklist.
+---
+
+## When this applies
+
+Parity (38) tools are frozen: never rename, reshape, or remove one. A genuinely
+new capability ships as an **additive** tool under ADR-0033
+(`docs/decisions/0033-additive-tools-kinds-discipline.md`): ADR + catalog regen
++ tests + versioning. `ask_judgment` (bd-ncpt) is the worked example — third
+additive, 41 total.
+
+## Checklist
+
+1. **ADR first.** Name the tool, its inputs/outputs, and why it is additive
+   (not a parity reshape). Reference it `governed-by` at the top of every new
+   file.
+2. **Core logic in `toron-core`, thin tool in `toron-mcp`.** Pure functions
+   (argv building, output parsing, validation) live beside the mailbox method
+   and carry unit tests; the `#[tool]` fn only adapts args → mailbox →
+   `ToolOutput`. Never duplicate another repo's validation math — shell out
+   to its CLI (child process, no shell, explicit timeout, `kill_on_drop`).
+3. **mcp-builder bar.** Action-oriented name; input constraints + descriptions;
+   `output_schema` via `responses.rs` (schemars type and hand-mirrored `ToJson`
+   must agree); `destructive_hint = true` for any write (journaling counts),
+   `read_only_hint = true` otherwise; errors typed and actionable (what
+   happened, the exact fix, e.g. install command or env override); budgets on
+   every external call (timeout with max, byte cap on inputs). Idempotency keys
+   replay stored rows instead of re-invoking.
+4. **Register.** New `tools/<domain>.rs` module + `judgment_router()` merge in
+   `tools/mod.rs`; append to `ADDITIVE_TOOLS` in `catalog.rs` (never to a
+   parity group — the 38-tool catalog contract is byte-identical).
+5. **Version the surface.** Bump `TOOL_COUNT`, regenerate the shapes fixture to
+   a NEW version (`TORON_REGEN_SHAPES=1`, keep the old file as audit trail),
+   regenerate `docs/catalog/toron-mcp.json` (`toron catalog --json --output`),
+   add a CHANGELOG entry.
+6. **Gates.** `mbx test catalog_freshness`, `mbx test -p toron-mcp catalog_shapes`,
+   flag conformance, clippy, fmt, plus a live probe (stub the child process,
+   assert journal + replay) — prove-it-works, not self-report.
+
+## Boundaries
+
+No new Nostr kinds here unless the ADR also justifies kind occupancy (free
+blocks only, registry tests extended). Tick/DecisionReady feeds stay on the
+consumer side: toron returns and journals effects, it does not publish them.

@@ -20,27 +20,31 @@ Kill the daemon mid-workflow and watch the run resume instead of restarting.
 
 ## Every canonical guide
 
-The text lives in the toron repository and stays there. This page lists all of it and says when to read each one,
-so you can find the guide without this site becoming a second copy of the manual (ADR-0003 D4).
+Every guide below is read here in full. The text is projected from `toron/docs/guides/` into this site and hashed on both sides, so the toron
+repository stays the only place it is written and a copy edited here instead of there fails the build (ADR-0006).
+Those guides are written as plain Markdown, and this site compiles MDX, so the projection escapes the two
+characters that mean something else in MDX and quotes one frontmatter value. Commands, flags, and shown output are
+untouched. The Canonical column names the file each page came from.
 
 | Guide | Read when | Canonical |
 |---|---|---|
-| toron quick start | First daemon, keys, and project on a host | `toron/docs/guides/quick-start.mdx` |
-| Identity | Keys, passphrases, pins, roles, contacts, the captain alias | `toron/docs/guides/identity.mdx` |
-| Planes | The five wire surfaces and what belongs where | `toron/docs/guides/planes.mdx` |
-| Mail | Send, inbox, corr, receipts, tags, urgency | `toron/docs/guides/mail.mdx` |
-| Channels and jobs | Rooms, posts, the job lifecycle, crew steering | `toron/docs/guides/channels-and-jobs.mdx` |
-| Reservations and slots | File leases, conflicts, transfers, build slots | `toron/docs/guides/reservations.mdx` |
-| The workflow engine | YAML workflows and durable approvals | `toron/docs/guides/workflow-engine.mdx` |
-| Daemon operations | Daemon lifecycle, doctor, reconstruction, federation | `toron/docs/guides/daemon-ops.mdx` |
-| The backend | The herdr client, pane primitives, agent_read sources | `toron/docs/guides/backend.mdx` |
-| Authoring an MCP tool | Writing a tool against the toron surface, its schemas, and the catalog it must publish | `toron/docs/guides/tool-authoring.mdx` |
-| toron CLI reference | The command surface | `toron/docs/guides/cli-reference.mdx` |
-| toron troubleshooting | Gotchas and failure modes | `toron/docs/guides/troubleshooting.mdx` |
-| Buzz parity | Buzz×toron Landed/Adapt/Reject/Hold decisions for any harness | `toron/docs/guides/buzz-parity.mdx` |
+| [toron quick start](/docs/guides/toron/quick-start) | First daemon, keys, and project on a host | `toron/docs/guides/quick-start.mdx` |
+| [Identity](/docs/guides/toron/identity) | Keys, passphrases, pins, roles, contacts, the captain alias | `toron/docs/guides/identity.mdx` |
+| [Planes](/docs/guides/toron/planes) | The five wire surfaces and what belongs where | `toron/docs/guides/planes.mdx` |
+| [Mail](/docs/guides/toron/mail) | Send, inbox, corr, receipts, tags, urgency | `toron/docs/guides/mail.mdx` |
+| [Channels and jobs](/docs/guides/toron/channels-and-jobs) | Rooms, posts, the job lifecycle, crew steering | `toron/docs/guides/channels-and-jobs.mdx` |
+| [Reservations and slots](/docs/guides/toron/reservations) | File leases, conflicts, transfers, build slots | `toron/docs/guides/reservations.mdx` |
+| [The workflow engine](/docs/guides/toron/workflow-engine) | YAML workflows and durable approvals | `toron/docs/guides/workflow-engine.mdx` |
+| [Daemon operations](/docs/guides/toron/daemon-ops) | Daemon lifecycle, doctor, reconstruction, federation | `toron/docs/guides/daemon-ops.mdx` |
+| [The backend](/docs/guides/toron/backend) | The herdr client, pane primitives, agent_read sources | `toron/docs/guides/backend.mdx` |
+| [Authoring an MCP tool](/docs/guides/toron/tool-authoring) | Writing a tool against the toron surface, its schemas, and the catalog it must publish | `toron/docs/guides/tool-authoring.mdx` |
+| [toron CLI reference](/docs/guides/toron/cli-reference) | The command surface | `toron/docs/guides/cli-reference.mdx` |
+| [toron troubleshooting](/docs/guides/toron/troubleshooting) | Gotchas and failure modes | `toron/docs/guides/troubleshooting.mdx` |
+| [Buzz parity](/docs/guides/toron/buzz-parity) | Buzz×toron Landed/Adapt/Reject/Hold decisions for any harness | `toron/docs/guides/buzz-parity.mdx` |
 
 <Callout title="What this site adds">
 The reference grid for the 38-tool MCP surface is generated from `catalog/toron-mcp.json` on every build and pinned
 by a freshness gate, so a count on this site cannot quietly disagree with the product. The guide table above is
-checked the same way: a guide added in the toron repository without a row here fails the build.
+checked the same way, and so is every projected page: a guide added in the toron repository without a
+row here fails the build, and a projected page edited on this site instead of in the repository fails it too.
 </Callout>
