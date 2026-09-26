@@ -14,3 +14,5 @@ regression=b1ed851 deployment ERROR, "The `vercel.json` schema validation failed
 repo-visibility=public (gh repo edit bangedorrunt/toron.dev --visibility public --accept-visibility-change-consequences), GitHub Actions billing no longer a factor
 commands=curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/dpl_FYDsVJmppMEbPeP9j4jtjZ4Gu8xJ?teamId=team_6r544iAjZUYZFi1vqZlkrWdA" => readyState READY, buildSkipped false, alias toronmail.vercel.app
 commands=for p in / /docs /how-it-works /security /sitemap.xml /robots.txt; do curl -s -o /dev/null -w "%{http_code}" https://toronmail.vercel.app$p; done => all 200
+skip-path-live=push 027af57..7ca6609 (.flywheel/receipts/* and .beads only) -> deployment dpl_2c8yZLUJKFCm6WJpfMC9D2LVCgbM CANCELED in 6s, build log: "The deployment was canceled because the Ignored Build Step command returned exit code 0."
+build-cache=restored build cache from dpl_FYDsVJmppMEbPeP9j4jtjZ4Gu8xJ
