@@ -1,0 +1,23 @@
+bead: torondev-baa
+sha: 26dd549b9f06352ee08635e8b1d2aa3ddf37c04d
+gate: unit-test-verified
+command: cd apps/toron-dev && bun scripts/render-mascots.tsx
+exit: 0
+---
+mascot render report (viewBox 96, rendered at 320 and 56px)
+  ok                stylesheet loaded, grain blends as overlay
+  ok                toron        shapes= 39  art=79.8x65 at 8.1,27.5
+  ok                flywheel     shapes= 48  art=70x77 at 13,12
+  ok                beads        shapes= 35  art=64x83.5 at 17,9.5
+  ok                chiebukuro   shapes= 42  art=59.4x81.6 at 18.3,3.5
+  ok                set weight       smallest is chiebukuro at 91% of the median area
+  ok                toron         14.1% unmodulated, 524 tones,  43.8% dark mass
+  ok                flywheel       7.3% unmodulated, 661 tones,  30.7% dark mass
+  ok                beads         11.7% unmodulated, 511 tones,    47% dark mass
+  ok                chiebukuro    11.2% unmodulated, 740 tones,    55% dark mass
+  ok                toron        rest and work are distinct pictures
+  ok                flywheel     rest and work are distinct pictures
+  ok                beads        rest and work are distinct pictures
+  ok                chiebukuro   rest and work are distinct pictures
+
+ok — sheet at /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/mascots.png
