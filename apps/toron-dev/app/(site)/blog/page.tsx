@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PLANE_SLUGS } from "@/lib/planes";
 import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function BlogPage() {
       eyebrow="Blog"
       title="Notes from the stack."
       description="Short essays about what survives, what proves, and what an agent system should be honest about. No thought leadership, no predictions."
+      marks={PLANE_SLUGS}
     >
       <Section
         index="1.0"

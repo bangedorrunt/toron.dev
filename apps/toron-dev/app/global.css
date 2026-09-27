@@ -229,6 +229,7 @@ summary:focus-visible {
 }
 
 .toron-page__header {
+  position: relative;
   max-width: 56rem;
   padding-bottom: 2.5rem;
 }
@@ -414,7 +415,13 @@ summary:focus-visible {
  * the overlay escape behind the element's own background and the hover becomes
  * invisible. With it, the veil paints above the surface and below the text.
  */
-:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link) {
+:is(
+  .toron-btn,
+  .toron-home__pill,
+  .toron-stack-strip__item,
+  .toron-card--link,
+  .toron-plane-row__item
+) {
   position: relative;
   isolation: isolate;
   /* Named explicitly rather than left to the initial value, which is `all`.
@@ -425,7 +432,13 @@ summary:focus-visible {
   transition-duration: 0s;
 }
 
-:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link)::after {
+:is(
+  .toron-btn,
+  .toron-home__pill,
+  .toron-stack-strip__item,
+  .toron-card--link,
+  .toron-plane-row__item
+)::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -438,11 +451,53 @@ summary:focus-visible {
   transition: opacity var(--toron-dur-fast) var(--toron-ease-standard);
 }
 
-:is(.toron-btn, .toron-home__pill, .toron-stack-strip__item, .toron-card--link):is(
-    :hover,
-    :focus-visible
-  )::after {
+:is(
+    .toron-btn,
+    .toron-home__pill,
+    .toron-stack-strip__item,
+    .toron-card--link,
+    .toron-plane-row__item
+  ):is(:hover, :focus-visible)::after {
   opacity: 1;
+}
+
+/*
+ * The primary action gets a light rake across it on hover.
+ *
+ * It is one gradient translated on `transform` over the slow duration, so the
+ * compositor does it and the button never repaints. The veil is not enough on
+ * its own for the one control on the page that is shaped like a decision: the
+ * veil shifts the surface it sits on, and this passes over it, which is the
+ * difference between a button that has been noticed and one that has been
+ * picked up.
+ *
+ * `overflow: hidden` is load-bearing: without it the gradient is visible outside
+ * the button's own radius, and the effect reads as a smudge on the page. The
+ * focus ring is an outline, which is not clipped by an ancestor's overflow, so
+ * keyboard users still get the ring they had.
+ */
+.toron-btn--primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.toron-btn--primary::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 34%,
+    color-mix(in srgb, white 20%, transparent) 48%,
+    transparent 62%
+  );
+  content: "";
+  pointer-events: none;
+  transform: translateX(-130%);
+  transition: transform var(--toron-dur-slow) var(--toron-ease-standard);
+}
+
+:is(.toron-btn--primary:hover, .toron-btn--primary:focus-visible)::before {
+  transform: translateX(130%);
 }
 
 .toron-btn {
@@ -1989,9 +2044,301 @@ summary:focus-visible {
   line-height: 1.65;
 }
 
+/* ============================================================ characters */
+
+/*
+ * The four characters, on every surface that draws one.
+ *
+ * A placement is a size, not a rule: the modifier sets `--character` and the art
+ * rule reads it. Every `sizes` attribute in the components mirrors these numbers,
+ * because they have to be changed together or the browser starts guessing at how
+ * wide the art lands and pulls a render built for a different box.
+ */
+.toron-character {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.toron-character--chip {
+  --character: 2rem;
+}
+
+.toron-character--mark {
+  --character: 3.5rem;
+}
+
+.toron-character--strip {
+  --character: 4.5rem;
+}
+
+/* The two layers the component drives: an ambient float on the outside, the
+   pointer tilt on the inside. Two elements rather than one because a spring and
+   a looping keyframe on the same transform fight each other. */
+.toron-character__drift,
+.toron-character__tilt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toron-character__art {
+  width: var(--character);
+  height: var(--character);
+  object-fit: contain;
+  transition: transform var(--toron-dur-base) var(--toron-ease-standard);
+}
+
+/*
+ * A card's character answers the card's own hover.
+ *
+ * The pointer physics only run while the pointer is over the character itself,
+ * which on a card is a 32px square in the corner. A reader who hovers the card
+ * is hovering the card, so the art has to answer that, not only its own box.
+ */
+:is(.toron-card--link, .toron-plane-row__item):is(:hover, :focus-visible) .toron-character__art {
+  transform: scale(1.06);
+}
+
+/* Everything above 56rem of header, so the art never lands on the title. */
+.toron-page__marks {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 901px) {
+  .toron-page__marks {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-bottom: 0;
+  }
+}
+
+.toron-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* The eyebrow keeps its own margin for the cards that carry no character. */
+.toron-card__top .toron-card__eyebrow {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------- plane row (index) */
+
+/*
+ * The docs index's four characters, and the row is the door into the four plane
+ * pages. It replaces a markdown table that said the same thing in text — the text
+ * is still here, each tile printing what its plane owns — but a table cannot be
+ * walked into, and a row of characters can.
+ */
+.toron-plane-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius-lg);
+  background: var(--toron-border);
+}
+
+.toron-plane-row__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  background: var(--toron-bg);
+  color: var(--toron-ink);
+  text-decoration: none;
+  --toron-veil-wash: var(--toron-surface);
+}
+
+.toron-plane-row__art {
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  margin-bottom: 0.35rem;
+  transition: transform var(--toron-dur-base) var(--toron-ease-standard);
+}
+
+.toron-plane-row__name {
+  font-family: var(--toron-font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.toron-plane-row__owns {
+  color: var(--toron-body);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------- plane mark (page) */
+
+/*
+ * The character at the top of its own plane page. The glow is a background
+ * layer rather than a pseudo-element on a negative z-index, so it cannot escape
+ * behind the panel's own background and take the whole effect with it.
+ */
+.toron-plane-mark {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 1.5rem 0 0.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(
+      ellipse 26% 62% at 9% 50%,
+      color-mix(in srgb, var(--toron-accent) 18%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--toron-surface) 55%, transparent);
+}
+
+/*
+ * The mark settles in when its page arrives.
+ *
+ * A view transition covers the navigation between two documents. An in-app
+ * navigation is not one of those: measured in the built site, clicking the index
+ * tile keeps the same document and starts no transition, so the morph pair below
+ * only plays on a real document navigation. This animation is what the arriving
+ * page does on the click path — the character lands from slightly below and
+ * slightly small, on the decelerating curve, which is the same "work coming to
+ * rest" the hero's resume state speaks in.
+ *
+ * Transform and opacity only, so it cannot move the layout it is arriving in, and
+ * `both` so the finished state is the state that stays.
+ */
+.toron-plane-mark__art {
+  display: block;
+  width: clamp(5.5rem, 16vw, 8.5rem);
+  height: clamp(5.5rem, 16vw, 8.5rem);
+  flex: none;
+  object-fit: contain;
+  animation: toron-mark-arrive var(--toron-dur-slow) var(--toron-ease-settle) both;
+}
+
+@keyframes toron-mark-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toron-plane-mark__name {
+  margin: 0;
+  color: var(--toron-ink);
+  font-family: var(--toron-font-mono);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.toron-plane-mark__role {
+  max-width: 36rem;
+  margin: 0.35rem 0 0;
+  color: var(--toron-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/*
+ * The morph between the index tile and the plane page.
+ *
+ * `view-transition-name` is the entire implementation: the browser snapshots the
+ * element on the outgoing page and the element with the same name on the
+ * incoming one, and interpolates the box between them. There is no layoutId, no
+ * projection library, and no JavaScript, which is why the docs can afford it
+ * (ADR-0009 D5).
+ *
+ * Four literal names rather than a variable, because the name has to be unique on
+ * the page and a typo in a computed name would silently produce no transition at
+ * all. Only `PlaneMark` and `PlaneRow` set the attribute, and each page renders
+ * at most one of them: two elements sharing a name aborts every transition on
+ * that page, which is the failure mode worth designing against.
+ *
+ * The group's duration comes from the motion scale and lands on the decelerating
+ * curve, so the character settles into its new size instead of stopping at it.
+ * The root cross-fade is untouched: a page change should still be quick.
+ */
+[data-morph="toron"] {
+  view-transition-name: toron-character-toron;
+}
+
+[data-morph="flywheel"] {
+  view-transition-name: toron-character-flywheel;
+}
+
+[data-morph="beads"] {
+  view-transition-name: toron-character-beads;
+}
+
+[data-morph="chiebukuro"] {
+  view-transition-name: toron-character-chiebukuro;
+}
+
+::view-transition-group(*) {
+  animation-duration: var(--toron-dur-slow);
+  animation-timing-function: var(--toron-ease-settle);
+}
+
+/*
+ * The character effects, switched off for a reader who asked for less motion.
+ *
+ * This block sits here, at the end of the section that introduces the effects,
+ * rather than in the reduced-motion block above, and the position is the whole
+ * point: those neutralisations carry the same specificity as the rules they
+ * override, so the later declaration is the one that wins. Written in the earlier
+ * block it was a rule that named the right elements and changed nothing — the
+ * arrival animation still ran and the strip's hover still eased, which is what the
+ * harness caught when it was pointed at the sheet in reduced-motion mode.
+ *
+ * The pointer physics are gated in the component as well, because a spring is not a
+ * stylesheet's to switch off. Between the two, nothing here moves for those readers.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .toron-plane-mark__art {
+    animation: none;
+  }
+
+  :is(
+    .toron-character__art,
+    .toron-stack-strip__mascot,
+    .toron-plane-row__art,
+    .toron-plane-mark__art,
+    .toron-btn--primary::before
+  ) {
+    transition: none;
+  }
+}
+
 /* ============================================================ responsive */
 
 @media (max-width: 900px) {
+  .toron-plane-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toron-plane-mark {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
   .toron-home__hero {
     padding-top: 4.5rem;
     text-align: left;

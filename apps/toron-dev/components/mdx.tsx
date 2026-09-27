@@ -1,6 +1,9 @@
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
-import { Callout, CodeBlock, Fail, StatRow, Step, Walk } from "./site-content";
+// From `./docs-content`, never `./site-content`: that module imports the client
+// character, and importing it here is what put 38.9 KB of animation library on
+// every docs page. See ADR-0009 D7.
+import { Callout, CodeBlock, Fail, PlaneMark, PlaneRow, StatRow, Step, Walk } from "./docs-content";
 import {
   ApiSurface,
   AppWindow,
@@ -34,6 +37,9 @@ export function getMDXComponents(components?: MDXComponents) {
     LedgerSurface,
     MemorySurface,
     ApiSurface,
+    // The four characters, where a guide set is about them
+    PlaneMark,
+    PlaneRow,
     // Primitives
     CodeBlock,
     Callout,

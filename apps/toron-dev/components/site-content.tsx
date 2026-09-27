@@ -1,16 +1,17 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import beadsArt from "../assets/mascots/beads.png";
-import chiebukuroArt from "../assets/mascots/chiebukuro.png";
-import flywheelArt from "../assets/mascots/flywheel.png";
-import toronArt from "../assets/mascots/toron.png";
+import { PLANES, type PlaneSlug } from "@/lib/planes";
+import { Character } from "./mascot";
 
 /*
  * governed-by: ADR-0004 D3/D5/D6
  *
- * The marketing kit. A section is a numbered claim carrying a figure. A
- * walkthrough is a numbered action carrying its output and its failure mode.
+ * The marketing kit. A section is a numbered claim carrying a figure.
+ *
+ * This module imports the interactive character, which is the whole point of it:
+ * every surface here is a marketing surface, where the physics are worth their
+ * bytes. The components the docs also use live in `./docs-content`, which imports
+ * no client component, and are re-exported at the bottom of this file.
  */
 
 /* ------------------------------------------------------------------ shell */
@@ -19,16 +20,34 @@ export function SitePage({
   eyebrow,
   title,
   description,
+  marks,
   children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  /**
+   * The characters this page is about, drawn small at the top right of the
+   * header. A page that names all four carries all four; a page about one plane
+   * carries one; most pages carry none, which is the point — a header that always
+   * has art in it stops being a signal.
+   */
+  marks?: readonly PlaneSlug[];
   children: ReactNode;
 }) {
   return (
     <main className="toron-page">
       <header className="toron-page__header">
+        {marks?.length ? (
+          <div className="toron-page__marks">
+            {marks.map((slug) => (
+              /* A lone character drifts, because it is the page's subject. A set
+                 of four does not: four independent floats read as noise, and the
+                 set is meant to read as one object. */
+              <Character key={slug} slug={slug} size="mark" drift={marks.length === 1} />
+            ))}
+          </div>
+        ) : null}
         <p className="toron-page__eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         <p className="toron-page__description">{description}</p>
@@ -81,85 +100,21 @@ export function Section({
   );
 }
 
-/*
- * The four characters, one per plane.
- *
- * These are renders generated in Grok Imagine and shipped as the strip's art.
- * Each was cropped to its own silhouette and re-centred at a common long side
- * before it landed here, because the masters frame their subjects at four
- * different offsets and sizes, and a row of four has to read as one set.
- *
- * Posts, in the order the planes appear below:
- *   toron       d7bd3e78-b9d9-44e3-a270-4e4de7dd9020
- *   flywheel    a7f367e1-c875-4721-9131-594c04d7197e
- *   beads       609ff84e-9d80-4c86-bf72-0c0f072269fa
- *   chiebukuro  4910c028-64cd-4865-a886-6c750628d670
- * (grok.com/imagine/post/<id>; the 1024px masters stay out of the repo).
- *
- * The hand-drawn svg characters that used to live in ./mascots.tsx, and the
- * harness that rendered and measured them, are gone (torondev-rig). The raster
- * set replaced them and nothing referenced either one, so keeping them would
- * have left a second art system that only ever read as current by mistake.
- */
-const MASCOT_ART = {
-  toron: toronArt,
-  flywheel: flywheelArt,
-  beads: beadsArt,
-  chiebukuro: chiebukuroArt,
-} as const;
-
 export function StackStrip() {
-  // `name` is the product name as it is displayed, `slug` is the path segment it
-  // links into. The two differ only in the leading capital, and conflating them
-  // is what kept the section titles lowercase in the first place.
-  const planes = [
-    {
-      name: "Toron",
-      slug: "toron",
-      role: "signed mail · identity · receipts · reservations",
-      href: "https://github.com/bangedorrunt/toron",
-    },
-    {
-      name: "Flywheel",
-      slug: "flywheel",
-      role: "spawn · dispatch · loops · workflows · cron",
-      href: "https://github.com/bangedorrunt/flywheel",
-    },
-    {
-      name: "Beads",
-      slug: "beads",
-      role: "work items · dependencies · gates · close evidence",
-      href: "https://github.com/bangedorrunt/br",
-    },
-    {
-      name: "Chiebukuro",
-      slug: "chiebukuro",
-      role: "curated knowledge · episodic memory · synthesis",
-      href: "https://github.com/bangedorrunt/chiebukuro",
-    },
-  ] as const;
-
   return (
     <div className="toron-stack-strip" aria-label="The four planes of the autonomous agent stack">
-      {planes.map((plane) => (
+      {PLANES.map((plane) => (
         <a
           key={plane.slug}
-          href={plane.href}
+          href={plane.repo}
           target="_blank"
           rel="noreferrer"
           className="toron-stack-strip__item"
         >
-          {/* `sizes` has to match the css rule that draws this (4.5rem at the
-              16px root). Without it the browser assumes the art spans the full
-              viewport and pulls a render orders of magnitude larger than the
-              72px box it lands in. `alt` is empty on purpose: the link already
-              names the plane in text, so the art is decorative. */}
-          <Image
-            src={MASCOT_ART[plane.slug]}
-            alt=""
-            sizes="72px"
-            className="toron-stack-strip__mascot"
-          />
+          {/* The art keeps its own class, because `.toron-stack-strip__mascot`
+              is the rule that fixes the 4.5rem box the strip's measurement was
+              taken at; the character component supplies the physics around it. */}
+          <Character slug={plane.slug} size="strip" className="toron-stack-strip__mascot" />
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
         </a>
@@ -174,18 +129,26 @@ export function SurfaceCard({
   title,
   eyebrow,
   badge,
+  mark,
   children,
   href,
 }: {
   title: string;
   eyebrow?: string;
   badge?: string;
+  /** The character of the plane this card is about, drawn in its corner. */
+  mark?: PlaneSlug;
   children: ReactNode;
   href?: string;
 }) {
   const content = (
     <>
-      {eyebrow ? <p className="toron-card__eyebrow">{eyebrow}</p> : null}
+      {eyebrow || mark ? (
+        <div className="toron-card__top">
+          {eyebrow ? <p className="toron-card__eyebrow">{eyebrow}</p> : null}
+          {mark ? <Character slug={mark} size="chip" /> : null}
+        </div>
+      ) : null}
       <span className="toron-tile__head">
         <h3>{title}</h3>
         {badge ? <span className="toron-badge">{badge}</span> : null}
@@ -205,41 +168,6 @@ export function SurfaceCard({
     </Link>
   ) : (
     <article className="toron-card">{content}</article>
-  );
-}
-
-export function StatRow({ items }: { items: [string, string][] }) {
-  return (
-    <div className="toron-stat-row">
-      {items.map(([value, caption]) => (
-        <div key={caption}>
-          <strong>{value}</strong>
-          <span>{caption}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function Callout({
-  glyph = "↻",
-  title,
-  children,
-}: {
-  glyph?: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="toron-callout">
-      <p className="toron-callout__glyph" aria-hidden="true">
-        {glyph}
-      </p>
-      <div>
-        <h3>{title}</h3>
-        <p>{children}</p>
-      </div>
-    </div>
   );
 }
 
@@ -265,125 +193,28 @@ export function CTABand({
   );
 }
 
-/* -------------------------------------------------------------- walkthrough */
-
-export function Walkthrough({ outcome, children }: { outcome: ReactNode; children: ReactNode }) {
-  return (
-    <div>
-      <p className="toron-walk__outcome">{outcome}</p>
-      <div className="toron-walk">{children}</div>
-    </div>
-  );
-}
-
-export function WalkStep({
-  n,
-  title,
-  body,
-  children,
-  fail,
-  diagnose,
-}: {
-  n: number;
-  title: string;
-  body: ReactNode;
-  children?: ReactNode;
-  fail?: string;
-  diagnose?: string;
-}) {
-  return (
-    <article className="toron-walk__step">
-      <span className="toron-walk__num" aria-hidden="true">
-        {String(n).padStart(2, "0")}
-      </span>
-      <div>
-        <h3 className="toron-walk__title">{title}</h3>
-        <p className="toron-walk__body">{body}</p>
-        {children}
-        {fail ? (
-          <p className="toron-walk__fail">
-            <strong>If it fails</strong>
-            <span>
-              {fail}
-              {diagnose ? (
-                <>
-                  {" "}
-                  Run <code>{diagnose}</code>.
-                </>
-              ) : null}
-            </span>
-          </p>
-        ) : null}
-      </div>
-    </article>
-  );
-}
-
 /*
- * MDX-facing aliases. Guides in content/docs/guides/ use these, so the
- * walkthrough shape is enforced by the component rather than by author
- * discipline: a step always renders a number, and a fail block is always
- * visible rather than buried in a paragraph.
+ * The walkthrough, code, callout, stat, and plane-mark vocabulary lives in
+ * `./docs-content`, which imports no client component, and is re-exported here so
+ * the marketing pages keep one import for the whole kit.
+ *
+ * The split is not tidiness. `components/mdx.tsx` used to import these from this
+ * file, so every docs page registered this module's client import and fetched the
+ * animation library for characters it never drew — 38.9 KB gzipped on
+ * `/docs/toron`, measured. See ADR-0009 D7.
  */
-export function Walk({ outcome, children }: { outcome: ReactNode; children: ReactNode }) {
-  return <Walkthrough outcome={outcome}>{children}</Walkthrough>;
-}
-
-// `Step` is deliberately loose about its children: a guide step interleaves
-// prose, fenced commands, and fenced output, all of which arrive as MDX nodes.
-export function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
-  return (
-    <article className="toron-walk__step">
-      <span className="toron-walk__num" aria-hidden="true">
-        {String(n).padStart(2, "0")}
-      </span>
-      <div className="toron-md-step">
-        <h3 className="toron-walk__title">{title}</h3>
-        {children}
-      </div>
-    </article>
-  );
-}
-
-// The failure mode is not optional in a walkthrough, so it gets its own
-// component and its own visual treatment instead of a trailing sentence.
-export function Fail({ diagnose, children }: { diagnose?: string; children: ReactNode }) {
-  return (
-    <p className="toron-walk__fail">
-      <strong>If it fails</strong>
-      <span>
-        {children}
-        {diagnose ? (
-          <>
-            {" "}
-            Run <code>{diagnose}</code>.
-          </>
-        ) : null}
-      </span>
-    </p>
-  );
-}
-
-/* ------------------------------------------------------------------ code */
-
-export function CodeBlock({
-  children,
-  label,
-  out = false,
-}: {
-  children: string;
-  label?: string;
-  out?: boolean;
-}) {
-  return (
-    <figure className={`toron-code-block${out ? " toron-code-block--out" : ""}`}>
-      {label ? <figcaption>{label}</figcaption> : null}
-      <pre>
-        <code>{children}</code>
-      </pre>
-    </figure>
-  );
-}
+export {
+  Callout,
+  CodeBlock,
+  Fail,
+  PlaneMark,
+  PlaneRow,
+  StatRow,
+  Step,
+  Walk,
+  Walkthrough,
+  WalkStep,
+} from "./docs-content";
 
 export function PageFooter() {
   return (

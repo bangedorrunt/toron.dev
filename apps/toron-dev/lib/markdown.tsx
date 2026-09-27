@@ -21,6 +21,7 @@
 
 import { asMarkdown, md } from "fumadocs-core/server";
 import { LOOP } from "@/components/product-surfaces";
+import { PLANES, PLANE_BY_SLUG, type PlaneSlug } from "@/lib/planes";
 import type { ReactNode } from "react";
 
 /** A numbered step. The number is the point, so it leads. */
@@ -153,6 +154,38 @@ function LoopSurface() {
   );
 }
 
+/**
+ * A plane's character and its one-line role.
+ *
+ * The picture is the page's; a reader of the Markdown gets the two things the
+ * picture was standing next to, and they come from the same `PLANE_BY_SLUG` entry
+ * the page draws from, never a copy. `morph` does not appear here because a
+ * view-transition name has no meaning in text.
+ */
+function PlaneMark({ slug }: { slug: PlaneSlug; morph?: boolean }) {
+  asMarkdown();
+  const plane = PLANE_BY_SLUG[slug];
+  return (
+    <p>
+      <strong>{plane.name}</strong> — {plane.role}
+    </p>
+  );
+}
+
+/** The four characters as the index of the planes. The links are the point. */
+function PlaneRow() {
+  asMarkdown();
+  return (
+    <ul>
+      {PLANES.map((plane) => (
+        <li key={plane.slug}>
+          <a href={plane.docs}>{plane.name}</a> — {plane.owns}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Two-column rows as a Markdown table, which is how a key/value list reads. */
 function ApiSurface({ rows }: { rows: [string, string][] }) {
   asMarkdown();
@@ -179,6 +212,8 @@ export const markdownComponents = {
   Fail,
   FigureCaption,
   LoopSurface,
+  PlaneMark,
+  PlaneRow,
   Step,
   Walk,
 } as const;

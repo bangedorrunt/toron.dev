@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PLANE_SLUGS, type PlaneSlug } from "@/lib/planes";
 import { PageFooter, SitePage } from "@/components/site-content";
+
+/*
+ * Each post carries the characters of the planes its argument actually needs,
+ * which is why the counts differ: the case for a receipt is a toron argument with
+ * a beads gate behind it, a crash is a flywheel argument, and the piece about the
+ * loop is about all four. A post with one mark gets a drifting character; a post
+ * with four gets a set that holds still (see SitePage).
+ */
+const POST_MARKS: Record<string, readonly PlaneSlug[]> = {
+  "receipt-is-the-proof": ["toron", "beads"],
+  "four-planes-one-loop": PLANE_SLUGS,
+  "crash-is-a-transition": ["flywheel"],
+};
 
 const posts = {
   "receipt-is-the-proof": {
@@ -54,7 +68,12 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
   if (!post) notFound();
 
   return (
-    <SitePage eyebrow={post.date} title={post.title} description={post.intro}>
+    <SitePage
+      eyebrow={post.date}
+      title={post.title}
+      description={post.intro}
+      marks={POST_MARKS[slug] ?? []}
+    >
       <article className="toron-article">
         {post.body.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>

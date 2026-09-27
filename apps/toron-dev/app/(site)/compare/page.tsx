@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PLANE_SLUGS, type PlaneSlug } from "@/lib/planes";
 import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
@@ -40,7 +41,13 @@ const ROWS: [string, string[]][] = [
   ],
 ];
 
-const COMPOSE: [string, string, string][] = [
+/*
+ * The fourth field is the character the entry is about, and it is deliberately
+ * absent on the first row: the process-dies entry is about herdr, which is not one
+ * of the four planes, and a card that claims a character it does not own is worse
+ * than a card with no art at all. The three that do name a plane get it.
+ */
+const COMPOSE: [string, string, string, PlaneSlug?][] = [
   [
     "The process dies",
     "herdr keeps the runtime",
@@ -50,16 +57,19 @@ const COMPOSE: [string, string, string][] = [
     "The work is ambiguous",
     "beads makes it accountable",
     "The smallest verifiable unit gets an owner, a dependency graph, a gate row, and a close reason.",
+    "beads",
   ],
   [
     "Knowledge is missing",
     "chiebukuro makes it reusable",
     "Retrieved pages, episodic events, and synthesis become context for the next agent instead of a re-explanation.",
+    "chiebukuro",
   ],
   [
     "Nothing is coordinated",
     "toron carries the handoff",
     "Signed mail, receipts, reservations, and durable workflows make each handoff observable after the fact.",
+    "toron",
   ],
 ];
 
@@ -69,6 +79,7 @@ export default function ComparePage() {
       eyebrow="Compare"
       title="Pick the smallest tool for each failure."
       description="A terminal, a mailbox, a ledger, and a memory system solve different problems. None of them is a worse version of the others."
+      marks={PLANE_SLUGS}
     >
       <Section
         index="1.0"
@@ -112,8 +123,8 @@ export default function ComparePage() {
         lede="Most of the value comes from four tools refusing to impersonate each other."
       >
         <div className="toron-grid toron-grid--2">
-          {COMPOSE.map(([eyebrow, title, body]) => (
-            <SurfaceCard key={title} eyebrow={eyebrow} title={title}>
+          {COMPOSE.map(([eyebrow, title, body, mark]) => (
+            <SurfaceCard key={title} eyebrow={eyebrow} title={title} mark={mark}>
               {body}
             </SurfaceCard>
           ))}

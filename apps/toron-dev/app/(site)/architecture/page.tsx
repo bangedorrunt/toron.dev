@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PLANE_SLUGS } from "@/lib/planes";
 import { AppWindow, FigureCaption, LoopSurface } from "@/components/product-surfaces";
 import {
   CTABand,
@@ -30,6 +31,7 @@ export default function ArchitecturePage() {
       eyebrow="Architecture"
       title="Four planes. One execution loop."
       description="Every agent gets a way to talk, a way to act, a way to prove what happened, and a way to remember. These four jobs are owned by four projects, and the boundaries between them are the reason the loop works."
+      marks={PLANE_SLUGS}
     >
       <Section
         index="1.0"
@@ -50,14 +52,24 @@ export default function ArchitecturePage() {
         <FigureCaption>Each arrow is a durable artifact, not a function call</FigureCaption>
 
         <div className="toron-grid" style={{ marginTop: "1.5rem" }}>
-          <SurfaceCard eyebrow="Plan" title="Break the goal into lanes" href="/how-it-works">
+          <SurfaceCard
+            eyebrow="Plan"
+            title="Break the goal into lanes"
+            href="/how-it-works"
+            mark="flywheel"
+          >
             flywheel turns intent into work with dependencies and proof targets, then owns the
             dispatch policy.
           </SurfaceCard>
-          <SurfaceCard eyebrow="Carry" title="Make the handoff signed" href="/security">
+          <SurfaceCard
+            eyebrow="Carry"
+            title="Make the handoff signed"
+            href="/security"
+            mark="toron"
+          >
             toron turns each handoff into a sealed message with a receipt and a path reservation.
           </SurfaceCard>
-          <SurfaceCard eyebrow="Close" title="Record the evidence" href="/features">
+          <SurfaceCard eyebrow="Close" title="Record the evidence" href="/features" mark="beads">
             beads records the gate row. chiebukuro keeps the conclusion. The next run starts
             smarter.
           </SurfaceCard>
