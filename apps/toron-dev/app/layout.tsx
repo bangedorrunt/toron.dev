@@ -85,6 +85,17 @@ const jsonLd = [
 export const metadata: Metadata = {
   // governed-by: ADR-0005 D1 — the origin is the one constant in lib/shared.
   metadataBase: new URL(siteUrl),
+  /*
+   * Every page names itself, through `./` rather than a path: Next resolves a
+   * relative canonical against the route being rendered, so one line covers the
+   * whole site and keeps the origin in lib/shared.ts where ADR-0005 D1 put it.
+   *
+   * It matters twice here. A Vercel preview deployment serves the same pages from
+   * a different hostname, and without this both hosts claim to be the original. And
+   * ADR-0005 D2 publishes a Markdown twin of every docs page, so the HTML page says
+   * which of the two spellings is the one to index.
+   */
+  alternates: { canonical: "./" },
   title: { default: "toron.dev: the autonomous agent stack", template: "%s | toron.dev" },
   description: "The mailbox is the transport. The stack is what keeps autonomous work moving.",
   keywords: [

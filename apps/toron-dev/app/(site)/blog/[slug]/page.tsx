@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PLANE_SLUGS, type PlaneSlug } from "@/lib/planes";
 import { PageFooter, SitePage } from "@/components/site-content";
+import { absoluteUrl } from "@/lib/shared";
 
 /*
  * Each post carries the characters of the planes its argument actually needs,
@@ -59,7 +60,12 @@ export async function generateMetadata(props: {
   const { slug } = await props.params;
   const post = posts[slug as PostSlug];
   if (!post) return {};
-  return { title: post.title, description: post.intro };
+  return {
+    title: post.title,
+    description: post.intro,
+    // Same rule as every other page: a preview hostname must not become the original.
+    alternates: { canonical: absoluteUrl(`/blog/${slug}`) },
+  };
 }
 
 export default async function BlogPostPage(props: { params: Promise<{ slug: string }> }) {
