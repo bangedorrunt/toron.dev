@@ -114,7 +114,7 @@ archive        → prove the signed history after the fact, from either half`}</
           rows={[
             [
               "metadata",
-              "a relay still sees sender, recipient, and timing — this is not anonymity",
+              "a relay still sees sender, recipient, and timing; this is not anonymity",
             ],
             ["endpoint", "a compromised host can read plaintext before it is sealed"],
             ["keys", "lose the key store without a backup and the history is unreadable"],
