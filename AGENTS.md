@@ -69,6 +69,16 @@ Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
   committed) before reporting done. Stubs and seed files don't count. If the
   producer isn't done, wait or mail them — do not assume the interface.
 - Commit messages: no semicolons (the toron repo shell guard rejects them).
+- **Commit subjects are `type(scope): summary`.** Type is one of `feat`, `fix`,
+  `docs`, `chore`, `refactor`, `test`, `perf`, `build`, `ci`, `style`. Scope is
+  optional. Append the bead ids in parentheses, because the commit guard
+  refuses a commit whose message omits a bead token its diff names:
+  `fix(gate): stop the count check reading a quoted figure (torondev-56u)`.
+  Checkable by `node apps/toron-dev/scripts/check-commit-convention.mjs
+  --message-file <path>`, which is the git `commit-msg` hook contract.
+  Thirty-seven older commits predate this and are **left alone on purpose**:
+  they are bound to closed beads and receipts by sha, and retro-fitting them
+  would trade a fail-closed ledger for a tidier log. Enforced forward only.
 
 ## COMMANDS
 
@@ -77,6 +87,7 @@ bun install && bun run build   # apps/toron-dev build must be green
 bun run dev                    # local dev
 bun run --filter toron-dev lint      # oxlint, must be green
 bun run --filter toron-dev format    # oxfmt
+node scripts/check-commit-convention.mjs   # audit commit subjects (never fails)
 scripts/sync-catalogs.sh       # refresh catalogs from product repos
 ```
 
