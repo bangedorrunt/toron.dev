@@ -83,7 +83,7 @@ tags: [limitation, loop-configuration]
 
 The frontmatter is the page's own account of itself: `confidence` is the score it carries, and `provenanceState: merged` says the page was merged into the live wiki rather than captured raw. The body follows the `------` line, and this is the text an answer may cite.
 
-<Fail diagnose="chie qmd reindex">`get` resolves through the same index as search, so a path that exists on disk can still come back as `no document matching` — a page written by `chie remember` is not indexed until its collection is rescanned. Pass the path exactly as the hit printed it, without a `sessions/` or `raw/` prefix.</Fail>
+<Fail diagnose="chie qmd reindex">`get` resolves through the same index as search, so a path that exists on disk can still come back as `no document matching`. A page written by `chie remember` is not indexed until its collection is rescanned. Pass the path exactly as the hit printed it, without a `sessions/` or `raw/` prefix.</Fail>
 </Step>
 
 <Step n={4} title="Write a page of your own">
@@ -130,7 +130,7 @@ chie memory recall "gists choose the page, only full pages answer" --limit 5 --a
 … a representation class for the peer follows
 ```
 
-Read the classes rather than the list. Your event comes back as `memory_event`, the conclusion class is empty because derivation has not run yet, and that difference is exactly "we decided this" versus "we concluded this". A conclusion climbs to the wiki only through `chie memory promote --conclusion <id>`, which lands it in the review queue — never automatically.
+Read the classes rather than the list. Your event comes back as `memory_event`, the conclusion class is empty because derivation has not run yet, and that difference is exactly "we decided this" versus "we concluded this". A conclusion climbs to the wiki only through `chie memory promote --conclusion <id>`, which lands it in the review queue, never automatically.
 
 <Fail diagnose="chie memory status --json">no hits. Recall searches peers, sessions, and conclusions: a query with no shared term falls back to a literal substring match, and an empty query browses the recent window instead. Check the queue before assuming the write was lost, and raise `--limit` when the class line says there are more matches.</Fail>
 </Step>

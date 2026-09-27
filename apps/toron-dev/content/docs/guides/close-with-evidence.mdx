@@ -3,7 +3,7 @@ title: Close with evidence
 description: Take one work item from claim to a legal close, with the gate rows that authorise it.
 ---
 
-<Walk outcome={<>When you finish: one work item is closed, and the close is legal — a verification run happened, the gate rows the workflow requires are satisfied, and the commit that carries the change names the item. You will also have seen the ledger refuse a close, which is the part that makes the record worth trusting.</>}>
+<Walk outcome={<>When you finish: one work item is closed, and the close is legal: a verification run happened, the gate rows the workflow requires are satisfied, and the commit that carries the change names the item. You will also have seen the ledger refuse a close, which is the part that makes the record worth trusting.</>}>
 
 ## Read the required gates before you plan the close
 
@@ -20,7 +20,7 @@ br gate list torondev-landing-grammar-xo2 --json
                            "gates": ["command-verified"], "satisfied": false } ] }
 ```
 
-```text title="You should see (ungated close — the common case)"
+```text title="You should see (ungated close, the common case)"
 { "current_status": "in_progress",
   "gated_transitions": [ { "from": "in_progress", "to": "closed",
                            "gates": [], "satisfied": true } ] }
