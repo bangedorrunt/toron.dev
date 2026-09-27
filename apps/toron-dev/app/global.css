@@ -1373,8 +1373,14 @@ summary:focus-visible {
 }
 
 /* The mascot leads the cell and the name sits under it, so the four read as a
-   set of characters first and a list of products second. Sized to clear the
-   name's cap height without letting the row get taller than the copy needs.
+   set of characters first and a list of products second.
+
+   4.5rem, up from the 3.5rem the svg set drew at, and the measurement is why:
+   the copy already holds a cell at 181px and the art was 56 of those, the
+   smallest thing in a cell with room to spare. At 4.5rem each character draws 61
+   to 67px tall and the cell goes to 197px, which is the cheap half of the growth
+   available. These are soft rendered images rather than crisp line art, so
+   pixels are what they read in.
 
    `object-fit` is load-bearing, not a detail. Each render is cropped to its own
    silhouette and re-centred at a common long side, so the four assets have four
@@ -1382,8 +1388,8 @@ summary:focus-visible {
    of them. Contain keeps the character's own shape while the box stays square,
    which is what keeps the row aligned. */
 .toron-stack-strip__mascot {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
   object-fit: contain;
   margin-bottom: 0.25rem;
   transition: transform var(--toron-dur-base) var(--toron-ease-standard);

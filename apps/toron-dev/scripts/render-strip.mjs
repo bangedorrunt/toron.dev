@@ -2,12 +2,14 @@
  * Render the stack strip's art for a human to judge.
  *
  * What this is: a contact sheet of the four shipped mascot renders, laid out
- * with the site's own stylesheet, on the site's own background. Two rows and one
- * question each. The top row is the strip exactly as the home page draws it
- * (3.5rem) and answers "does the row read as one set of characters at that
- * size". The bottom row is the same four files at 160px, which is not a size the
- * site draws, and exists because the art is generated rather than drawn and the
- * only instrument that can judge it is an eye.
+ * with the site's own stylesheet, on the site's own background. Three sections
+ * and one question each.
+ *
+ *   strip    the home page's strip exactly as it draws (the css box), checked
+ *   ladder   the same strip at four sizes, because the drawn size is a taste
+ *            call that only an eye can make and the numbers below it are the
+ *            cost of each rung (cell height, and how tall the character lands)
+ *   zoom     the four files large, for inspecting the artwork itself
  *
  * What this is NOT: a test of the app wiring. `next build` proves the component's
  * imports resolve and a page load proves the bytes are served. This sheet reads
@@ -37,7 +39,11 @@ const ZOOM = 160; // the review row, deliberately not a size the site draws
 // The size the css draws the art at, kept here as the assertion target rather
 // than read back out of the stylesheet: a check that reads its input from the
 // thing it is checking passes after the stylesheet loses the rule.
-const BOX = 56; // 3.5rem at the 16px root
+const BOX = 72; // 4.5rem at the 16px root
+
+// The rungs the operator chooses between. The shipped size has to appear among
+// them, or the ladder starts comparing candidates the site does not draw.
+const LADDER = [56, 72, 88, 104];
 
 // Copied from the component's plane list. The sheet needs names and roles to draw
 // the real cells; the set check below fails if the directory holds a slug this
@@ -86,6 +92,9 @@ const cell = (p) => `<a class="toron-stack-strip__item" href="#">
     <span class="toron-stack-strip__role">${p.role}</span>
   </a>`;
 
+const strip = (id, size) =>
+  `<div class="toron-stack-strip" ${id ? `id="${id}"` : `data-size="${size}"`} style="--mascot:${size}px">${PLANES.map(cell).join("")}</div>`;
+
 const frame = (p) =>
   `<div class="col"><img class="toron-stack-strip__mascot" data-slug="${p.slug}" src="${art(p.slug)}" alt=""><span class="lab">${p.slug}</span></div>`;
 
@@ -101,11 +110,20 @@ ${TOKENS}
   .zoom { display:flex; gap:26px; align-items:flex-end; }
   .col { display:flex; flex-direction:column; gap:9px; align-items:center; }
   .lab { color: var(--toron-body); font-size:11px; }
-  /* the review row only: the strip's own box rule stays untouched above it */
+  /* the review sections only: the strip's own box rule stays untouched, and the
+     ladder restates it per rung so one sheet can show all four sizes */
   .zoom .toron-stack-strip__mascot { width:${ZOOM}px; height:${ZOOM}px; }
+  .ladder h2 { font:600 11px/1.4 ui-monospace,monospace; color: var(--toron-body); margin:0 0 8px; }
+  .ladder .toron-stack-strip { margin-bottom: 22px; }
+  .ladder .toron-stack-strip__mascot { width: var(--mascot); height: var(--mascot); }
 </style></head><body>
 <h1>stack strip · <b>the size the home page draws it</b> · ${BOX}px</h1>
-<div class="toron-stack-strip" id="strip">${PLANES.map(cell).join("")}</div>
+${strip("strip", BOX)}
+<div class="gap"></div>
+<h1>size ladder · <b>the same strip at each candidate size</b></h1>
+<div class="ladder">
+${LADDER.map((s) => `  <h2>${s}px${s === BOX ? " · shipped" : ""}</h2>\n  ${strip(null, s)}`).join("\n")}
+</div>
 <div class="gap"></div>
 <h1>review zoom · <b>not a size the site draws</b> · ${ZOOM}px</h1>
 <div class="zoom">${PLANES.map(frame).join("")}</div>
@@ -135,7 +153,8 @@ const one = pages.find((p) => p.scale === 1).shot;
 const seen = await one.evaluate(async () => {
   // The drawn silhouette at natural size. The assets are cropped to their own
   // silhouette, so a drawn long side far short of the canvas means the crop is
-  // not doing its job and the character will read small inside its box.
+  // not doing its job and the character will read small inside its box. The box
+  // is reported too, so the drawn height can be read at any render size.
   const measure = async (img) => {
     const c = document.createElement("canvas");
     c.width = img.naturalWidth;
@@ -159,6 +178,7 @@ const seen = await one.evaluate(async () => {
     }
     return {
       natural: { w: img.naturalWidth, h: img.naturalHeight },
+      drawn: { w: maxX - minX + 1, h: maxY - minY + 1 },
       drawnLong: Math.max(maxX - minX + 1, maxY - minY + 1),
       canvasLong: Math.max(c.width, c.height),
     };
@@ -178,11 +198,27 @@ const seen = await one.evaluate(async () => {
       };
     }),
   );
+
+  // What each rung costs in layout: the cell is content sized, so a bigger
+  // mascot makes the whole strip taller.
+  const cells = Object.fromEntries(
+    [...document.querySelectorAll(".ladder .toron-stack-strip")].map((s) => [
+      s.dataset.size,
+      Math.max(
+        ...[...s.querySelectorAll(".toron-stack-strip__item")].map((i) =>
+          Math.round(i.getBoundingClientRect().height),
+        ),
+      ),
+    ]),
+  );
+
   const root = getComputedStyle(document.documentElement);
   return {
     token: root.getPropertyValue("--toron-ease-standard").trim(),
     bg: root.getPropertyValue("--toron-bg").trim(),
     rows,
+    cells,
+    canvas: document.querySelector("#strip img").naturalWidth,
   };
 });
 
@@ -218,6 +254,13 @@ line(
   "set matches",
   `assets hold exactly ${onDisk.join(", ")}`,
 );
+line(
+  LADDER.includes(BOX),
+  "ladder honest",
+  LADDER.includes(BOX)
+    ? `the rungs include the shipped ${BOX}px, marked on the sheet`
+    : `the ladder is ${LADDER.join("/")}px while the strip draws ${BOX}px`,
+);
 
 for (const row of seen.rows) {
   line(
@@ -243,6 +286,22 @@ for (const row of seen.rows) {
   );
 }
 
+// The two numbers the size decision needs, together: how tall the character
+// lands at each rung, and what that rung does to the strip's height.
+console.log(`\n  drawn height per character, and the cell it forces`);
+console.log(`  ${"character".padEnd(12)}${LADDER.map((s) => `${s}px`.padEnd(8)).join("")}`);
+for (const row of seen.rows) {
+  // Row measurements are in master pixels, so the drawn height is a share of the
+  // character that any render size can be read off.
+  const scale = seen.canvas ? 1 / seen.canvas : 0;
+  console.log(
+    `  ${row.slug.padEnd(12)}${LADDER.map((s) => `${Math.round(row.drawn.h * scale * s)}`.padEnd(8)).join("")}`,
+  );
+}
+console.log(
+  `  ${"cell height".padEnd(12)}${LADDER.map((s) => `${seen.cells[s] ?? "?"}`.padEnd(8)).join("")}\n`,
+);
+
 const shots = await Promise.all(
   pages.map(async ({ scale, shot }) => {
     const file = join(OUT_DIR, scale === 1 ? "strip.png" : `strip@${scale}x.png`);
@@ -254,10 +313,10 @@ await Promise.all(pages.map(({ shot }) => shot.close()));
 await browser.close();
 rmSync(pageFile, { force: true });
 
-console.log(`\n  sheets    ${shots.join("\n            ")}\n`);
+console.log(`  sheets    ${shots.join("\n            ")}\n`);
 console.log(
   bad === 0
-    ? `  all checks passed on 4 characters; the artwork itself is judged by eye at the sheets above\n`
+    ? `  all checks passed on 4 characters; the artwork and the size are judged by eye at the sheets above\n`
     : `  ${bad} check(s) failed\n`,
 );
 process.exitCode = bad === 0 ? 0 : 1;

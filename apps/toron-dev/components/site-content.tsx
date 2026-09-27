@@ -149,15 +149,15 @@ export function StackStrip() {
           rel="noreferrer"
           className="toron-stack-strip__item"
         >
-          {/* `sizes` has to match the css rule that draws this (3.5rem at the
+          {/* `sizes` has to match the css rule that draws this (4.5rem at the
               16px root). Without it the browser assumes the art spans the full
               viewport and pulls a render orders of magnitude larger than the
-              56px box it lands in. `alt` is empty on purpose: the link already
+              72px box it lands in. `alt` is empty on purpose: the link already
               names the plane in text, so the art is decorative. */}
           <Image
             src={MASCOT_ART[plane.slug]}
             alt=""
-            sizes="56px"
+            sizes="72px"
             className="toron-stack-strip__mascot"
           />
           <span className="toron-stack-strip__name">{plane.name}</span>
