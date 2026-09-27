@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { MASCOTS } from "./mascots";
+import beadsArt from "../assets/mascots/beads.png";
+import chiebukuroArt from "../assets/mascots/chiebukuro.png";
+import flywheelArt from "../assets/mascots/flywheel.png";
+import toronArt from "../assets/mascots/toron.png";
 
 /*
  * governed-by: ADR-0004 D3/D5/D6
@@ -77,6 +81,32 @@ export function Section({
   );
 }
 
+/*
+ * The four characters, one per plane.
+ *
+ * These are renders generated in Grok Imagine and shipped as the strip's art.
+ * Each was cropped to its own silhouette and re-centred at a common long side
+ * before it landed here, because the masters frame their subjects at four
+ * different offsets and sizes, and a row of four has to read as one set.
+ *
+ * Posts, in the order the planes appear below:
+ *   toron       d7bd3e78-b9d9-44e3-a270-4e4de7dd9020
+ *   flywheel    a7f367e1-c875-4721-9131-594c04d7197e
+ *   beads       609ff84e-9d80-4c86-bf72-0c0f072269fa
+ *   chiebukuro  4910c028-64cd-4865-a886-6c750628d670
+ * (grok.com/imagine/post/<id>; the 1024px masters stay out of the repo).
+ *
+ * The hand-drawn svg characters in ./mascots.tsx are no longer rendered by the
+ * strip. They stay in the tree for now: whether the vector set is worth keeping
+ * is a separate decision, and deleting it is not this change's business.
+ */
+const MASCOT_ART = {
+  toron: toronArt,
+  flywheel: flywheelArt,
+  beads: beadsArt,
+  chiebukuro: chiebukuroArt,
+} as const;
+
 export function StackStrip() {
   // `name` is the product name as it is displayed, `slug` is the path segment it
   // links into. The two differ only in the leading capital, and conflating them
@@ -118,10 +148,17 @@ export function StackStrip() {
           rel="noreferrer"
           className="toron-stack-strip__item"
         >
-          {(() => {
-            const Mascot = MASCOTS[plane.slug];
-            return <Mascot className="toron-stack-strip__mascot" />;
-          })()}
+          {/* `sizes` has to match the css rule that draws this (3.5rem at the
+              16px root). Without it the browser assumes the art spans the full
+              viewport and pulls a render orders of magnitude larger than the
+              56px box it lands in. `alt` is empty on purpose: the link already
+              names the plane in text, so the art is decorative. */}
+          <Image
+            src={MASCOT_ART[plane.slug]}
+            alt=""
+            sizes="56px"
+            className="toron-stack-strip__mascot"
+          />
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
         </a>
