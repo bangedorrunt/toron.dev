@@ -60,11 +60,18 @@ Legacy alias: `workflow run <token> --execute` still runs tokens; the preferred 
 
 ## Catalog overlays and coordination
 
-`flywheel workflow seed` copies compiled-in workflows and stages into
-`~/.config/flywheel/` without overwriting authored files. `flywheel workflow
-drift` reports `missing`, `current`, `stale`, and `custom` entries. Resolution
-stays built-ins &lt; user &lt; project, so a stale user copy remains authoritative
-but visible. See [workflow-catalog-review](./workflow-catalog-review).
+`flywheel config seed` is the user-config door. It writes missing compiled-in
+workflows, stages, and judgment packs into `~/.config/flywheel`, and writes
+`config.toml` from `config.sample.toml` only when that file is absent.
+`--overwrite none` (the default) does not replace an existing file.
+`--overwrite stale` replaces a shipped file whose bytes differ, after a
+`.bak` and a confirm. `--dry-run` prints the plan. `flywheel config drift`
+only reports `missing`, `stale`, `current`, and `custom`. It does not write.
+`workflow seed` is the same contract for workflows and stages alone.
+Resolution stays built-ins, then the user directory. A project `.flywheel`
+workflow or stage can still add a name the user tier does not have. A
+judgment pack in the project directory does not replace the user pack.
+See [workflow-catalog-review](./workflow-catalog-review).
 
 Choose the control plane by handoff: `flywheel send` is captain → crew,
 `toron channel` plus `toron job` is crew → crew, `toron mail` is private,
@@ -78,7 +85,9 @@ Schema fields: `name` (required), `description`, `trigger`, `guard` (an evalexpr
 
 Triggers (reactive; on-demand `run --execute` always works): `schedule`, `webhook`, `message_posted`, `reaction_added`, `reservation_acquired`, `reservation_released`, `agent_state_changed`.
 
-Actions: `spawn` (the workhorse: `profile`, `stage`, `await`, per-step `harness` override, `no_claim_timeout` default 600s, `inputs`), `dispatch_job` (kind-43001), `send_message` / `send_dm`, `reduce` (bounded fold over a proper list: `all`/`any`/`count`/`sum`/`join`, one scalar), `request_approval` (durable suspend; approve and reject are kinds 46011 and 46012), `delay`, `verify` (host `VerifySink` runs the command), `call_workflow` (sub-run; the child starts from the parent inputs, explicit keys win, outputs land under `{{steps.<name>}}`), plus control flow: `parallel` (fan out `over:` `@crew.<role>`, a positive integer, or a template that renders to one; success is a JSON array, any failed copy is `{ok:false}`), `branch`, `retry`, `foreach`, `loop` (`max` is a number or a template, cap 32; `until` stops on a true guard; a missing field is not yet; exhaustion is `{ok:false}`). A JSON object in a step `response`, or one fenced block, is copied onto the step so a guard can read `improved`. Two actions are **deprecated and fail-closed** (bd-i6kc): `react` and `call_webhook` are lint errors and the boundary rejects them with `unsupported_action`. Do not author them.
+Actions: `spawn` (the workhorse: `profile`, `stage`, `await`, per-step `harness` override, `no_claim_timeout` default 600s, `inputs`), `dispatch_job` (kind-43001), `send_message` / `send_dm`, `reduce` (bounded fold over a proper list: `all`/`any`/`count`/`sum`/`join`, one scalar), `request_approval` (durable suspend; approve and reject are kinds 46011 and 46012), `delay`, `park` (bd-ynef: durable wait until an ABSOLUTE `until_ms`; `max_wait_secs` is required and caps one wait; the intent is journaled before waiting so a crash resumes instead of losing the wait; the step value carries `parked` / `resumed` / `redrive_key`, and a park is interruption, not failure), `verify` (host `VerifySink` runs the command), `call_workflow` (sub-run; the child starts from the parent inputs, explicit keys win, outputs land under `{{steps.<name>}}`), plus control flow: `parallel` (fan out `over:` `@crew.<role>`, a positive integer, or a template that renders to one; success is a JSON array, any failed copy is `{ok:false}`), `branch`, `retry`, `foreach`, `loop` (`max` is a number or a template, cap 32; `until` stops on a true guard; a missing field is not yet; exhaustion is `{ok:false}`). A JSON object in a step `response`, or one fenced block, is copied onto the step so a guard can read `improved`. Two actions are **deprecated and fail-closed** (bd-i6kc): `react` and `call_webhook` are lint errors and the boundary rejects them with `unsupported_action`. Do not author them.
+
+**`delay` vs `park`.** `delay { secs }` sleeps a relative span inside one process and dies with it. `park { until_ms, max_wait_secs, reason }` waits to an absolute wake time and survives a crash: the engine journals the intent before waiting, so a later run re-drives it under the same key. Reach for `park` when the wait must outlive the process — a busy-owner fence handing back "park until T" is exactly that case. Reach for `delay` when a plain in-run pause is enough.
 
 A step fails when its value is `{ok:false}` or `{status:failed}`. `{skipped:true}` is not a failure. `repair-until-verified` is one `loop` (`max` from `inputs.max_iterations`, `until` on `steps_verify_ok == true`), not an unrolled `repair-1..3` graph. `hillclimb` is the same shape capped by `inputs.max_iters`, and it stops only when the reply JSON has `improved: true`.
 

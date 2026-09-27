@@ -56,4 +56,6 @@ Rebuild after source changes: `mbx +nightly-aarch64-apple-darwin install --path 
 
 ## Output contract
 
+`flywheel config path` prints the XDG directory. `flywheel config list` prints every documented setting, its default, the file value, and the value in effect. `flywheel config seed` fills missing workflows, stages, judgment packs, and `config.toml`. `--overwrite none` is the default and does not replace files. `--overwrite stale` and `--overwrite all` replace only names the binary ships, after `--dry-run` or `--yes`. `config drift` only reports. `config.toml` is never overwritten.
+
 Exit codes: `0` ok, `1` herdr or server error, `2` usage error. stdout carries data (`--json` for machines); stderr carries messages and progress. `NO_COLOR` or a piped stdout disables color. `workflow list --json` rows carry `description`, `family`, `selection`, `run`, `compose_token`, and `decide_trigger`; `workflow list --brief --json` is the GS-052 hybrid: name/family/selection/run/topology/compose_token. Crew cap: `FLYWHEEL_CREW_MAX` env beats `[crew].max` in `~/.config/flywheel/config.toml`, default 5; `--crew-max` is the per-run operator override.
