@@ -10,3 +10,9 @@ dist/
 .DS_Store
 # catalog snapshots are committed; extractor scratch is not
 catalog/.tmp/
+
+# local scratch: the third-party art a mascot render is compared against, and
+# the per-character probe PNGs that render-mascots.tsx writes
+.scratch/
+apps/toron-dev/.mascot-out/
+apps/toron-dev/.mascot-*.html

@@ -1379,7 +1379,6 @@ summary:focus-visible {
   width: 3.5rem;
   height: 3.5rem;
   margin-bottom: 0.25rem;
-  border-radius: 0.75rem;
   transition: transform var(--toron-dur-base) var(--toron-ease-standard);
 }
 
@@ -1406,13 +1405,6 @@ summary:focus-visible {
   .toron-mascot [data-detail] {
     display: none;
   }
-}
-
-/* The grain sits over the whole tile as an overlay blend, so it darkens the
-   shadow side and lifts the highlight without tinting either. In CSS rather
-   than a JSX style object because the value never varies per mascot. */
-.toron-mascot__grain {
-  mix-blend-mode: overlay;
 }
 
 /*
@@ -1496,8 +1488,8 @@ summary:focus-visible {
   opacity: 1;
 }
 
-/* Hover lifts the character rather than tinting the cell, so the tile the
-   mascot already draws is not fighting a background change underneath it. */
+/* Hover lifts the character rather than tinting the cell. The mascot draws no
+   tile of its own, so the character is the thing that has to move. */
 .toron-stack-strip__item:hover .toron-stack-strip__mascot,
 .toron-stack-strip__item:focus-visible .toron-stack-strip__mascot {
   transform: translateY(-2px) rotate(-2deg);

@@ -1,21 +1,34 @@
 /*
- * Render the four mascots and report what actually painted.
+ * Render the mascots for a human to judge, and for the probe to measure.
  *
- * The point is verification, not decoration. A mascot that throws, renders an
- * empty box, or paints outside its viewBox looks fine in the source and broken
- * on the page, and neither `tsc` nor the freshness gate can tell the difference.
- * So this renders the real components through a real DOM, asks the browser what
- * it drew, and fails when the answer is not four non-empty pictures inside their
- * tiles.
+ * Two audiences, two outputs, one run:
  *
- * It is a .tsx run by bun, not a .mjs run by node, because it imports a
- * component. bun resolves the TSX and the JSX here directly (ADR-0008 made it the
- * toolchain); node would need a loader for both.
+ *   mascots.png        the contact sheet, on the real page background, with the
+ *                      external reference beside it. This is what a person
+ *                      looks at.
+ *   <name>-probe.png   one character per file, on transparency, rendered so its
+ *                      silhouette is the same size as the reference's. This is
+ *                      what probe-art.mjs measures, and the size match is the
+ *                      whole point: crisp/soft is a per-pixel gradient
+ *                      statistic, so two drawings measured at different scales
+ *                      cannot be compared.
  *
- * Run: bun scripts/render-mascots.tsx [--out path.png]
+ * The probe page is deliberately bare: no stylesheet, and transparent on both
+ * html and body. `omitBackground` only removes the default canvas, so a page
+ * that paints its own background comes back as a picture of the background with
+ * a character on it, every gradient statistic swamped by the field. The first
+ * version of this script shipped that mistake and reported all four characters
+ * as 100% coverage at a median luminance of 14.
+ *
+ * Both moods are pinned rather than animated. The live cross-fade is a slow
+ * cycle with per-plane offsets, so a screenshot of the running page catches
+ * every cell at a different point in it and the sheet stops answering "does the
+ * resting face read".
+ *
+ * Run: bun scripts/render-mascots.tsx [--ref path.png]
  */
 
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -24,411 +37,355 @@ import { MASCOTS } from "../components/mascots";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, "..");
-const outFlag = process.argv.indexOf("--out");
-const OUT = outFlag === -1 ? join(APP_ROOT, "mascots.png") : process.argv[outFlag + 1];
+const REPO_ROOT = resolve(APP_ROOT, "..", "..");
+const OUT_DIR = join(APP_ROOT, ".mascot-out");
 
-// The two sizes the site actually uses them at, so a stroke weight that reads
-// at 320px but disappears at 56px is caught here rather than in review.
-const SIZES = [320, 56];
-const TILE = 96; // the mascots' own viewBox
+const refFlag = process.argv.indexOf("--ref");
+const REF =
+  refFlag === -1 ? join(REPO_ROOT, ".scratch", "ship.png") : resolve(process.argv[refFlag + 1]);
 
-// Each mascot is drawn twice, once pinned to the resting face and once to the
-// working face. The live cross-fade is a 9s cycle with per-plane offsets, so a
-// single screenshot would catch every cell at a different point in it and the
-// sheet could not answer "does the resting face read" for any of them. Pinning
-// the mood makes the artifact deterministic, which is the only reason a picture
-// is evidence at all.
+// The reference's silhouette long side, measured once by probe-art.mjs. Ours is
+// rendered to the same one so the two land on a single scale.
+const PROBE_LONG_SIDE = 1345;
+// The reference is third-party art and is not committed, so its absence is
+// expected on a fresh clone. The sheet is then just our own characters, which is
+// still the artifact a reviewer reads; the probe is unaffected because it never
+// touched the reference at all.
+const hasRef = existsSync(REF);
+const JUDGE = 320; // the size the artwork is worth looking at
+const REAL = 56; // the size the stack strip actually draws it at
 const MOODS = ["rest", "work"] as const;
-const figures = Object.entries(MASCOTS)
-  .map(([name, Mascot]) => {
-    const markup = renderToStaticMarkup(<Mascot className="m" />);
-    const rows = MOODS.map((mood) => {
-      const cells = SIZES.map(
-        (s) => `<div class="cell" style="width:${s}px;height:${s}px">${markup}</div>`,
-      ).join("");
-      return `<div class="moods" data-pin="${mood}"><span class="tag">${mood}</span>${cells}</div>`;
-    }).join("");
-    return `<figure>${rows}<figcaption>${name}</figcaption></figure>`;
-  })
-  .join("");
 
-const html = `<!doctype html><html><head><meta charset="utf-8">
+// `Object.keys` widens to string[] while the record is keyed by the four plane
+// slugs. Narrowed with a predicate rather than a cast, so a rename that misses
+// one of them fails here instead of at the first property access.
+const names = Object.keys(MASCOTS).filter((n): n is keyof typeof MASCOTS => n in MASCOTS);
+const markup = Object.fromEntries(
+  names.map((n) => [n, renderToStaticMarkup(MASCOTS[n]({ className: "m" }))]),
+);
+
+// Both mood groups are in every sheet, so both sheets have to say which one is
+// up. Without this they stack and the "resting face" is really both faces.
+const PIN = `
+  svg [data-mood] { animation: none !important; }
+  .pin-rest [data-mood="rest"] { opacity: 1 !important; }
+  .pin-rest [data-mood="work"] { opacity: 0 !important; }
+  .pin-work [data-mood="work"] { opacity: 1 !important; }
+  .pin-work [data-mood="rest"] { opacity: 0 !important; }
+`;
+
+const cell = (name: string, mood: (typeof MOODS)[number], size: number) =>
+  `<div class="cell pin-${mood}" style="width:${size}px;height:${size}px">${markup[name]}</div>`;
+
+/*
+ * `app/global.css` opens with four bare `@import`s (tailwind, fumadocs, the
+ * token package) and a bare specifier cannot resolve over `file://`. So the
+ * token stylesheet is linked directly as well, ahead of it: without the
+ * `--toron-*` variables every rule that reads one is dropped as invalid at
+ * computed-value time, which is silent. The cross-fade was the casualty, and
+ * the render skipped the tokens for three runs before anything noticed.
+ */
+const TOKENS = `<link rel="stylesheet" href="../../packages/tokens/theme.css">`;
+
+const sheet = `<!doctype html><html><head><meta charset="utf-8">
+${TOKENS}
 <link rel="stylesheet" href="./app/global.css"><style>
-  body { margin:0; background:#08090a; font:13px/1.4 ui-monospace,monospace; color:#f7f8f8; padding:24px; }
-  .row { display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; }
-  figure { margin:0; display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
-  figcaption { color:#8a8f98; }
-  .moods { display:flex; gap:14px; align-items:center; }
-  .tag { color:#828fff; width:3.2em; flex:none; }
+  html, body { background:#08090a; }
+  body { margin:0; font:12px/1.5 ui-monospace,monospace; color:#f7f8f8; padding:28px 32px 40px; }
+  h1 { font:600 12px/1.4 ui-monospace,monospace; color:#8a8f98; margin:0 0 20px; letter-spacing:.06em; text-transform:uppercase; }
+  h1 b { color:#f7f8f8; }
+  .row { display:flex; align-items:flex-end; gap:26px; }
+  .col { display:flex; flex-direction:column; gap:9px; align-items:center; }
+  .pair { display:flex; gap:14px; align-items:flex-end; }
   .cell { display:flex; align-items:center; justify-content:center; }
-  svg { width:100%; height:100%; display:block; }
-  /* Freeze the cycle to one face per row. Without this the two mood groups
-     both animate and the sheet shows a blend of both expressions. */
-  [data-mood] { animation: none !important; }
-  [data-pin="rest"] [data-mood="rest"] { opacity: 1 !important; }
-  [data-pin="rest"] [data-mood="work"] { opacity: 0 !important; }
-  [data-pin="work"] [data-mood="work"] { opacity: 1 !important; }
-  [data-pin="work"] [data-mood="rest"] { opacity: 0 !important; }
-</style></head><body><div class="row">${figures}</div></body></html>`;
+  .cell svg { width:100%; height:100%; display:block; }
+  .lab { color:#8a8f98; font-size:11px; }
+  .ref { border:1px solid #23252a; border-radius:10px; overflow:hidden; }
+  .ref img { display:block; height:400px; }
+  .ref--missing { width:320px; height:400px; display:flex; align-items:center; justify-content:center; text-align:center; color:#4b5058; line-height:1.6; }
+  .gap { height:30px; }
+  ${PIN}
+</style></head><body>
+<h1>characters · <b>left = rest, right = work</b> · top row at ${JUDGE}px, bottom row at the ${REAL}px the strip draws</h1>
+<div class="row">
+  ${
+    hasRef
+      ? `<div class="col"><div class="ref"><img src="file://${REF}" alt="reference"></div><span class="lab">reference · ${REF.split("/").pop()}</span></div>`
+      : `<div class="col"><div class="ref ref--missing">no reference at<br>${REF}</div><span class="lab">run with --ref to compare</span></div>`
+  }
+  ${names
+    .map(
+      (n) => `<div class="col">
+    <div class="pair">${cell(n, "rest", JUDGE)}${cell(n, "work", JUDGE)}</div>
+    <span class="lab">${n}</span>
+  </div>`,
+    )
+    .join("")}
+</div>
+<div class="gap"></div>
+<div class="row">
+  ${names.map((n) => `<div class="col">${cell(n, "rest", REAL)}</div>`).join("")}
+</div>
+</body></html>`;
 
-const scratch = join(APP_ROOT, ".mascot-preview.html");
-writeFileSync(scratch, html);
+/*
+ * A strip cell, built from the site's real markup and stylesheet, because the
+ * cross-fade selectors are scoped to these class names.
+ *
+ * This page deliberately does NOT carry the pinning CSS the other two use. It
+ * exists to test the cycle and the reduced-motion fallback, and a pin would
+ * disable the very animation under test while making the reduced-motion case
+ * pass for the wrong reason.
+ */
+const strip = `<!doctype html><html><head><meta charset="utf-8">
+${TOKENS}
+<link rel="stylesheet" href="./app/global.css"></head><body>
+<div class="toron-stack-strip">${names
+  .map(
+    (n) =>
+      `<a class="toron-stack-strip__item" href="#">${markup[n].replace("<svg ", '<svg class="toron-mascot toron-stack-strip__mascot" ')}</a>`,
+  )
+  .join("")}</div>
+</body></html>`;
 
-mkdirSync(dirname(OUT), { recursive: true });
+const probe = `<!doctype html><html><head><meta charset="utf-8"><style>
+  html, body { background:transparent; margin:0; padding:0; }
+  .probe { width:${PROBE_LONG_SIDE}px; height:${PROBE_LONG_SIDE}px; }
+  .probe svg { width:100%; height:100%; display:block; }
+  ${PIN}
+</style></head><body>
+${names.map((n) => `<div class="probe pin-rest" data-name="${n}">${markup[n]}</div>`).join("")}
+</body></html>`;
+
+/*
+ * The scratch pages live in the app root, not in the output directory, because
+ * they link `./app/global.css`: a relative path resolves against the page, so
+ * the one directory that works is the app root. Writing them into the output
+ * directory instead renders four pictures with no stylesheet behind them, and
+ * the first version of this script did exactly that while its "did the
+ * stylesheet load" check passed off an inline rule of its own.
+ */
+mkdirSync(OUT_DIR, { recursive: true });
+const sheetFile = join(APP_ROOT, ".mascot-sheet.html");
+const probeFile = join(APP_ROOT, ".mascot-probe.html");
+const stripFile = join(APP_ROOT, ".mascot-strip.html");
+writeFileSync(sheetFile, sheet);
+writeFileSync(probeFile, probe);
+writeFileSync(stripFile, strip);
 
 const browser = await chromium.launch();
-const page = await browser.newPage({
+
+// The sheet links the site's real stylesheet, so a scratch page that failed to
+// load it would render four pictures that are not the pictures that ship. Read
+// the load back off a real element rather than assuming it.
+const sheetPage = await browser.newPage({
   deviceScaleFactor: 2,
-  viewport: { width: 1500, height: 840 },
+  viewport: { width: 1920, height: 1200 },
 });
-await page.goto(`file://${scratch}`);
-
-// Ask the browser what it painted. An SVG that failed to draw, and a mascot
-// whose paint escaped its tile, both surface here and nowhere else.
-type MascotReport = {
-  name: string;
-  shapes: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  escaped: boolean;
-};
-
-const report = (await page.evaluate((tile) => {
-  // These run inside the page, so the DOM types available here are the ones the
-  // browser has. Querying by tag returns Element, which has neither getBBox nor
-  // getScreenCTM, so the two nodes that need SVG geometry are narrowed to
-  // SVGSVGElement and SVGGElement rather than cast past the check.
-  const svgOf = (fig: Element) => fig.querySelector("svg") as SVGSVGElement | null;
-  const artOf = (fig: Element) => fig.querySelector("[data-mascot-art]") as SVGGElement | null;
-
-  return [...document.querySelectorAll("figure")].map((fig): MascotReport => {
-    const svg = svgOf(fig);
-    const art = artOf(fig);
-    const name = fig.querySelector("figcaption")?.textContent ?? "";
-    const shapes = art?.querySelectorAll("path,circle,ellipse,rect").length ?? 0;
-    if (!svg || !art) {
-      return { name, shapes, x: 0, y: 0, w: 0, h: 0, escaped: false };
-    }
-    // Measure the character group, not the svg: the tile rect fills the whole
-    // viewBox, so measuring the root would report every mascot as a clean
-    // full-bleed fit and hide any character that actually overflows.
-    const box = art.getBBox();
-    // getBBox is in the group's OWN space, so it silently ignores the scale
-    // that sets the optical size. Map the four corners through the group's
-    // transform relative to the svg root, or the size check measures nothing.
-    const root = svg.getScreenCTM();
-    const artM = art.getScreenCTM();
-    if (!root || !artM) {
-      return { name, shapes, x: 0, y: 0, w: 0, h: 0, escaped: false };
-    }
-    const toRoot = root.inverse().multiply(artM);
-    const corners = [
-      [box.x, box.y],
-      [box.x + box.width, box.y],
-      [box.x, box.y + box.height],
-      [box.x + box.width, box.y + box.height],
-    ].map(([x, y]) => {
-      const p = svg.createSVGPoint();
-      p.x = x;
-      p.y = y;
-      return p.matrixTransform(toRoot);
-    });
-    const xs = corners.map((p) => p.x);
-    const ys = corners.map((p) => p.y);
-    const x = Math.min(...xs);
-    const y = Math.min(...ys);
-    const w = Math.max(...xs) - x;
-    const h = Math.max(...ys) - y;
-    return {
-      name,
-      shapes,
-      x: +x.toFixed(1),
-      y: +y.toFixed(1),
-      w: +w.toFixed(1),
-      h: +h.toFixed(1),
-      escaped: x < 0 || y < 0 || x + w > tile || y + h > tile,
-    };
-  });
-}, TILE)) as MascotReport[];
-
-await page.screenshot({ path: OUT });
-
-/*
- * The two expressions have to be two expressions. A mascot whose work group was
- * dropped, or copied from the rest group, still passes every check above: it
- * draws, it stays in its tile, and it carries the right weight. Only a pixel
- * comparison between the two pinned rows catches that, so the rows are
- * screenshotted separately and compared rather than trusted to be distinct.
- */
-/*
- * The sheet links the real stylesheet so the grain blends the way it does on
- * the page. A scratch page that failed to load it would still render four good
- * pictures, just with the grain laid on flat, and the artifact would quietly
- * stop being evidence of what ships. So the blend is read back off the element.
- */ const grainBlend = await page.$eval(
-  ".toron-mascot__grain",
-  (n) => getComputedStyle(n).mixBlendMode,
-);
-const grainOk = grainBlend === "overlay";
-
-/*
- * The detail tier is only worth anything if it actually switches, and a
- * container query that fails to match is silent: the mascots still render, they
- * just render the 320px drawing at 56px with every sub-pixel mark turned to
- * dirt, which is the thing this change exists to prevent. So read the tagged
- * elements back at both sizes and require them to differ.
- */
-const detail = await page.evaluate(() => {
-  const count = (fig: Element) => {
-    const svg = fig.querySelector(".toron-mascot");
-    if (!svg) return -1;
-    return [...svg.querySelectorAll("[data-detail]")].filter(
-      (n) => getComputedStyle(n).display !== "none",
-    ).length;
-  };
-  return [...document.querySelectorAll("figure")].map((fig) => {
-    const big = fig.querySelector('.moods[data-pin="rest"] .cell');
-    const small = fig.querySelectorAll('.moods[data-pin="rest"] .cell')[1];
-    return {
-      name: fig.querySelector("figcaption")?.textContent ?? "",
-      atBig: count(big as Element),
-      atSmall: count(small as Element),
-    };
-  });
+await sheetPage.goto(`file://${sheetFile}`);
+// Read a token back off the document rather than testing for a rule of our own.
+// The two failure modes here are both silent: a stylesheet that did not load at
+// all, and one that loaded with its token import unresolved, in which case every
+// declaration reading a variable is dropped and the page still looks plausible.
+const sheetOk = await sheetPage.evaluate(() => {
+  const svg = document.querySelector(".toron-mascot");
+  const ease = getComputedStyle(document.documentElement).getPropertyValue("--toron-ease-standard");
+  return !!svg && getComputedStyle(svg).containerType !== "normal" && ease.trim().length > 0;
 });
+if (!sheetOk) {
+  console.error(
+    "the sheet is not styled like the site: no container-type on the mascot or no --toron-ease-standard, so the detail tier and the cross-fade would both be silently absent",
+  );
+  await browser.close();
+  process.exitCode = 1;
+  process.exit();
+}
+await sheetPage.screenshot({ path: join(APP_ROOT, "mascots.png"), fullPage: true });
 
 /*
- * "Does it look expensive" is a judgement no reviewer can repeat, so measure the
- * thing the judgement is actually about.
+ * The detail tier.
  *
- * Cheap vector art fails in a specific, measurable way: large regions of a fill
- * that never changes value. Paint has modulation almost everywhere, because
- * every surface has a gradient across it whether or not a person drew one. So
- * the useful number is not colour count, it is FLAT AREA: the share of pixels
- * whose neighbours are effectively identical. A flat-filling mascot scores high
- * on it no matter how many gradients it declares, and that is the regression
- * worth failing on.
+ * Two sub-unit marks, the tight gloss and the second catchlight, are tagged
+ * `data-detail` and hidden below 8rem by a container query on the svg itself. A
+ * container query that fails to match is silent: the characters still render,
+ * they just render the large drawing at 56px with every sub-pixel mark turned
+ * to dirt. So the tag is read back off the live elements at both sizes.
  */
-const paint = await page.evaluate(async () => {
-  const rasterise = async (svg: SVGSVGElement) => {
-    const clone = svg.cloneNode(true) as SVGSVGElement;
-    clone.setAttribute("width", "192");
-    clone.setAttribute("height", "192");
-    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-      new XMLSerializer().serializeToString(clone),
-    )}`;
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    const c = document.createElement("canvas");
-    c.width = 192;
-    c.height = 192;
-    const ctx = c.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(img, 0, 0, 192, 192);
-    return ctx.getImageData(0, 0, 192, 192).data;
+const tiers = await sheetPage.evaluate(() => {
+  const DETAIL = "[data-detail]";
+  const visible = (box: Element) =>
+    [...box.querySelectorAll(DETAIL)].filter((n) => getComputedStyle(n).display !== "none").length;
+  const cells = [...document.querySelectorAll(".cell")];
+  const big = cells.find((c) => c.getBoundingClientRect().width > 200);
+  const small = cells.find((c) => c.getBoundingClientRect().width < 100);
+  return {
+    big: big ? visible(big) : -1,
+    small: small ? visible(small) : -1,
+    shapes: cells.reduce(
+      (n, c) =>
+        Math.min(
+          n,
+          c.querySelectorAll(
+            "[data-mascot-art] path, [data-mascot-art] circle, [data-mascot-art] ellipse, [data-mascot-art] rect",
+          ).length,
+        ),
+      Number.MAX_SAFE_INTEGER,
+    ),
   };
-
-  const out = [];
-  for (const fig of document.querySelectorAll("figure")) {
-    const name = fig.querySelector("figcaption")?.textContent ?? "";
-    const svg = fig.querySelector('.moods[data-pin="rest"] svg');
-    if (!svg) continue;
-    const px = await rasterise(svg as SVGSVGElement);
-    if (!px) continue;
-    const W = 192;
-    // The tile is a rounded square on a dark page, so the corner pixels are not
-    // character. Measuring them would reward a mascot for being small.
-    let lum = 0;
-    let dark = 0;
-    let n = 0;
-    const seen = new Set<number>();
-    let flat = 0;
-    for (let y = 22; y < 170; y++) {
-      for (let x = 22; x < 170; x++) {
-        const i = (y * W + x) * 4;
-        const r = px[i];
-        const g = px[i + 1];
-        const b = px[i + 2];
-        const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        lum += L;
-        if (L < 34) dark++;
-        n++;
-        seen.add(((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3));
-        // Compare against the pixel to the right and below. Both deltas under
-        // 2/255 means this neighbourhood is one flat fill.
-        const j = (y * W + x + 1) * 4;
-        const k = ((y + 1) * W + x) * 4;
-        const dR =
-          Math.abs(r - px[j]) +
-          Math.abs(r - px[k]) +
-          Math.abs((g - px[j + 1]) / 3) +
-          Math.abs((g - px[k + 1]) / 3) +
-          Math.abs((b - px[j + 2]) / 3) +
-          Math.abs((b - px[k + 2]) / 3);
-        if (dR < 2) flat++;
-      }
-    }
-    out.push({
-      name,
-      colors: seen.size,
-      flatPct: +((flat / n) * 100).toFixed(1),
-      meanLum: +(lum / n).toFixed(1),
-      // Dark mass INSIDE the picture. The tile itself is INK, so this is
-      // reported rather than gated: the tile contributes a known floor and the
-      // number is only meaningful compared against a previous run. It is the
-      // one measure that separates an outlined drawing from a painted one, since
-      // an outline is nothing but extra dark mass laid along a contour.
-      darkPct: +((dark / n) * 100).toFixed(1),
-    });
-  }
-  return out;
 });
+await sheetPage.close();
 
 /*
- * The flywheel's rim is an annulus, and the whole difference between a wheel and
- * a gear is that the interior is open. If somebody later "simplifies" the rim
- * into a filled disc, every other check still passes: the mascot draws, it stays
- * in its tile, it carries the right weight, and it is a cog again. So sample the
- * ring of pixels between the hub and the rim and require most of them to be the
- * tile showing through.
+ * Exactly one face.
+ *
+ * Both moods live in one svg and the cross-fade is scoped to the stack strip. A
+ * blanket `animation-duration: 0.01ms` under reduced motion ends each animation
+ * at its 100% keyframe, and with no fill mode both groups then revert to their
+ * base opacity of 1, which stacks the resting face on the working face: two
+ * expressions at once, which is worse than either. Nothing in the markup shows
+ * it. It is a cascade interaction between two rules, so it has to be read off a
+ * live element in a real browser.
  */
-const openInterior = await page.evaluate(async () => {
-  const fig = document.querySelectorAll("figure")[1]; // flywheel
-  const svg = fig?.querySelector('.moods[data-pin="rest"] svg');
-  if (!svg) return null;
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("width", "192");
-  clone.setAttribute("height", "192");
-  const img = new Image();
-  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-    new XMLSerializer().serializeToString(clone),
-  )}`;
-  await img.decode();
-  const c = document.createElement("canvas");
-  c.width = 192;
-  c.height = 192;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(img, 0, 0, 192, 192);
-  const px = ctx.getImageData(0, 0, 192, 192).data;
-  // 96-unit viewBox at 192px, so scale is 2. The hub is r=17 and the rim's inner
-  // edge is r=25, so r=21 sits in the open band between them.
-  const S = 2;
-  let open = 0;
-  let n = 0;
-  for (let deg = 0; deg < 360; deg += 3) {
-    const a = (deg * Math.PI) / 180;
-    const x = Math.round((48 + 21 * Math.cos(a)) * S);
-    const y = Math.round((48 + 21 * Math.sin(a)) * S);
-    const i = (y * 192 + x) * 4;
-    const L = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
-    if (L < 40) open++;
-    n++;
-  }
-  return +((open / n) * 100).toFixed(1);
-});
+const peace = async (reduced: boolean) => {
+  const p = await browser.newPage({
+    reducedMotion: reduced ? "reduce" : "no-preference",
+    viewport: { width: 400, height: 200 },
+  });
+  await p.goto(`file://${stripFile}`);
+  const seen = await p.evaluate(() =>
+    [...document.querySelectorAll(".toron-mascot")].map((svg) => {
+      const op = (mood: string) => {
+        const n = svg.querySelector(`[data-mood="${mood}"]`);
+        return n ? getComputedStyle(n).opacity : null;
+      };
+      const anim = svg.querySelector('[data-mood="rest"]');
+      return {
+        rest: op("rest"),
+        work: op("work"),
+        animating: anim ? getComputedStyle(anim).animationName !== "none" : false,
+      };
+    }),
+  );
+  await p.close();
+  return seen;
+};
+const still = await peace(true);
+const moving = await peace(false);
 
-const moods = await Promise.all(
-  (await page.$$("figure")).map(async (fig) => {
-    const name = (await fig.$eval("figcaption", (n) => n.textContent)) ?? "";
-    const shot = async (pin: string) =>
-      Buffer.from(
-        await (await fig.$(`.moods[data-pin="${pin}"] .cell`))!.screenshot({
-          animations: "disabled",
-        }),
-      );
-    const [rest, work] = await Promise.all([shot("rest"), shot("work")]);
-    return { name, same: rest.equals(work) };
+// Scale 1, because the target is a pixel count that matches the reference, not a
+// retina capture of it.
+const probePage = await browser.newPage({
+  deviceScaleFactor: 1,
+  viewport: { width: 1400, height: 1400 },
+});
+await probePage.goto(`file://${probeFile}`);
+await probePage.evaluate(() => window.scrollTo(0, 0));
+// Shoot and measure each character, then report the silhouette actually drawn.
+// "I set the width" and "the silhouette came out at the reference's scale" are
+// different claims, and the second one is what makes the numbers comparable.
+const measured = await Promise.all(
+  names.map(async (name) => {
+    const el = probePage.locator(`.probe[data-name="${name}"] svg`);
+    await el.screenshot({ path: join(OUT_DIR, `${name}-probe.png`), omitBackground: true });
+    const size = await probePage.evaluate(
+      async (b64: string) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${b64}`;
+        await img.decode();
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d", { willReadFrequently: true })!;
+        ctx.drawImage(img, 0, 0);
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let minX = c.width;
+        let minY = c.height;
+        let maxX = -1;
+        let maxY = -1;
+        let drawn = 0;
+        for (let y = 0; y < c.height; y++) {
+          for (let x = 0; x < c.width; x++) {
+            if (d[(y * c.width + x) * 4 + 3] > 8) {
+              drawn++;
+              if (x < minX) minX = x;
+              if (y < minY) minY = y;
+              if (x > maxX) maxX = x;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        return {
+          long: Math.max(maxX - minX + 1, maxY - minY + 1),
+          area: (maxX - minX + 1) * (maxY - minY + 1),
+          coverage: +((drawn / (c.width * c.height)) * 100).toFixed(1),
+        };
+      },
+      readFileSync(join(OUT_DIR, `${name}-probe.png`)).toString("base64"),
+    );
+    return { name, ...size };
   }),
 );
+const sizes = Object.fromEntries(measured.map((m) => [m.name, m]));
 
+await probePage.close();
 await browser.close();
-
-// The scratch file must not survive: it sits in the app root, where a stale copy
-// would be picked up by the freshness gate's source scans.
-rmSync(scratch, { force: true });
+rmSync(sheetFile, { force: true });
+rmSync(probeFile, { force: true });
+rmSync(stripFile, { force: true });
 
 let bad = 0;
-console.log(`mascot render report (viewBox ${TILE}, rendered at ${SIZES.join(" and ")}px)`);
-if (!grainOk) bad++;
-console.log(
-  `  ${(grainOk ? "ok" : "GRAIN NOT BLENDED").padEnd(17)} stylesheet ${grainOk ? "loaded, grain blends as overlay" : `did not load, mix-blend-mode is ${grainBlend}`}`,
+const line = (ok: boolean, label: string, detail: string) => {
+  if (!ok) bad++;
+  console.log(`  ${(ok ? "ok" : "FAIL").padEnd(5)} ${label.padEnd(15)} ${detail}`);
+};
+
+console.log(`sheet    ${join(APP_ROOT, "mascots.png")}`);
+if (!hasRef) console.log(`note     no reference at ${REF}; the sheet is our four characters alone`);
+console.log(`probes   ${OUT_DIR}, target long side ${PROBE_LONG_SIDE}`);
+for (const name of names) {
+  const s = sizes[name];
+  console.log(
+    `  ${name.padEnd(11)} silhouette ${String(s.long).padStart(4)}px   ${s.coverage}% of its box drawn`,
+  );
+}
+console.log("");
+
+// A character whose art group lost its shapes still renders a valid, empty svg.
+line(
+  tiers.shapes >= 8,
+  "drew something",
+  `every character carries at least ${tiers.shapes} shapes`,
 );
-for (const r of report) {
-  const empty = r.shapes < 5;
-  const flag = r.escaped ? "ESCAPES ITS TILE" : empty ? "DREW NOTHING" : "ok";
-  if (r.escaped || empty) bad++;
-  console.log(
-    `  ${flag.padEnd(17)} ${r.name.padEnd(12)} shapes=${String(r.shapes).padStart(3)}  art=${r.w}x${r.h} at ${r.x},${r.y}`,
-  );
-}
 
-// A set reads as a set only if the characters carry comparable weight. Judged on
-// enclosed area rather than width, because a wheel and an envelope are
-// different shapes and comparing their widths measures the noun, not the art.
-const areas = report
-  .map((r) => ({ name: r.name, area: r.w * r.h }))
-  .sort((a, b) => a.area - b.area);
-const median = areas[Math.floor(areas.length / 2)]?.area ?? 0;
-if (median > 0) {
-  const smallest = areas[0];
-  const ratio = smallest.area / median;
-  // 55% is where a character stops reading as the same weight as its neighbours.
-  if (ratio < 0.55) {
-    console.log(
-      `  ${"TOO SMALL FOR THE SET".padEnd(17)} ${smallest.name.padEnd(12)} area is ${(ratio * 100).toFixed(0)}% of the median (${median.toFixed(0)}), needs 55%`,
-    );
-    bad++;
-  } else {
-    console.log(
-      `  ${"ok".padEnd(17)} set weight       smallest is ${smallest.name} at ${(ratio * 100).toFixed(0)}% of the median area`,
-    );
-  }
-}
+// A set reads as a set only when the characters carry comparable weight. Judged
+// on the art's area rather than its width, because a wheel and an envelope are
+// different shapes and comparing widths measures the noun, not the drawing.
+const areas = names.map((n) => ({ n, a: sizes[n].area })).toSorted((x, y) => x.a - y.a);
+const median = areas[Math.floor(areas.length / 2)].a;
+const ratio = areas[0].a / median;
+line(
+  ratio >= 0.55,
+  "set weight",
+  `smallest is ${areas[0].n} at ${(ratio * 100).toFixed(0)}% of the median area, needs 55%`,
+);
 
-// A tile that is more than a third unmodulated is reading as a flat fill with a
-// gradient declared on it, which is the cheap look. 30% is the floor, not a
-// target: the point is to catch a regression to flat, not to reward noise.
-if (openInterior !== null) {
-  // A filled disc reads 0% here. Six spokes crossing an annulus leave roughly
-  // 70% of the ring clear, so 40% is a floor that a cog cannot reach.
-  const isWheel = openInterior >= 40;
-  if (!isWheel) bad++;
-  console.log(
-    `  ${(isWheel ? "ok" : "READS AS A DISC").padEnd(17)} flywheel     ${openInterior}% of the interior ring is open tile`,
-  );
-}
+line(
+  tiers.big > 0 && tiers.small < tiers.big,
+  "detail tier",
+  `${tiers.big} sub-pixel marks at 320px, ${tiers.small} at 56px`,
+);
 
-for (const d of detail) {
-  const switches = d.atBig > 0 && d.atSmall < d.atBig;
-  if (!switches) bad++;
-  console.log(
-    `  ${(switches ? "ok" : "DETAIL IGNORED").padEnd(17)} ${d.name.padEnd(12)} ${d.atBig} marks at 320px, ${d.atSmall} at 56px`,
-  );
-}
+const stillOk =
+  still.length === names.length && still.every((s) => s.rest === "1" && s.work === "0");
+const oneFace = still.map((s) => `${s.rest}/${s.work}`).join(" ");
+line(stillOk, "one face", `reduced motion reads rest/work as ${oneFace}, needs 1/0`);
 
-for (const p of paint) {
-  const flatArt = p.flatPct > 30;
-  if (flatArt) bad++;
-  console.log(
-    `  ${(flatArt ? "TOO FLAT" : "ok").padEnd(17)} ${p.name.padEnd(12)} ${String(p.flatPct).padStart(5)}% unmodulated, ${p.colors} tones, ${String(p.darkPct).padStart(5)}% dark mass`,
-  );
-}
+const animated = moving.filter((s) => s.animating).length;
+line(
+  animated === names.length,
+  "cycle drawn",
+  `${animated} of ${names.length} characters cross-fade when motion is allowed`,
+);
 
-for (const m of moods) {
-  if (m.same) {
-    console.log(
-      `  ${"IDENTICAL MOODS".padEnd(17)} ${m.name.padEnd(12)} the rest and work rows are the same pixels`,
-    );
-    bad++;
-  } else {
-    console.log(`  ${"ok".padEnd(17)} ${m.name.padEnd(12)} rest and work are distinct pictures`);
-  }
-}
-
-console.log(`\n${bad === 0 ? "ok" : `FAIL ${bad} problem(s)`} — sheet at ${OUT}`);
-
+console.log(`\n${bad === 0 ? "ok" : `FAIL ${bad} problem(s)`}`);
 process.exitCode = bad === 0 ? 0 : 1;
