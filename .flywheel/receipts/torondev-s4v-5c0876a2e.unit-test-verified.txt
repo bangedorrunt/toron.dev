@@ -1,0 +1,19 @@
+bead: torondev-s4v
+sha: 5c0876a2e81a3b1e93ac43c1379f3b7949a4bddb
+gate: unit-test-verified
+command: cd apps/toron-dev && bun scripts/render-mascots.tsx
+exit: 0
+---
+mascot render report (viewBox 96, rendered at 320 and 56px)
+  ok                stylesheet loaded, grain blends as overlay
+  ok                toron        shapes= 39  art=76.6x63.2 at 9.7,29.4
+  ok                flywheel     shapes= 60  art=72x77.5 at 12,13
+  ok                beads        shapes= 40  art=62x78.5 at 17,14
+  ok                chiebukuro   shapes= 55  art=56x77.5 at 20,7
+  ok                set weight       smallest is chiebukuro at 89% of the median area
+  ok                toron        rest and work are distinct pictures
+  ok                flywheel     rest and work are distinct pictures
+  ok                beads        rest and work are distinct pictures
+  ok                chiebukuro   rest and work are distinct pictures
+
+ok — sheet at /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/mascots.png
