@@ -1,0 +1,12 @@
+bead: torondev-z50
+sha: aadc408c7e1ff5c6518f896830da6306f9e8801f
+gate: unit-test-verified
+command: cd apps/toron-dev && node scripts/check-freshness.mjs
+exit: 0
+---
+summary: 1 pinned catalog(s), 17 canonical source entries, 4 plane(s), 44 projected guide(s), 4 origin/sitemap/markdown/component check(s), 0 skip(s), green
+---
+projected files byte-identical to upstream:
+  toron/workflow-engine.mdx identical
+  flywheel/cli-reference.mdx identical
+  flywheel/workflows.mdx identical
