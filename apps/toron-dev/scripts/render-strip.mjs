@@ -22,11 +22,20 @@
  * four files from disk and renders them through the real CSS, which is what keeps the
  * art checks runnable with no server.
  *
- * Three checks at the bottom read the **build output** rather than the browser: the
- * runtime split (the docs must not reference the animation chunk), the morph names
- * (one per slug per page, declared once in the stylesheet), and the social card. Each
- * prints `skipped` and says why when there is no build to read, so a run without one
- * is visibly incomplete instead of quietly green.
+ * Past the art, three families of checks that are not about the drawing at all:
+ *
+ *   depth    the five scroll- and view-timeline rules, read as computed styles off
+ *            the real stylesheet, and read again in a reduced-motion browser where
+ *            every one of them has to come back `none`
+ *   build    read from `.next`: the runtime split (the docs must not reference the
+ *            animation chunk), the morph names (one per slug per page, declared once
+ *            in the stylesheet), and the social card
+ *   live     read from a running `next start`: the icon links the head emits and the
+ *            files behind them, the morph on a real click, and the particle canvas
+ *            drawing while it is on screen and stopped once it is not
+ *
+ * The last two print `skipped` and say why when there is no build, or no server, to
+ * read, so a run without them is visibly incomplete instead of quietly green.
  *
  * The markup below is the strip's shape copied from components/site-content.tsx,
  * because the checks read real class names out of the real stylesheet. If the
@@ -209,6 +218,15 @@ ${LADDER.map((s) => `  <h2>${s}px${s === BOX ? " · shipped" : ""}</h2>\n  ${str
 <div class="zoom">${PLANES.map(frame).join("")}</div>
 <div class="gap"></div>
 ${placements()}
+<div class="gap"></div>
+<h1>depth · <b>the field, the grid, and the band that answer the scroll</b></h1>
+<div class="toron-bg" id="depth"><div class="toron-bg__field"></div><div class="toron-bg__grid"></div></div>
+<div id="cta-depth">
+  <div class="toron-cta">
+    <canvas class="toron-cta__particles"></canvas>
+    <div><h2>The band, with the canvas the app puts in it</h2><p>Depth is the one effect the sheet can hold still.</p></div>
+  </div>
+</div>
 </body></html>`;
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -465,6 +483,66 @@ line(
   `the drift layer is ${placed.layerDisplay} and ${placed.layer.join("x")}, exactly the art's box`,
 );
 
+/* ------------------------------------------------------------------ depth */
+
+/*
+ * The depth effects are not a component: the two background layers ride a scroll
+ * timeline and the two blooms ride their own visibility. All four are pure CSS, and
+ * the failure they have is silent — a misspelled keyframe name leaves the rule in
+ * place and the page still — so they are read as computed styles off the real
+ * stylesheet rather than trusted to the source text.
+ *
+ * `@supports` is why the expectation is a pair of alternatives rather than a
+ * constant: in a browser without scroll timelines the declarations are dropped and
+ * the names read `none`, which is the intended behaviour and not a failure. The gap
+ * between `none` and the name is what is being checked; which side of it this
+ * browser lands on is reported.
+ *
+ * The canvas rule is checked here too, and the interesting half is its position in
+ * the cascade: `.toron-cta > *` sets `position: relative` on every child of the band,
+ * so the rule that puts the canvas behind the copy only wins because it is written
+ * after it. Computed `absolute` is that order holding.
+ */
+const depth = await one.evaluate(() => {
+  const anim = (el, pseudo) => {
+    const style = getComputedStyle(el, pseudo);
+    return { name: style.animationName, timeline: style.animationTimeline };
+  };
+  const particles = getComputedStyle(document.querySelector("#cta-depth .toron-cta__particles"));
+  return {
+    scrollTimeline: CSS.supports("animation-timeline: scroll()"),
+    viewTimeline: CSS.supports("animation-timeline: view()"),
+    field: anim(document.querySelector("#depth .toron-bg__field")),
+    grid: anim(document.querySelector("#depth .toron-bg__grid")),
+    bloom: anim(document.querySelector("#cta-depth .toron-cta"), "::before"),
+    particles: {
+      position: particles.position,
+      zIndex: particles.zIndex,
+      pointerEvents: particles.pointerEvents,
+    },
+  };
+});
+line(
+  !depth.scrollTimeline ||
+    (depth.field.name === "toron-depth-field" && depth.grid.name === "toron-depth-grid"),
+  "scroll depth",
+  depth.scrollTimeline
+    ? `the field runs ${depth.field.name} and the grid ${depth.grid.name} on ${depth.field.timeline}`
+    : "no scroll timeline in this browser, so the @supports block drops and the page is still",
+);
+line(
+  !depth.viewTimeline || depth.bloom.name === "toron-depth-bloom",
+  "view depth",
+  depth.viewTimeline
+    ? `the band's bloom runs ${depth.bloom.name} on ${depth.bloom.timeline}`
+    : "no view timeline in this browser, so the blooms drop and the page is still",
+);
+line(
+  depth.particles.position === "absolute" && depth.particles.zIndex === "0",
+  "canvas behind copy",
+  `the particle canvas computes ${depth.particles.position} z-${depth.particles.zIndex} with pointer-events ${depth.particles.pointerEvents}, so it sits under the band's copy and takes no clicks`,
+);
+
 /*
  * The sheet's copy of the plane list is checked against the module that owns it.
  * Every number and name below is otherwise read off a copy, and a copy that drifts
@@ -505,6 +583,10 @@ const calm = await calmPage.evaluate(() => ({
     .animationName,
   strip: getComputedStyle(document.querySelector("#strip .toron-stack-strip__mascot"))
     .transitionDuration,
+  field: getComputedStyle(document.querySelector("#depth .toron-bg__field")).animationName,
+  grid: getComputedStyle(document.querySelector("#depth .toron-bg__grid")).animationName,
+  bloom: getComputedStyle(document.querySelector("#cta-depth .toron-cta"), "::before")
+    .animationName,
 }));
 await calmPage.close();
 line(
@@ -512,10 +594,11 @@ line(
   "mark arrival",
   `the plane mark runs ${arrival.name} over ${arrival.duration}`,
 );
+const quietDepth = [calm.field, calm.grid, calm.bloom].every((name) => name === "none");
 line(
-  calm.arrival === "none" && Number.parseFloat(calm.strip) < 0.05,
+  calm.arrival === "none" && Number.parseFloat(calm.strip) < 0.05 && quietDepth,
   "reduced motion",
-  `with reduce: arrival ${calm.arrival}, strip hover transition ${calm.strip} (the pointer physics are gated in the component)`,
+  `with reduce: arrival ${calm.arrival}, strip hover transition ${calm.strip}, depth ${[calm.field, calm.grid, calm.bloom].join("/")} (the pointer physics are gated in the component)`,
 );
 
 /*
@@ -637,6 +720,318 @@ if (!existsSync(join(BUILD, "server", "app", "index.html")) || !motionChunk) {
   }
 }
 
+/* --------------------------------------------------------------- live site */
+
+/*
+ * The three things a `file://` sheet cannot show, because they need the app running:
+ * the head's icon links and the files behind them, the morph on a real click, and the
+ * particle canvas drawing in a real browser tab.
+ *
+ * They need the built app on a server. With nothing answering they print `skipped`,
+ * in the same voice as the build-output checks, so a run without a server is visibly
+ * incomplete rather than quietly green.
+ */
+const ORIGIN = process.env.TORON_STRIP_ORIGIN ?? "http://127.0.0.1:3111";
+const serving = await fetch(ORIGIN, { signal: AbortSignal.timeout(2000) })
+  .then((response) => response.ok)
+  .catch(() => false);
+
+if (!serving) {
+  unchecked = true;
+  console.log(
+    `  skipped live site  nothing answered at ${ORIGIN}, so the icon links, the click-path morph, and the canvas gates were NOT checked (start one with \`bunx next start -p 3111\`)`,
+  );
+} else {
+  /*
+   * The icon set, as the browser sees it: what the head links, and what those links
+   * actually load. Both halves matter and only one of them is visible in the source —
+   * the apple touch icon was building and being served for as long as the layout
+   * declared an `icons` field, because Next merges a segment's convention icons only
+   * when that field is absent.
+   */
+  const iconPage = await browser.newPage();
+  await iconPage.goto(`${ORIGIN}/`, { waitUntil: "domcontentloaded" });
+  const icons = await iconPage.evaluate(async () => {
+    const href = (rel, match) =>
+      [...document.querySelectorAll(`link[rel="${rel}"]`)]
+        .map((link) => link.getAttribute("href"))
+        .find((value) => value && (!match || value.includes(match))) ?? null;
+    const load = (src) =>
+      new Promise((resolve) => {
+        const image = new Image();
+        image.addEventListener("load", () => resolve([image.naturalWidth, image.naturalHeight]), {
+          once: true,
+        });
+        image.addEventListener("error", () => resolve(null), { once: true });
+        image.src = src;
+      });
+    const manifestHref = document.querySelector('link[rel="manifest"]')?.getAttribute("href");
+    const manifest = manifestHref ? await (await fetch(manifestHref)).json() : null;
+    const svg = href("icon", ".svg");
+    const ico = href("icon", ".ico");
+    const apple = href("apple-touch-icon");
+    return {
+      svg,
+      ico,
+      apple,
+      manifest,
+      sizes: {
+        svg: svg ? await load(svg) : null,
+        ico: ico ? await load(ico) : null,
+        apple: apple ? await load(apple) : null,
+        png: manifest ? await Promise.all(manifest.icons.map((icon) => load(icon.src))) : [],
+      },
+    };
+  });
+  await iconPage.close();
+
+  const sized = (box, [w, h]) => Boolean(box) && box[0] === w && box[1] === h;
+  const frameNote = (count) =>
+    count > 0
+      ? `${count} frame(s) over 500ms after the transition, so the page is ticking again`
+      : "no frames over 500ms after the transition: the page's rendering stayed held, which freezes every rAF animation on it";
+  // An svg with a viewBox and no width/height has no intrinsic size: Chrome
+  // decodes it at its 150x150 default, whatever the drawing scales to. So the
+  // assertion is that it loads and is square, not that it is any particular size.
+  const square = (box) => Boolean(box) && box[0] === box[1];
+  line(
+    Boolean(icons.svg) && Boolean(icons.ico),
+    "favicon links",
+    `the head links ${icons.svg ?? "no svg"} and ${icons.ico ?? "no ico"}`,
+  );
+  line(
+    square(icons.sizes.svg) && sized(icons.sizes.ico, [256, 256]),
+    "favicon files",
+    `the svg loads square at ${icons.sizes.svg?.join("x")} (a viewBox and no width, so the decoded box is the browser's default) and the ico at its largest entry, ${icons.sizes.ico?.join("x")}`,
+  );
+  line(
+    sized(icons.sizes.apple, [180, 180]),
+    "apple touch icon",
+    icons.apple
+      ? `the head links ${icons.apple}, served at ${icons.sizes.apple?.join("x")}`
+      : "no apple-touch-icon in the head: iOS falls back to a screenshot of the page",
+  );
+  line(
+    icons.manifest?.theme_color === "#08090a" &&
+      icons.manifest?.background_color === "#08090a" &&
+      icons.sizes.png.length === 2 &&
+      sized(icons.sizes.png[0], [192, 192]) &&
+      sized(icons.sizes.png[1], [512, 512]),
+    "manifest",
+    icons.manifest
+      ? `${icons.manifest.name} · theme ${icons.manifest.theme_color} · icons ${icons.sizes.png.map((box) => box?.join("x")).join(" and ")}`
+      : "no manifest link in the head, so a phone installs the page as a shortcut with no icon",
+  );
+
+  /*
+   * The morph on the click path, which is the claim ADR-0009 D5 recorded as
+   * unproven for an in-app navigation. The page patches `document.startViewTransition`
+   * before hydration, so what is counted is the app's own call and not a transition
+   * the browser started for some other reason.
+   *
+   * Three things are read off it, and all three have been wrong at some point:
+   *
+   *   ready/finished settled  a transition whose callback never settles sits pending
+   *                           forever, and while it does, rendering is held: the page
+   *                           stops painting and every rAF animation on it freezes.
+   *                           Counting the call alone would have called that a pass.
+   *   group animations        the animations are transient, so they are sampled on a
+   *                           timer for the duration. Frames will not do: rAF is
+   *                           paused while a transition is pending.
+   *   frames afterwards       the freeze is the failure mode that outlives the click,
+   *                           so the page has to be ticking again once it is over.
+   */
+  const docs = await browser.newPage();
+  await docs.addInitScript(() => {
+    const original = document.startViewTransition?.bind(document);
+    if (!original) return;
+    window.morphProbe = { calls: [], ready: "none", finished: "none", groups: [] };
+    document.startViewTransition = (callback) => {
+      window.morphProbe.calls.push(location.pathname);
+      const transition = original(callback);
+      transition.ready.then(
+        () => {
+          window.morphProbe.ready = "settled";
+        },
+        (error) => {
+          window.morphProbe.ready = `rejected: ${error.message}`;
+        },
+      );
+      transition.finished.then(
+        () => {
+          window.morphProbe.finished = "settled";
+        },
+        (error) => {
+          window.morphProbe.finished = `rejected: ${error.message}`;
+        },
+      );
+      const sample = setInterval(() => {
+        for (const animation of document.getAnimations()) {
+          const pseudo = String(animation.effect?.pseudoElement ?? "");
+          if (
+            pseudo.startsWith("::view-transition") &&
+            !window.morphProbe.groups.includes(pseudo)
+          ) {
+            window.morphProbe.groups.push(pseudo);
+          }
+        }
+      }, 20);
+      setTimeout(() => clearInterval(sample), 4000);
+      return transition;
+    };
+  });
+  await docs.goto(`${ORIGIN}/docs`, { waitUntil: "networkidle" });
+  const tile = docs.locator(".toron-plane-row__item").first();
+  const target = await tile.getAttribute("href");
+  await tile.hover();
+  await docs.waitForTimeout(150); // the enhancer's prefetch, as a reader's pause would give it
+  await tile.click();
+  await docs
+    .waitForFunction(() => window.morphProbe?.finished !== "none", null, {
+      timeout: 5000,
+      // The same reason as the sampling above, one level up: a frame-polled wait
+      // does not advance while the transition it is waiting for is pending.
+      polling: 50,
+    })
+    .catch(() => {});
+  await docs
+    .waitForURL((url) => url.pathname !== "/docs", { timeout: 4000, polling: 50 })
+    .catch(() => {});
+  const landed = await docs.evaluate(async () => {
+    // Frames over half a second, as the proof that the transition did not leave
+    // the page frozen behind it.
+    const frames = await new Promise((resolve) => {
+      let ticks = 0;
+      const tick = () => {
+        ticks++;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      setTimeout(() => resolve(ticks), 500);
+    });
+    return {
+      calls: window.morphProbe?.calls ?? [],
+      ready: window.morphProbe?.ready ?? "none",
+      finished: window.morphProbe?.finished ?? "none",
+      groups: window.morphProbe?.groups ?? [],
+      frames,
+      path: location.pathname,
+    };
+  });
+  await docs.close();
+  const slug = target?.replace("/docs/", "") ?? "";
+  const named = landed.groups.filter((pseudo) => pseudo.includes(`(${slug}`));
+  line(
+    landed.calls.length === 1 && landed.path === target,
+    "morph on click",
+    `one startViewTransition on ${landed.calls.join("/") || "nothing"}, landed on ${landed.path} (the tile points at ${target})`,
+  );
+  line(
+    landed.ready === "settled" && landed.finished === "settled" && landed.groups.length > 0,
+    "morph plays",
+    landed.groups.length > 0
+      ? `ready and finished both settled, with ${landed.groups.length} transition animation(s) sampled, ${named.length ? named.join(", ") : "none named for the character"}`
+      : `ready ${landed.ready}, finished ${landed.finished}, and no view-transition animation was ever sampled: the click pushed the route without morphing anything`,
+  );
+  line(landed.frames > 0, "page still ticks", frameNote(landed.frames));
+
+  /*
+   * The canvas, in a real tab: it has to draw while the band is on screen, and it has
+   * to have stopped once the band is not. The stopped half is the one an eager
+   * implementation fails, and it is checkable exactly — a cancelled frame loop leaves
+   * the last frame on the canvas, so two readings taken away from the band have to
+   * agree exactly. The running half cannot be that strict (a frame is a moment, not a
+   * value), so it asks for a changed reading and reports the totals it saw.
+   */
+  const homePage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await homePage.goto(`${ORIGIN}/`, { waitUntil: "networkidle" });
+  const field = await homePage.evaluate(async () => {
+    const canvas = document.querySelector(".toron-cta__particles");
+    if (!canvas) return null;
+    const context = canvas.getContext("2d");
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    // The painted count says the field is there; the alpha total says whether the
+    // frame changed. Summing every alpha is the cheap reading of the whole buffer:
+    // sub-pixel motion moves it through anti-aliasing alone, so a still frame and a
+    // running one cannot look the same.
+    const ink = () => {
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let painted = 0;
+      let sum = 0;
+      for (let i = 3; i < data.length; i += 4) {
+        sum += data[i];
+        if (data[i] > 0) painted++;
+      }
+      return { painted, sum };
+    };
+    canvas.scrollIntoView({ block: "center" });
+    await wait(700); // a beat for the observer to arrive and the field to fill
+    const onScreen = ink();
+    await wait(400);
+    const later = ink();
+    window.scrollTo(0, 0);
+    await wait(800); // out of view, and past the 140px margin the observer starts on
+    const away = ink();
+    await wait(400);
+    const awayLater = ink();
+    return {
+      box: [canvas.width, canvas.height],
+      dpr: window.devicePixelRatio,
+      onScreen,
+      later,
+      away,
+      awayLater,
+      base: canvas.width === 300 && canvas.height === 150,
+    };
+  });
+  const still = await browser.newPage({
+    reducedMotion: "reduce",
+    viewport: { width: 1280, height: 800 },
+  });
+  await still.goto(`${ORIGIN}/`, { waitUntil: "networkidle" });
+  const quiet = await still.evaluate(async () => {
+    const canvas = document.querySelector(".toron-cta__particles");
+    if (!canvas) return null;
+    canvas.scrollIntoView({ block: "center" });
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const { data } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+    let painted = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) painted++;
+    return { painted, box: [canvas.width, canvas.height] };
+  });
+  await Promise.all([homePage.close(), still.close()]);
+
+  const drew = field ? Math.max(field.onScreen.painted, field.later.painted) : 0;
+  line(
+    Boolean(field) && drew > 0 && !field.onScreen.base,
+    "canvas draws",
+    field
+      ? `${drew} painted pixel(s) in a ${field.box.join("x")} canvas on screen at dpr ${field.dpr}, so it is the field and not an untouched 300x150 element`
+      : "no .toron-cta__particles canvas on the home page",
+  );
+  line(
+    Boolean(field) && field.onScreen.sum !== field.later.sum,
+    "canvas animates",
+    field
+      ? `the frame changed between two readings 400ms apart while on screen (${field.onScreen.painted} painted pixels, alpha total ${field.onScreen.sum} → ${field.later.sum})`
+      : "nothing to animate",
+  );
+  line(
+    Boolean(field) && field.away.sum === field.awayLater.sum,
+    "canvas stops",
+    field
+      ? `scrolled away it held still: two readings 400ms apart are byte-identical, alpha total ${field.away.sum}, with the last frame's ${field.away.painted} painted pixel(s) left on the canvas`
+      : "nothing to stop",
+  );
+  line(
+    Boolean(quiet) && quiet.painted === 0,
+    "canvas honours reduce",
+    quiet
+      ? `under reduce the canvas is never sized or drawn: ${quiet.painted} painted pixel(s) in a ${quiet.box.join("x")} canvas`
+      : "no canvas to check",
+  );
+}
+
 const shots = await Promise.all(
   pages.map(async ({ scale, shot }) => {
     const file = join(OUT_DIR, scale === 1 ? "strip.png" : `strip@${scale}x.png`);
@@ -651,7 +1046,7 @@ rmSync(pageFile, { force: true });
 console.log(`  sheets    ${shots.join("\n            ")}\n`);
 console.log(
   bad === 0
-    ? `  all checks passed on 4 characters across ${CENSUS.length} placement(s)${unchecked ? ", with the build-output checks SKIPPED because no build was there to read (run `bun run build` first)" : ""}; the artwork and the size are judged by eye at the sheets above\n`
+    ? `  all checks passed on 4 characters across ${CENSUS.length} placement(s)${unchecked ? ", with the build-output and/or live-site checks SKIPPED (see the skipped lines above; `bun run build` and `bunx next start -p 3111` cover them)" : ""}; the artwork and the size are judged by eye at the sheets above\n`
     : `  ${bad} check(s) failed\n`,
 );
 process.exitCode = bad === 0 ? 0 : 1;

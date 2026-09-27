@@ -186,6 +186,18 @@ function PlaneRow() {
   );
 }
 
+/**
+ * The morph enhancer renders nothing into the document, so its Markdown form is
+ * nothing. It is here because the freshness gate requires every component used in
+ * content to declare a form: without one, MDX serializes the tag verbatim into the
+ * text `get_page`, `/docs/:slug.md` and `/llms-full.txt` serve, and `null` is the
+ * honest serialization of a component with no visual output at all.
+ */
+function MorphNav() {
+  asMarkdown();
+  return null;
+}
+
 /** Two-column rows as a Markdown table, which is how a key/value list reads. */
 function ApiSurface({ rows }: { rows: [string, string][] }) {
   asMarkdown();
@@ -212,6 +224,7 @@ export const markdownComponents = {
   Fail,
   FigureCaption,
   LoopSurface,
+  MorphNav,
   PlaneMark,
   PlaneRow,
   Step,

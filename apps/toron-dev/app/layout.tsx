@@ -112,7 +112,18 @@ export const metadata: Metadata = {
       "Signed mail, orchestration, work evidence, and memory for autonomous multi-agent workflows.",
     images: ["/opengraph-image"],
   },
-  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
+  // governed-by: ADR-0010 D6
+  // The whole set, declared rather than left to the file conventions: Next only
+  // merges a segment's convention icons when this field is absent, so declaring
+  // `icon` alone silently dropped the apple touch icon `app/apple-icon.png` was
+  // building. `favicon.ico` still arrives from the convention either way.
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
   other: { "theme-color": "#08090a" },
 };
 

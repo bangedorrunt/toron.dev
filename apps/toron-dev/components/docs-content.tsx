@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { PLANES, PLANE_BY_SLUG, type PlaneSlug } from "@/lib/planes";
 
 /*
@@ -23,6 +22,11 @@ import { PLANES, PLANE_BY_SLUG, type PlaneSlug } from "@/lib/planes";
  * which the marketing pages import and the docs never touch. `scripts/render-strip.mjs`
  * checks the result — it reads the built HTML for `/docs/toron` and fails if the
  * motion chunk is in it.
+ *
+ * ADR-0010 D4 adds one client island back onto the docs **index** — `MorphNav`, which
+ * wraps the tile click in a view transition — and that is placed by the page, next to
+ * `<PlaneRow />`, rather than imported from here. The index pays about a kilobyte for
+ * it and the four plane pages it opens pay nothing, which is the split that matters.
  */
 
 /* -------------------------------------------------------------- walkthrough */
@@ -226,12 +230,19 @@ export function PlaneMark({ slug, morph = false }: { slug: PlaneSlug; morph?: bo
  * thing in text, and the text is still here — each tile prints the plane's name and
  * what it owns — but the row is also the door into the four pages, so the set is
  * navigable rather than described.
+ *
+ * The tiles are **plain anchors**, not `next/link`. Two reasons, and they agree: the
+ * router would intercept the click and race `MorphNav`, which is what wraps the click
+ * in a view transition (ADR-0010 D4); and with no JavaScript at all, a plain anchor
+ * performs a real document navigation, which is the path the cross-document view
+ * transition already morphs. The enhancement is faster, and its absence is not a
+ * broken state.
  */
 export function PlaneRow({ morph = false }: { morph?: boolean }) {
   return (
     <div className="toron-plane-row">
       {PLANES.map((plane) => (
-        <Link key={plane.slug} href={plane.docs} className="toron-plane-row__item">
+        <a key={plane.slug} href={plane.docs} className="toron-plane-row__item">
           <Image
             src={plane.art}
             alt=""
@@ -241,7 +252,7 @@ export function PlaneRow({ morph = false }: { morph?: boolean }) {
           />
           <span className="toron-plane-row__name">{plane.name}</span>
           <span className="toron-plane-row__owns">{plane.owns}</span>
-        </Link>
+        </a>
       ))}
     </div>
   );

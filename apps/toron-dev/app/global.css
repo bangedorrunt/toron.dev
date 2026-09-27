@@ -371,6 +371,86 @@ summary:focus-visible {
 }
 
 /*
+ * Depth: the layers behind the content move at their own speed.
+ *
+ * Parallax is a cheap effect with an expensive reputation, because it is usually
+ * built by reading `scrollY` in a listener and writing transforms back onto the
+ * page. That version costs a main-thread callback per frame, and it is wrong the
+ * moment the reader uses a trackpad's momentum, a scrollbar drag, or the find bar.
+ *
+ * `animation-timeline: scroll(root block)` maps the animation's progress onto the
+ * scroller's position instead, so the browser drives it from work it was already
+ * doing. There is no listener, no rAF, no JavaScript, and it is exact at every
+ * scroll velocity. The progress is linear by definition, hence `linear` as the
+ * timing function: easing a scroll-linked animation makes the page and the layer
+ * disagree about where they are.
+ *
+ * Both parallax layers are decoration behind the content — the fixed field and grid
+ * that paint the page's background — and neither is on screen at a size where the
+ * shift could be mistaken for the page itself moving. The blooms that belong to a
+ * figure are linked to that figure's own progress through the viewport, so they
+ * trail the card they sit behind rather than the document.
+ *
+ * Firefox has no scroll-driven animations and needs none: without the at-rule
+ * nothing animates and both layers sit exactly where the static rules put them.
+ */
+@supports (animation-timeline: scroll()) {
+  .toron-bg__field {
+    animation: toron-depth-field linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  .toron-bg__grid {
+    animation: toron-depth-grid linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .toron-home__figure::before,
+  .toron-cta::before {
+    animation: toron-depth-bloom linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+/*
+ * The field is the page's top glow: it recedes as the reader leaves it. The grid
+ * is the floor: it slides the other way, which is what makes the page read as a
+ * surface being moved over rather than an image being scaled.
+ */
+@keyframes toron-depth-field {
+  from {
+    transform: translateY(-2%) scale(1);
+  }
+
+  to {
+    transform: translateY(8%) scale(1.06);
+  }
+}
+
+@keyframes toron-depth-grid {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-5%);
+  }
+}
+
+@keyframes toron-depth-bloom {
+  from {
+    transform: translateY(16px) scale(0.96);
+  }
+
+  to {
+    transform: translateY(-16px) scale(1.03);
+  }
+}
+
+/*
  * A reader who asked for less motion gets none of it, including the reveals.
  * Without this block a reduced-motion browser would still get the scroll-linked
  * animation, because `animation-duration` is not what a scroll timeline reads.
@@ -2297,6 +2377,27 @@ summary:focus-visible {
 }
 
 /*
+ * The dust field in the closing call to action.
+ *
+ * `position: absolute` has to win over `.toron-cta > *`, which gives every direct
+ * child `position: relative`, so this rule lives after that one. Written before it,
+ * the canvas would be a block in the band's flex row, `height: 100%` would resolve
+ * against an auto-height parent to the canvas default of 150px, and the band would
+ * grow by a canvas nobody can see.
+ *
+ * It is first in the markup so it paints under the copy, and `z-index: 0` keeps the
+ * stacking order explicit rather than a consequence of document order.
+ */
+.toron-cta__particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/*
  * The character effects, switched off for a reader who asked for less motion.
  *
  * This block sits here, at the end of the section that introduces the effects,
@@ -2312,6 +2413,22 @@ summary:focus-visible {
  */
 @media (prefers-reduced-motion: reduce) {
   .toron-plane-mark__art {
+    animation: none;
+  }
+
+  /* The scroll-linked layers and the figure blooms, by name. A scroll-driven
+     animation is not governed by duration, so the set of selectors above does not
+     reach them.
+
+     The two pseudo-element selectors are written out flat rather than folded into
+     the `:is()` beside them, because `:is()` takes a forgiving list of complex
+     selectors and a pseudo-element is not one of those: `.toron-cta::before` inside
+     `:is()` is dropped as an invalid argument, the rule stays valid for the rest,
+     and both blooms keep running for exactly the readers this block exists for.
+     That is what the harness caught. */
+  :is(.toron-bg__field, .toron-bg__grid),
+  .toron-home__figure::before,
+  .toron-cta::before {
     animation: none;
   }
 

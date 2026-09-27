@@ -14,9 +14,10 @@ import { PLANES } from "@/lib/planes";
  * the card rather than fetched over the network. That read happens at module
  * scope, during `next build`: this route has no dynamic input, so it is
  * statically generated, and a missing file fails the build loudly instead of
- * shipping a card with three characters on it. The colours are the two literals
- * an OG image can use — the card is rendered before any stylesheet exists, so
- * `--toron-*` tokens are not reachable from here.
+ * shipping a card with three characters on it. The colours are literals for the same
+ * reason: `--toron-*` tokens are not reachable from a renderer that runs before any
+ * stylesheet exists, so the four values are carried here and checked against the
+ * tokens by `scripts/render-icons.mjs`.
  */
 
 const art = (file: string) =>
@@ -27,16 +28,19 @@ const art = (file: string) =>
 const ART = PLANES.map((plane) => ({ slug: plane.slug, name: plane.name, src: art(plane.slug) }));
 
 /*
- * Every style object lives at module scope.
+ * Every style object lives at module scope, and every colour in them is a
+ * dark-theme token value: background, ink, body, accent.
  *
- * Satori reads these once per card, and an inline literal would be a new object
- * on every render of a route that renders exactly once. Hoisting them also keeps
- * the layout of the card readable as one block instead of six nested literals.
+ * They are literals because Satori renders this card before any stylesheet exists,
+ * which is also why they drifted: the card carried the previous palette (a violet
+ * accent on a slightly different near-black) for as long as the palette has been
+ * indigo, and nothing compared them. `scripts/render-icons.mjs` now reads the tokens
+ * and fails when the four values below stop being the four values there.
  */
 const S = {
   card: {
-    background: "#0a0a0f",
-    color: "#f5f3ff",
+    background: "#08090a",
+    color: "#f7f8f8",
     display: "flex",
     flexDirection: "column",
     height: "100%",
@@ -45,18 +49,18 @@ const S = {
     fontFamily: "sans-serif",
   },
   eyebrow: {
-    color: "#8b5cf6",
+    color: "#5e6ad2",
     fontSize: 24,
     letterSpacing: 4,
     textTransform: "uppercase",
     marginBottom: 24,
   },
   title: { fontSize: 74, fontWeight: 700, lineHeight: 1.05, maxWidth: 920 },
-  subtitle: { color: "#a3a3b8", fontSize: 30, marginTop: 26 },
+  subtitle: { color: "#8a8f98", fontSize: 30, marginTop: 26 },
   row: { display: "flex", gap: 26, marginTop: 46 },
   cell: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
   art: { objectFit: "contain" },
-  name: { color: "#8b5cf6", fontSize: 18, letterSpacing: 1 },
+  name: { color: "#5e6ad2", fontSize: 18, letterSpacing: 1 },
 } as const;
 
 export const alt = "toron.dev: the autonomous agent stack";

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { PLANES, type PlaneSlug } from "@/lib/planes";
 import { Character } from "./mascot";
+import { ParticleField } from "./particle-field";
 
 /*
  * governed-by: ADR-0004 D3/D5/D6
@@ -182,6 +183,11 @@ export function CTABand({
 }) {
   return (
     <div className="toron-cta">
+      {/* First in the markup, so it paints under the copy, and behind the very
+          last thing every marketing page asks the reader to do. Nothing about the
+          band depends on it: the canvas is aria-hidden, takes no pointer events,
+          and is simply absent for a reader who asked for less motion. */}
+      <ParticleField className="toron-cta__particles" />
       <div>
         <h2>{title}</h2>
         <p>{body}</p>

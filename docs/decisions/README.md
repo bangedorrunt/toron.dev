@@ -14,6 +14,7 @@ and renumbered** on 2026-08-14 — site decisions live in the site repo.
 | [0007](0007-motion-scale-and-native-effect-vocabulary.md)               | Motion Scale and Native Effect Vocabulary                       | **Accepted** (reduced-motion is a separate concern, not a smaller version of the same animation)                                                                                                           |
 | [0008](0008-bun-oxlint-oxfmt-toolchain.md)                              | bun, oxlint, and oxfmt as the Site Toolchain                    | **Accepted** (2026-09-27; **amends ADR-0002 D6** for package manager, linter, and formatter; coverage measured, not assumed)                                                                               |
 | [0009](0009-the-characters-travel-and-the-motion-runtime-is-adopted.md) | The Four Characters Travel, and the Motion Runtime Is Adopted   | **Accepted** (2026-09-27; **supersedes ADR-0007 D6** — the richness condition D6 wrote for itself; marketing routes +37.3–37.4 KB gzipped, docs +0, measured)                                              |
+| [0010](0010-depth-particles-and-a-morph-that-plays-on-the-click.md)     | Depth, Particles, a Morph That Plays on the Click, and an Icon Set | **Accepted** (2026-09-27; **amends ADR-0009 D5** — the soft navigation now morphs, and the frame wait that made it hang is measured; depth is zero-byte CSS, particles +0.7 KB, the morph island +0.3 KB, and the apple touch icon was being built but never linked)                                              |
 | [0002 appendix](0002-vercel-hobby-facts.md)                             | Vercel Hobby Tier Facts                                         | research-verified 2026-08-14                                                                                                                                                                               |
 
 ## Cross-repo ADRs referenced here
@@ -40,3 +41,8 @@ record of what was true when it was made. ADR-0007 D6 declined the Motion
 library on measured bytes and named the condition that would reverse it; the
 condition was met, so ADR-0009 supersedes that decision and leaves the numbers
 that were true then exactly as they were written.
+
+An **amended** decision is left in place too, for the same reason: ADR-0009 D5
+recorded the morph as playing only on a document navigation, with the measurement
+behind it. ADR-0010 D4 closes that limit and keeps the record of the limit as it
+was.
