@@ -1,0 +1,20 @@
+bead: torondev-k9c
+sha: 8841d2b800d805721b508963878239df092565cd
+gate: unit-test-verified
+command: cd apps/toron-dev && bun scripts/render-mascots.tsx
+exit: 0
+---
+sheet    /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/mascots.png
+probes   /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/.mascot-out, target long side 1345
+  toron       silhouette 1102px   42.4% of its box drawn
+  flywheel    silhouette 1277px   52.9% of its box drawn
+  beads       silhouette  996px   24.5% of its box drawn
+  chiebukuro  silhouette 1085px   34.2% of its box drawn
+
+  ok    drew something  every character carries at least 53 shapes
+  ok    set weight      smallest is beads at 83% of the median area, needs 55%
+  ok    detail tier     9 sub-pixel marks at 320px, 0 at 56px
+  ok    one face        reduced motion reads rest/work as 1/0 1/0 1/0 1/0, needs 1/0
+  ok    cycle drawn     4 of 4 characters cross-fade when motion is allowed
+
+ok
