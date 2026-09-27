@@ -1,0 +1,50 @@
+bead: torondev-b36
+sha: a4e113d21ac5cde57eee22aac454884cb3d111ac
+gate: unit-test-verified
+verify: node apps/toron-dev/scripts/render-strip.mjs
+---
+Ran against the built app at that sha:
+
+  bun run --filter toron-dev build         green, 215/215 static pages
+  bun run --filter toron-dev format:check  All matched files use the correct format.
+  bun run --filter toron-dev lint          0 errors
+  bunx next start -p 3111 && node apps/toron-dev/scripts/render-strip.mjs
+      92 checks passed, exit 0, nothing skipped
+
+What was missing. `alternates` appeared nowhere under app/, so no page on the site named
+itself. Two consequences, both real rather than theoretical: a Vercel preview deployment
+serves the same pages from another hostname and neither host names the original, and the
+docs publish a Markdown twin of every page at <path>.md (ADR-0005 D2), so a crawler
+meeting both spellings had nothing to reconcile them with.
+
+What shipped. `alternates: { canonical: "./" }` in the root layout, which is one line for
+every route because Next resolves a relative canonical against the route being rendered,
+and it keeps the origin where ADR-0005 D1 put it. The docs and blog generateMetadata name
+themselves explicitly through absoluteUrl(page.url) and absoluteUrl(`/blog/${slug}`),
+since those are the routes whose paths are computed rather than literal.
+
+Read back out of the built HTML rather than the source:
+
+  index.html        <link rel="canonical" href="https://toronmail.vercel.app">
+  docs.html         <link rel="canonical" href="https://toronmail.vercel.app/docs">
+  docs/toron.html   <link rel="canonical" href="https://toronmail.vercel.app/docs/toron">
+  architecture.html <link rel="canonical" href="https://toronmail.vercel.app/architecture">
+  blog/*.html       one per post, each naming its own slug
+
+27 of the 28 built HTML files declare one. The 28th is .next/server/app/_global-error.html,
+which is Next's own global error fallback rather than a route of ours, and it carries no
+canonical in a stock app either.
+
+The harness now asserts four of them (/, /docs, /docs/toron, /architecture), comparing
+against the origin parsed out of lib/shared.ts rather than a copy of it, so a route that
+loses its canonical fails a run. That check reads the built HTML, so it holds with no
+server up.
+
+One process note, recorded because the ledger should not read cleaner than it was: an
+earlier pass row for this bead was recorded at sha cb8340e, which is the previous bead's
+ledger commit. The commit it was meant to record was blocked, and blocked silently by the
+commit hook — git exited 0 while HEAD never moved, which the guard prints as "strict guard
+blocked staged paths: ... (no active reservation)". The paths were the two bracketed ones
+(app/docs/[[...slug]]/page.tsx and app/(site)/blog/[slug]/page.tsx), reserved as literal
+bracket patterns that the guard's matcher did not match. Re-reserved with `*` wildcards,
+committed, and re-recorded the gate row at the sha that carries this bead.
