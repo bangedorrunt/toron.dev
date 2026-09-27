@@ -1,0 +1,10 @@
+bead: torondev-f7i
+sha: e1d219e7d297395ad140fa28b86ac1afde147821
+gate: unit-test-verified
+superseded: yes
+---
+This row was recorded against the tracker-flush commit, by mistake, in the same
+command that tried to make the work commit. The reserve guard had blocked that
+commit, so HEAD never moved and the note bound a sha that does not cite this bead.
+The close was refused as illegal on exactly that ground. The binding row is the
+one citing 8fc4c4bb530d1741d786e132681caf0fc70a3a05.

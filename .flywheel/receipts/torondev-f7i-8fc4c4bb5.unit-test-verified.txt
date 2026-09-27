@@ -1,0 +1,16 @@
+bead: torondev-f7i
+sha: 8fc4c4bb530d1741d786e132681caf0fc70a3a05
+gate: unit-test-verified
+command: node apps/toron-dev/scripts/render-strip.mjs
+exit: 0
+---
+  drawn height per character, and the cell it forces
+  character   56px    72px    88px    104px   
+  toron       50      64      79      93      
+  flywheel    52      67      82      97      
+  beads       49      63      77      91      
+  chiebukuro  48      61      75      89      
+  cell height 181     197     213     229     
+
+  all checks passed on 4 characters; the artwork and the size are judged by eye at the sheets above
+
