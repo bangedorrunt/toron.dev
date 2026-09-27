@@ -59,23 +59,26 @@ It is decoration in the strict sense: `aria-hidden`, no pointer events, and the 
 
 Measured cost: **+0.7 KB gzipped** on the routes that draw it (D9).
 
-### D4 — The morph plays on the click, and the reason it did not at first is a trap
+### D4 — The morph plays on the click, timed by React, with no island of our own
 
-`components/morph-nav.tsx` is a small client island imported by the docs index alone. It upgrades a tile click from a document navigation to `document.startViewTransition(() => router.push(href))`, which is exactly the case ADR-0009 D5 recorded as not morphing. **D5's limit is therefore closed, not deleted**: the measurement it published still describes the site before this ADR, and the soft navigation now morphs.
+The docs index tiles and the plane page marks are wrapped in **React's `<ViewTransition name={`toron-character-${slug}`}`>`**, and the tiles are `next/link`. A `Link` click is a React transition, which is what arms a `<ViewTransition>`, so the router drives the morph, Next prefetches the route, and React sets `view-transition-name` on the element for the duration of its own `document.startViewTransition` call. **ADR-0009 D5's limit is closed, not deleted**: the measurement it published still describes the site before this ADR.
 
-Three details are load-bearing:
+This is the second mechanism to ship in this file. The first was a hand-rolled client island (`MorphNav`) that called `startViewTransition(() => router.push(href))` from a capture-phase click handler, with the tiles rendered as plain anchors so the two would not race for the click. It worked, and it lost on two counts:
 
-**The tiles are plain anchors, not `next/link`.** With a `Link`, the router intercepts the click and the two handlers race for it. As anchors, the no-JavaScript path is not degraded at all: the browser performs a real document navigation and the cross-document transition plays the same morph with no script. The island only makes that path faster, and it stands aside for a modified click, for a browser without `startViewTransition`, and for a reader who asked for less motion. Because the anchors no longer preload, a capture-phase `pointerenter` listener calls `router.prefetch` to put the router's own prefetch back.
+- **It cost 0.3 KB gzipped on every `/docs/*` page**, not only the index: a client reference is registered per route, and the index shares the `/docs/[[...slug]]` catch-all with roughly a hundred pages. React's component is part of the runtime those pages already load, so the replacement measures **0 KB** (D7 and Verification).
+- **It had to hand-time the snapshot, and the first thing it tried deadlocked.** While a transition's callback is pending, Chrome holds the rendering update — which is what runs `requestAnimationFrame` callbacks. Measured in isolation: a callback awaiting two frames reached `callback-ran` and never reached `callback-done`; the same callback awaiting a 16ms timer finished normally, with the frame counter going from 0 to 71. Written the frame way, the transition sat pending forever, `ready` never settled, the morph never played, **and every rAF animation on the page stayed frozen behind it** — the particle field, the character drift, all of it. The second attempt resolved from an effect watching the router's pathname, with a 1500ms bail-out — correct, but a mechanism maintained by hand.
 
-**The callback must stay pending until React has committed the destination route.** Resolve too early and the browser snapshots the page it is leaving and morphs it into itself.
+The installed `vercel-react-view-transitions` skill states the rule plainly ("React auto-assigns a unique `view-transition-name` and calls `document.startViewTransition` behind the scenes. Never call `startViewTransition` yourself"), and React 19.3.0 ships the component. Checked in the installed source rather than trusted: `getViewTransitionName` returns a caller-supplied `name` **verbatim**, so the four names React assigns inline are the four literals the stylesheet already writes — one pairing, two paths.
 
-**And a frame wait cannot be used to get that timing, because it deadlocks.** While a transition's callback is pending, Chrome holds the rendering update — which is the very thing that runs `requestAnimationFrame` callbacks. Measured in isolation: a callback awaiting two frames reached `callback-ran` and never reached `callback-done`; the same callback awaiting a 16ms timer finished normally (and the frame counter went from 0 to 71). Written the frame way, the transition sat pending forever, `ready` never settled, the morph never played, **and every rAF animation on the page stayed frozen behind it** — the particle field, the character drift, all of it. The first version of this component shipped that bug for one build.
+What is load-bearing now:
 
-The signal is the router's own state: the promise resolves from an effect that runs after the commit which changes the pathname, with a 1500ms bail-out for the one case that would otherwise hang — clicking the tile of the page you are already on. The harness now asserts all three facts, because the failure was invisible to the obvious check: it counts the call, waits for `ready` **and** `finished` to settle, samples the transition's own animations on a timer (frames are paused), and then counts frames for half a second after the click. A stuck transition passes "was it called" and fails the other three.
+- **The names are literals, and each page carries each name at most once.** Two elements sharing a name on one page aborts every transition on that page. `PlaneMark` and `PlaneRow` are the only places the attribute is set, and the harness asserts the count on both sides of the pair.
+- **`default="none"` on both sides.** Every App Router link click is a React transition, so a boundary left at its default would animate on unrelated navigations too; with `default="none"` and `share="auto"`, the pair speaks only when it forms.
+- **The stylesheet keeps its half.** `[data-morph]` still carries the names for the path with no JavaScript at all, where `@view-transition { navigation: auto }` snapshots both documents; `::view-transition-group(*)` carries the duration and easing for both paths.
 
-Required support: Chrome/Edge 111+, Safari 18+, Firefox 133+ for view transitions; everything else falls through to the anchor.
+The harness asserts the mechanism rather than the intention: it counts the runtime's own `startViewTransition` call, waits for `ready` **and** `finished` to settle, samples the transition's animations on a timer (frames are paused while a transition is pending), counts frames for half a second afterwards, and reads `components/docs-content.tsx` to check the pair still comes from a server-only module with the island gone. A stuck transition passes "was it called" and fails the rest — which is exactly how the first cut was caught.
 
-**The cost is 0.3 KB gzipped on every `/docs/*` page**, not only the index: a client reference is registered per route, and the docs index shares the `/docs/[[...slug]]` catch-all with roughly a hundred pages. Options considered below.
+Required support: the browser's view transitions plus React's v2 object form of the API — Chromium 125+, Safari 18.2+, Firefox 144+ — and everything else navigates without the morph.
 
 ### D5 — The manifest names the icon set
 
@@ -107,11 +110,11 @@ Both families print `skipped` and the command that would fix it when there is no
 
 ## Options considered
 
-**React's `<ViewTransition>`.** React 19.3.0 exports it, and it is the right answer eventually: it times the snapshot off React's own commit instead of guessing. Rejected **for now** because Next 16.3.6 exposes no config key that wires React's transitions into a router navigation (checked in the installed package: no `viewTransition` in the config schema), so the router's commit is still outside React's control. This is the decision to revisit when that lands, and it is why the component is 60 lines with no other dependency.
+**Hand-roll the click wrapper and keep it.** It shipped first and was replaced the same session on bytes (0.3 KB × every docs page) and on the timing hazard above. The only argument for keeping it was familiarity, and the harness that verified it verifies React's version unchanged.
 
 **Awaiting a frame inside the transition callback.** Measured deadlock. Rejected.
 
-**A separate route for the docs index** (`app/docs/page.tsx` beside the catch-all) so the island's client reference is not registered for the other hundred docs pages. Rejected: 0.3 KB does not justify moving the docs index out of MDX, splitting the components map, or the route-conflict risk with `[[...slug]]`.
+**A separate route for the docs index** (`app/docs/page.tsx` beside the catch-all) so the island's client reference is not registered for the other hundred docs pages. Rejected: 0.3 KB does not justify moving the docs index out of MDX, splitting the components map, or the route-conflict risk with `[[...slug]]` — and it became moot once the island was deleted entirely.
 
 **Hide the particle canvas with CSS under reduce.** Rejected: the field should not exist for those readers, not be invisible while it runs.
 
@@ -122,7 +125,7 @@ Both families print `skipped` and the command that would fix it when there is no
 ## Consequences
 
 - **Marketing routes +0.7 KB gzipped** (`/` 271.0 → 271.7, `/architecture` and the other three 270.7 → 271.4). The particle field is all of it.
-- **The docs pay +0.3 KB** (256.9 → 257.2 KB) for the morph island, on every page of the catch-all rather than only the index. They still reference **no part of the animation library chunk**, which the harness re-asserts on every run.
+- **The docs pay nothing for the morph.** The island's +0.3 KB (256.9 → 257.2) was measured and then removed with it: React's component is in the runtime the docs already load, and the docs measure **256.9 KB** again. They still reference **no part of the animation library chunk**, which the harness re-asserts on every run.
 - **The build goes from 213 to 215 static routes**: `/apple-icon.png` and `/manifest.webmanifest` are routes.
 - New files: `components/particle-field.tsx`, `components/morph-nav.tsx`, `app/manifest.ts`, `scripts/render-icons.mjs`, and the four icon files. No new dependency.
 - `public/favicon.svg` and `app/opengraph-image.tsx` were carrying the pre-indigo violet (`#8b5cf6` on `#0a0a0f`); both now carry token values, and `render-icons.mjs` fails if either drifts again.
@@ -145,8 +148,8 @@ Every number below came off a command against this tree.
 | `/compare`                    | 270.7   | **271.4**   |
 | `/blog`                       | 270.7   | **271.4**   |
 | `/blog/crash-is-a-transition` | 270.7   | **271.4**   |
-| `/docs`                       | 256.9   | **257.2**   |
-| `/docs/toron`                 | 256.9   | **257.2**   |
+| `/docs`                       | 256.9   | **256.9**   |
+| `/docs/toron`                 | 256.9   | **256.9**   |
 
 The docs routes reference no part of the 38.1 KB animation chunk (`docs runtime-free ×5` in the harness).
 
@@ -162,6 +165,8 @@ The docs routes reference no part of the 38.1 KB animation chunk (`docs runtime-
 - `favicon files — the svg loads square at 150x150 … and the ico at its largest entry, 256x256`
 - `apple touch icon — the head links /apple-icon.png, served at 180x180`
 - `manifest — toron.dev: the autonomous agent stack · theme #08090a · icons 192x192 and 512x512`
+- `morph is React's — the pair uses React's ViewTransition from a server-only module, so the docs pay no island for it`
+- `no island — the hand-rolled enhancer is deleted rather than left beside the mechanism that replaced it`
 - `morph on click — one startViewTransition on /docs, landed on /docs/toron`
 - `morph plays — ready and finished both settled, with 9 transition animation(s) sampled, ::view-transition-group(toron-character-toron), ::view-transition-new(toron-character-toron), ::view-transition-old(toron-character-toron), ::view-transition-old(toron-character-flywheel), ::view-transition-old(toron-character-beads), ::view-transition-old(toron-character-chiebukuro)`
 - `page still ticks — 31 frame(s) over 500ms after the transition`
@@ -170,7 +175,9 @@ The docs routes reference no part of the 38.1 KB animation chunk (`docs runtime-
 - `canvas stops — scrolled away it held still: two readings 400ms apart are byte-identical (alpha total 2096)`
 - `canvas honours reduce — under reduce the canvas is never sized or drawn: 0 painted pixel(s) in a 300x150 canvas`
 
-**The deadlock, measured in isolation** (a page with a frame counter and a transition whose callback waits): frame wait — `frames 1 → 2`, state stuck at `callback-ran`, `ready` never settled; timer wait — `frames 0 → 71`, state `finished`. That is the experiment D4's timing rule comes from.
+**The deadlock, measured in isolation** (a page with a frame counter and a transition whose callback waits): frame wait — `frames 1 → 2`, state stuck at `callback-ran`, `ready` never settled; timer wait — `frames 0 → 71`, state `finished`. That is the experiment that retired the hand-rolled wrapper.
+
+**The mechanism swap, measured.** The hand-rolled island's build measured `/docs` and `/docs/toron` at 257.2 KB gzipped; after deleting it and wrapping the pair in React's `<ViewTransition>`, the same instrument reads **256.9 KB** on both, and the harness's four morph checks — call count, `ready`/`finished`, sampled group animations, frames afterwards — pass without a single edit to the assertions. The names React assigns were read out of the installed `react-dom` rather than assumed: `getViewTransitionName` returns a supplied `name` verbatim, which is why the inline name and the stylesheet's literal are the same string.
 
 **The `:is()` trap, measured on this sheet**: before the fix, the reduce page computed `none / none / toron-depth-bloom`; after it, `none / none / none`.
 

@@ -2341,9 +2341,15 @@ summary:focus-visible {
  *
  * `view-transition-name` is the entire implementation: the browser snapshots the
  * element on the outgoing page and the element with the same name on the
- * incoming one, and interpolates the box between them. There is no layoutId, no
- * projection library, and no JavaScript, which is why the docs can afford it
- * (ADR-0009 D5).
+ * incoming one, and interpolates the box between them. There is no layoutId and no
+ * projection library (ADR-0009 D5).
+ *
+ * These four rules are the **document-navigation** half: the path with no
+ * JavaScript at all, where `@view-transition` above snapshots both documents. The
+ * click path through the App Router gets the same names from React's
+ * `<ViewTransition name>` (ADR-0010 D4), which assigns them inline for the duration
+ * of the transition, so the two halves agree on four literals rather than two
+ * mechanisms agreeing by accident.
  *
  * Four literal names rather than a variable, because the name has to be unique on
  * the page and a typo in a computed name would silently produce no transition at
@@ -2353,7 +2359,9 @@ summary:focus-visible {
  *
  * The group's duration comes from the motion scale and lands on the decelerating
  * curve, so the character settles into its new size instead of stopping at it.
- * The root cross-fade is untouched: a page change should still be quick.
+ * `(*)` matches React's groups too, which is what keeps one timing rule true for
+ * both paths. The root cross-fade is untouched: a page change should still be
+ * quick.
  */
 [data-morph="toron"] {
   view-transition-name: toron-character-toron;

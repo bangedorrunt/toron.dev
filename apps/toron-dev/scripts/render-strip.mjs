@@ -701,7 +701,29 @@ if (!existsSync(join(BUILD, "server", "app", "index.html")) || !motionChunk) {
   line(
     globalCss.includes("@view-transition"),
     "route transitions",
-    "@view-transition is present, so the morph needs no client component",
+    "@view-transition is present, so a document navigation morphs the pair with no script at all",
+  );
+
+  /*
+   * Which mechanism carries the click path, asserted rather than assumed.
+   *
+   * ADR-0010 D4 first shipped a hand-rolled enhancer that called
+   * `startViewTransition` itself and paid about a kilobyte on every docs page; the
+   * second version hands the same job to React's `<ViewTransition>`, which is part
+   * of the runtime the docs already load. Both facts are checks here because the
+   * tempting regression is to add a client island back for a morph React already
+   * knows how to time.
+   */
+  const docsContent = readFileSync(join(APP_ROOT, "components", "docs-content.tsx"), "utf8");
+  line(
+    docsContent.includes("<ViewTransition") && !docsContent.includes('"use client"'),
+    "morph is React's",
+    "the pair uses React's ViewTransition from a server-only module, so the docs pay no island for it",
+  );
+  line(
+    !existsSync(join(APP_ROOT, "components", "morph-nav.tsx")),
+    "no island",
+    "the hand-rolled enhancer is deleted rather than left beside the mechanism that replaced it",
   );
 
   const cardPath = join(BUILD, "server", "app", "opengraph-image.body");
@@ -826,15 +848,19 @@ if (!serving) {
   /*
    * The morph on the click path, which is the claim ADR-0009 D5 recorded as
    * unproven for an in-app navigation. The page patches `document.startViewTransition`
-   * before hydration, so what is counted is the app's own call and not a transition
-   * the browser started for some other reason.
+   * before hydration, and the call counted is the runtime's own — React's
+   * `<ViewTransition>` calls it during the router's commit — so a count of one says
+   * the mechanism ran, not that some wrapper asked it to.
    *
    * Three things are read off it, and all three have been wrong at some point:
    *
    *   ready/finished settled  a transition whose callback never settles sits pending
    *                           forever, and while it does, rendering is held: the page
    *                           stops painting and every rAF animation on it freezes.
-   *                           Counting the call alone would have called that a pass.
+   *                           Counting the call alone would have called that a pass,
+   *                           and did: the hand-rolled enhancer was stuck exactly
+   *                           like that. React times its own callback, so this is now
+   *                           a check on the runtime rather than on our wrapper.
    *   group animations        the animations are transient, so they are sampled on a
    *                           timer for the duration. Frames will not do: rAF is
    *                           paused while a transition is pending.

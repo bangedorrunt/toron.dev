@@ -25,12 +25,17 @@ Isolated in a page with a frame counter:
 
 So the wait was the bug, not the router. While a view transition's callback is pending,
 Chrome holds the rendering update, and the rendering update is what runs the frame
-callbacks. A frame wait inside the callback is a deadlock by construction.
+callbacks. A frame wait inside the callback is a deadlock by construction.**What to do instead.** Do not call `document.startViewTransition` yourself. React's
+`<ViewTransition>` does this dance for you, and it times the snapshot off its own commit
+instead of guessing: `<ViewTransition name="toron-character-toron">` around the tile art
+and the plane page's mark is the entire implementation, and the App Router's own
+navigation is the `startTransition` it needs. That is what ships (ADR-0010 D4).
 
-**What to do instead.** Wait on something that is not tied to rendering. Here the signal
-is the router's own state: resolve the callback from an effect that runs after the commit
-which changes `usePathname()`, with a timeout as the way out when the router decides not
-to navigate (clicking a link to the page you are already on).
+The hand-rolled version was fixable, and was fixed before it was replaced: resolve the
+callback from an effect that runs after the commit which changes `usePathname()`, with a
+timeout as the way out when the router decides not to navigate (clicking a link to the
+page you are already on). Correct, and unnecessary once React offers the same thing for
+free.
 
 **Why it is worth remembering.** The obvious check, "was `startViewTransition` called",
 passes on this bug: it was called, once, and the route did change. Only two other

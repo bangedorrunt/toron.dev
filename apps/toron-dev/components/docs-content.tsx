@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { ViewTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { PLANES, PLANE_BY_SLUG, type PlaneSlug } from "@/lib/planes";
 
 /*
@@ -23,10 +25,13 @@ import { PLANES, PLANE_BY_SLUG, type PlaneSlug } from "@/lib/planes";
  * checks the result — it reads the built HTML for `/docs/toron` and fails if the
  * motion chunk is in it.
  *
- * ADR-0010 D4 adds one client island back onto the docs **index** — `MorphNav`, which
- * wraps the tile click in a view transition — and that is placed by the page, next to
- * `<PlaneRow />`, rather than imported from here. The index pays about a kilobyte for
- * it and the four plane pages it opens pay nothing, which is the split that matters.
+ * ADR-0010 D4 is why the click path morphs, and it does so **without a client island
+ * of this repo's own**: the tile and the plane page's mark are wrapped in React's
+ * `<ViewTransition>`, which assigns the `view-transition-name`, calls
+ * `document.startViewTransition` itself and times it off React's own commit. The
+ * component is part of the React runtime the docs already load, so nothing new is
+ * fetched, and the hand-rolled enhancer that used to live on the index is gone —
+ * along with the frame wait inside its callback that deadlocked the first build.
  */
 
 /* -------------------------------------------------------------- walkthrough */
@@ -191,30 +196,58 @@ export function Callout({
 /*
  * The two placements the documentation gets, drawn on the server.
  *
- * No client component, no feature bundle, no added JavaScript: the guides are the
+ * No client component of this repo's own, no feature bundle: the guides are the
  * pages a reader arrives at from a search result, and a character that costs them
  * 39KB before they can read a command is a bad trade. What the docs get instead is
- * the native view transition (ADR-0009 D5) — the same character, at two sizes,
- * morphing between the index and the plane page, driven by the browser's own
- * snapshot machinery at zero bytes.
+ * the native view transition — the same character, at two sizes, morphing between
+ * the index and the plane page, timed by React on the click path and by the browser
+ * itself on a document navigation.
  */
+
+/*
+ * The shared-element pair, declared once.
+ *
+ * `name` is the whole mechanism on the React side: React sets
+ * `view-transition-name` on the element for the duration of the transition, calls
+ * the browser's API itself, and resolves the promise that times the snapshot off
+ * its own commit — which is the part a hand-rolled wrapper gets wrong first, and
+ * got wrong here (ADR-0010 D4). The same literal names are written in the
+ * stylesheet beside `[data-morph]`, because that is the path with no JavaScript at
+ * all: a plain document navigation snapshots both documents and morphs the pair
+ * with no script involved.
+ *
+ * `default="none"` is deliberate. Every link click in the App Router is a React
+ * transition, so a boundary left at the default would animate on unrelated
+ * navigations too; this one speaks only when the pair actually forms, and stands
+ * aside when it does not.
+ *
+ * The names are set here and nowhere else, and each page carries at most one. Two
+ * elements sharing a name on one page aborts every transition on that page, which
+ * is the failure worth designing against.
+ */
+function Morph({ name, children }: { name?: string; children: ReactNode }) {
+  if (!name) return children;
+  return (
+    <ViewTransition name={name} default="none" share="auto">
+      {children}
+    </ViewTransition>
+  );
+}
 
 export function PlaneMark({ slug, morph = false }: { slug: PlaneSlug; morph?: boolean }) {
   const plane = PLANE_BY_SLUG[slug];
 
   return (
     <div className="toron-plane-mark">
-      <Image
-        src={plane.art}
-        alt=""
-        sizes="136px"
-        className="toron-plane-mark__art"
-        // `data-morph` is what carries the view transition name, and it is only
-        // ever set here and on the index row below. Two elements sharing a name on
-        // one page aborts every transition on that page, silently, so the name is
-        // not a class any caller can add by accident.
-        data-morph={morph ? slug : undefined}
-      />
+      <Morph name={morph ? `toron-character-${slug}` : undefined}>
+        <Image
+          src={plane.art}
+          alt=""
+          sizes="136px"
+          className="toron-plane-mark__art"
+          data-morph={morph ? slug : undefined}
+        />
+      </Morph>
       <div className="toron-plane-mark__copy">
         <p className="toron-plane-mark__name">{plane.name}</p>
         <p className="toron-plane-mark__role">{plane.role}</p>
@@ -231,28 +264,34 @@ export function PlaneMark({ slug, morph = false }: { slug: PlaneSlug; morph?: bo
  * what it owns — but the row is also the door into the four pages, so the set is
  * navigable rather than described.
  *
- * The tiles are **plain anchors**, not `next/link`. Two reasons, and they agree: the
- * router would intercept the click and race `MorphNav`, which is what wraps the click
- * in a view transition (ADR-0010 D4); and with no JavaScript at all, a plain anchor
- * performs a real document navigation, which is the path the cross-document view
- * transition already morphs. The enhancement is faster, and its absence is not a
- * broken state.
+ * The tiles are `next/link`, and that is what makes the morph work rather than a
+ * detail: a `Link` click is a React transition, which is the only thing that arms a
+ * `<ViewTransition>` (ADR-0010 D4). It is also the better default on its own terms —
+ * the router prefetches the route on hover — and it still renders a plain anchor, so
+ * a reader without JavaScript performs a real document navigation and the
+ * cross-document transition morphs the same pair.
+ *
+ * The first cut used plain anchors and a hand-rolled click handler, because the
+ * handler and the router would otherwise race for the click. Removing the handler
+ * removed the race, and the reason to avoid `Link` went with it.
  */
 export function PlaneRow({ morph = false }: { morph?: boolean }) {
   return (
     <div className="toron-plane-row">
       {PLANES.map((plane) => (
-        <a key={plane.slug} href={plane.docs} className="toron-plane-row__item">
-          <Image
-            src={plane.art}
-            alt=""
-            sizes="64px"
-            className="toron-plane-row__art"
-            data-morph={morph ? plane.slug : undefined}
-          />
+        <Link key={plane.slug} href={plane.docs} className="toron-plane-row__item">
+          <Morph name={morph ? `toron-character-${plane.slug}` : undefined}>
+            <Image
+              src={plane.art}
+              alt=""
+              sizes="64px"
+              className="toron-plane-row__art"
+              data-morph={morph ? plane.slug : undefined}
+            />
+          </Morph>
           <span className="toron-plane-row__name">{plane.name}</span>
           <span className="toron-plane-row__owns">{plane.owns}</span>
-        </a>
+        </Link>
       ))}
     </div>
   );
