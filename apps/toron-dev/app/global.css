@@ -1383,6 +1383,31 @@ summary:focus-visible {
   transition: transform var(--toron-dur-base) var(--toron-ease-standard);
 }
 
+/*
+ * Two tiers of detail, chosen by the size the mascot is actually rendered at.
+ *
+ * The stack strip draws these at 56px, which is a 0.58 scale on a 96-unit
+ * viewBox. At that scale a two-unit stroke is a little over one pixel: it stops
+ * reading as a mark and starts reading as dirt, and the second catchlight in
+ * each eye is half a pixel across. The same drawing at 320px wants all of it,
+ * because that is where the craft is visible.
+ *
+ * So the svg is its own query container and the sub-pixel marks are tagged
+ * `data-detail`. A container query rather than a prop because the interesting
+ * case is a tile whose size is decided by CSS, where no caller knows the
+ * rendered size to pass. Named so it cannot capture any other container on the
+ * page.
+ */
+.toron-mascot {
+  container: toron-mascot / inline-size;
+}
+
+@container toron-mascot (max-width: 8rem) {
+  .toron-mascot [data-detail] {
+    display: none;
+  }
+}
+
 /* The grain sits over the whole tile as an overlay blend, so it darkens the
    shadow side and lifts the highlight without tinting either. In CSS rather
    than a JSX style object because the value never varies per mascot. */

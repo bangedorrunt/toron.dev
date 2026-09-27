@@ -174,6 +174,32 @@ await page.screenshot({ path: OUT });
 const grainOk = grainBlend === "overlay";
 
 /*
+ * The detail tier is only worth anything if it actually switches, and a
+ * container query that fails to match is silent: the mascots still render, they
+ * just render the 320px drawing at 56px with every sub-pixel mark turned to
+ * dirt, which is the thing this change exists to prevent. So read the tagged
+ * elements back at both sizes and require them to differ.
+ */
+const detail = await page.evaluate(() => {
+  const count = (fig: Element) => {
+    const svg = fig.querySelector(".toron-mascot");
+    if (!svg) return -1;
+    return [...svg.querySelectorAll("[data-detail]")].filter(
+      (n) => getComputedStyle(n).display !== "none",
+    ).length;
+  };
+  return [...document.querySelectorAll("figure")].map((fig) => {
+    const big = fig.querySelector('.moods[data-pin="rest"] .cell');
+    const small = fig.querySelectorAll('.moods[data-pin="rest"] .cell')[1];
+    return {
+      name: fig.querySelector("figcaption")?.textContent ?? "",
+      atBig: count(big as Element),
+      atSmall: count(small as Element),
+    };
+  });
+});
+
+/*
  * "Does it look expensive" is a judgement no reviewer can repeat, so measure the
  * thing the judgement is actually about.
  *
@@ -261,6 +287,50 @@ const paint = await page.evaluate(async () => {
   return out;
 });
 
+/*
+ * The flywheel's rim is an annulus, and the whole difference between a wheel and
+ * a gear is that the interior is open. If somebody later "simplifies" the rim
+ * into a filled disc, every other check still passes: the mascot draws, it stays
+ * in its tile, it carries the right weight, and it is a cog again. So sample the
+ * ring of pixels between the hub and the rim and require most of them to be the
+ * tile showing through.
+ */
+const openInterior = await page.evaluate(async () => {
+  const fig = document.querySelectorAll("figure")[1]; // flywheel
+  const svg = fig?.querySelector('.moods[data-pin="rest"] svg');
+  if (!svg) return null;
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute("width", "192");
+  clone.setAttribute("height", "192");
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+    new XMLSerializer().serializeToString(clone),
+  )}`;
+  await img.decode();
+  const c = document.createElement("canvas");
+  c.width = 192;
+  c.height = 192;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, 192, 192);
+  const px = ctx.getImageData(0, 0, 192, 192).data;
+  // 96-unit viewBox at 192px, so scale is 2. The hub is r=17 and the rim's inner
+  // edge is r=25, so r=21 sits in the open band between them.
+  const S = 2;
+  let open = 0;
+  let n = 0;
+  for (let deg = 0; deg < 360; deg += 3) {
+    const a = (deg * Math.PI) / 180;
+    const x = Math.round((48 + 21 * Math.cos(a)) * S);
+    const y = Math.round((48 + 21 * Math.sin(a)) * S);
+    const i = (y * 192 + x) * 4;
+    const L = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+    if (L < 40) open++;
+    n++;
+  }
+  return +((open / n) * 100).toFixed(1);
+});
+
 const moods = await Promise.all(
   (await page.$$("figure")).map(async (fig) => {
     const name = (await fig.$eval("figcaption", (n) => n.textContent)) ?? "";
@@ -322,6 +392,24 @@ if (median > 0) {
 // A tile that is more than a third unmodulated is reading as a flat fill with a
 // gradient declared on it, which is the cheap look. 30% is the floor, not a
 // target: the point is to catch a regression to flat, not to reward noise.
+if (openInterior !== null) {
+  // A filled disc reads 0% here. Six spokes crossing an annulus leave roughly
+  // 70% of the ring clear, so 40% is a floor that a cog cannot reach.
+  const isWheel = openInterior >= 40;
+  if (!isWheel) bad++;
+  console.log(
+    `  ${(isWheel ? "ok" : "READS AS A DISC").padEnd(17)} flywheel     ${openInterior}% of the interior ring is open tile`,
+  );
+}
+
+for (const d of detail) {
+  const switches = d.atBig > 0 && d.atSmall < d.atBig;
+  if (!switches) bad++;
+  console.log(
+    `  ${(switches ? "ok" : "DETAIL IGNORED").padEnd(17)} ${d.name.padEnd(12)} ${d.atBig} marks at 320px, ${d.atSmall} at 56px`,
+  );
+}
+
 for (const p of paint) {
   const flatArt = p.flatPct > 30;
   if (flatArt) bad++;

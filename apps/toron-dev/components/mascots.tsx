@@ -50,7 +50,6 @@ type MascotProps = { className?: string };
 
 const INK = "#0a0a0f"; // the tile, and the deepest core. ADR-0001 D2 dark default.
 const PAPER = "#f7f8f8"; // --toron-ink, dark
-const MUTED = "#8a8f98"; // --toron-muted, dark
 const VIOLET = "#828fff"; // --toron-accent-bright
 const VIOLET_DEEP = "#5e6ad2"; // --toron-accent
 const GREEN = "#4cb782"; // --toron-green
@@ -180,7 +179,7 @@ function Tile({
   return (
     <svg
       viewBox="0 0 96 96"
-      className={className}
+      className={className ? `toron-mascot ${className}` : "toron-mascot"}
       role="img"
       aria-label={label}
       xmlns="http://www.w3.org/2000/svg"
@@ -210,9 +209,11 @@ function Tile({
         {children}
       </g>
       {/* tooth last, over everything, at an opacity low enough to be felt
-          rather than seen */}
+          rather than seen. Marked as detail: at 56px the noise is sub-pixel and
+          costs a full-tile filter pass to be invisible. */}
       <rect
         className="toron-mascot__grain"
+        data-detail
         width="96"
         height="96"
         rx="20"
@@ -293,7 +294,17 @@ function Eye({
       <circle cx={cx - r * 0.1} cy={cy - r * 0.06} r={r * 0.6} fill={iris} />
       <circle cx={cx - r * 0.1} cy={cy - r * 0.06} r={r * 0.29} fill={INK} />
       <circle cx={cx - r * 0.36} cy={cy - r * 0.38} r={r * 0.21} fill={PAPER} />
-      <circle cx={cx + r * 0.24} cy={cy + r * 0.3} r={r * 0.09} fill={PAPER} opacity="0.75" />
+      {/* the second light, which is what stops the eye looking like glass.
+          Half a unit across on a 96 tile, so it is the first thing to go when
+          the mascot is small. */}
+      <circle
+        data-detail
+        cx={cx + r * 0.24}
+        cy={cy + r * 0.3}
+        r={r * 0.09}
+        fill={PAPER}
+        opacity="0.75"
+      />
       {/* the lid: a filled mass bowed across the top of the sclera */}
       <path
         d={`M${cx - r} ${cy} a${r} ${r} 0 0 1 ${r * 2} 0 q${-r} ${drop} ${-r * 2} 0 z`}
@@ -345,6 +356,7 @@ export function ToronMascot({ className }: MascotProps) {
           strokeLinecap="round"
           fill="none"
           opacity="0.75"
+          data-detail
         />
       </g>
       <g data-mood="work">
@@ -367,6 +379,7 @@ export function ToronMascot({ className }: MascotProps) {
           strokeWidth="2.4"
           strokeLinecap="round"
           fill="none"
+          data-detail
         />
       </g>
     </g>
@@ -382,44 +395,65 @@ export function ToronMascot({ className }: MascotProps) {
       {body}
     </Tile>
   );
-}
-
-/* ---------------------------------------------------------- flywheel: spin */
+} /* ---------------------------------------------------------- flywheel: spin */
 // The feature only flywheel has is that it never stops, so the wheel is caught
 // mid-turn with its rim smeared and one spoke thrown clear as the dispatch arm.
 // Resting it is still turning, because resting is not a thing this plane does;
 // working adds the full set of arcs and the brows come down.
+//
+// A WHEEL, NOT A GEAR. The thing that separates the two is where the mass sits.
+// A gear is a thin disc with teeth cut into its edge; a flywheel is a heavy rim
+// with the interior open and the spokes crossing it. So the rim here is a real
+// annulus cut with an even-odd path rather than a stroked circle, the space
+// between the spokes is the tile showing through, and there is nothing toothed
+// anywhere in the silhouette. The earlier version filled the interior and drew
+// a ring on top of it, which is a washer, and read as a cog at every size.
 
 export function FlywheelMascot({ className }: MascotProps) {
   const id = "flywheel";
   const r = RAMPS.violet;
   const hub = RAMPS.green;
+  // The rim, as one path: the outer circle and the inner circle in opposite
+  // winding, so the even-odd rule leaves a hole and the interior stays open.
+  const rim = "M15 48a33 33 0 1 0 66 0a33 33 0 1 0-66 0zM23 48a25 25 0 1 1 50 0a25 25 0 1 1-50 0z";
+  // One spoke, drawn pointing up from the hub and rotated into the other five.
+  // Tapered, because a spoke of even width reads as a wire and a tapered one
+  // reads as something that was cast.
+  const spoke = "M45.7 33.5 46.4 23 49.6 23 50.3 33.5z";
   const wheel = (
     <g>
-      {/* the smeared rim: the outer band is soft and the spokes are drawn under
-          it, so the wheel reads as turning rather than as a gear icon */}
-      <g filter={`url(#${id}-soft)`} opacity="0.5">
-        <circle cx="48" cy="46" r="30" fill="none" stroke={r.body} strokeWidth="5" />
+      {/* the smear: a soft partial ring outside the rim, which is the only
+          thing in the picture that says the wheel is moving */}
+      <g filter={`url(#${id}-soft)`} opacity="0.42">
+        <path d="M14 30a33 33 0 0 1 24-11" fill="none" stroke={r.body} strokeWidth="6" />
+        <path d="M82 66a33 33 0 0 1-24 11" fill="none" stroke={r.body} strokeWidth="6" />
       </g>
+      {/* the rim, the heaviest single mass in the set */}
       <g filter={`url(#${id}-edge)`}>
-        <circle cx="48" cy="46" r="25" fill={`url(#${id}-round)`} />
-        <circle cx="48" cy="46" r="17" fill={r.deep} opacity="0.85" />
+        <path d={rim} fill={`url(#${id}-round)`} fillRule="evenodd" />
       </g>
-      <g stroke={r.bounce} strokeWidth="2.6" strokeLinecap="round" opacity="0.55" fill="none">
-        <path d="M48 26v8M48 58v8M28 46h8M60 46h8" />
+      <path d="M19 62a33 33 0 0 0 52 8 33 33 0 0 1-52-8z" fill={`url(#${id}-rim)`} />
+      {/* the spokes, crossing the open interior */}
+      <g fill={r.bounce} opacity="0.72">
+        {[0, 60, 120, 180, 240, 300].map((a) => (
+          <path key={a} d={spoke} transform={`rotate(${a} 48 48)`} />
+        ))}
       </g>
-      {/* the dispatch arm: one spoke thrown clear, with the job on its end */}
+      {/* the dispatch arm: one spoke thrown clear of the rim, with the job on
+          its end. Amber, because this is the plane's warm accent and it is the
+          same note the boat's moustache is. */}
       <path
-        d="M48 46 48 15"
+        d="M48 48 48 11"
         stroke={r.bounce}
-        strokeWidth="4"
+        strokeWidth="4.2"
         strokeLinecap="round"
-        opacity="0.9"
+        opacity="0.92"
       />
-      <path d="M43 20 48 12l5 8z" fill={hub.hi} />
+      <path d="M42.6 17 48 8.4l5.4 8.6z" fill={RAMPS.amber.hi} />
       <g filter={`url(#${id}-edge)`}>
-        <circle cx="48" cy="46" r="14" fill={`url(#${id}-hub)`} />
+        <circle cx="48" cy="48" r="17" fill={`url(#${id}-hub)`} />
       </g>
+      <path d="M33 55a17 17 0 0 0 30 6 17 17 0 0 1-30-6z" fill={`url(#${id}-rim)`} opacity="0.5" />
     </g>
   );
   return (
@@ -437,26 +471,22 @@ export function FlywheelMascot({ className }: MascotProps) {
           <stop offset="1" stopColor={hub.bounce} />
         </radialGradient>
       </defs>
-      <Ground id={id} cy={84} rx={26} />
+      <Ground id={id} cy={87} rx={30} />
       <g data-mood="rest">
-        <g stroke={r.bounce} strokeLinecap="round" fill="none" opacity="0.4">
-          <path d="M22 27a30 30 0 0 1 13-12" strokeWidth="4.5" />
-        </g>
         {wheel}
-        <Eye cx={43} cy={46} iris={hub.ink} brow="angry" r={7.5} lid={0.12} />
-        <Eye cx={55} cy={46} iris={hub.ink} brow="angry" r={7.5} lid={0.12} />
+        <Eye cx={40} cy={48} iris={hub.ink} brow="angry" r={8} lid={0.14} />
+        <Eye cx={56} cy={48} iris={hub.ink} brow="angry" r={8} lid={0.14} />
       </g>
       <g data-mood="work">
-        {/* the full set of arcs: the difference between turning and dispatching */}
-        <g stroke={r.bounce} strokeLinecap="round" fill="none">
-          <path d="M22 27a30 30 0 0 1 13-12" strokeWidth="4.5" opacity="0.75" />
-          <path d="M74 65a30 30 0 0 1-13 12" strokeWidth="4.5" opacity="0.75" />
-          <path d="M13 58a32 32 0 0 0 4 13" stroke={MUTED} strokeWidth="3" opacity="0.5" />
-          <path d="M83 34a32 32 0 0 0-4-13" stroke={MUTED} strokeWidth="3" opacity="0.5" />
-        </g>
         {wheel}
-        <Eye cx={43} cy={46} iris={hub.ink} brow="hard" r={7.5} />
-        <Eye cx={55} cy={46} iris={hub.ink} brow="hard" r={7.5} />
+        <Eye cx={40} cy={48} iris={hub.ink} brow="hard" r={8} />
+        <Eye cx={56} cy={48} iris={hub.ink} brow="hard" r={8} />
+        {/* dispatching, not merely turning: two more arcs of motion, and the
+            rim picks up a highlight that only shows while work is dispatched */}
+        <g stroke={r.hi} strokeLinecap="round" fill="none" opacity="0.8">
+          <path d="M17 60a34 34 0 0 0 6 14" strokeWidth="3.4" />
+          <path d="M79 36a34 34 0 0 0-6-14" strokeWidth="3.4" />
+        </g>
       </g>
     </Tile>
   );
@@ -477,7 +507,7 @@ export function BeadsMascot({ className }: MascotProps) {
           than the one in front because they are further from the light */}
       <g filter={`url(#${id}-soft)`}>
         <circle cx="26" cy="26" r="9" fill={r.deep} opacity="0.5" />
-        <circle cx="36" cy="16" r="6.5" fill={r.deep} opacity="0.32" />
+        <circle cx="36" cy="16" r="6.5" fill={r.deep} opacity="0.32" data-detail />
       </g>
       <path
         d="M26 26 36 16"
@@ -572,8 +602,8 @@ export function ChiebukuroMascot({ className }: MascotProps) {
       <g data-mood="rest">
         <g stroke={AMBER} strokeWidth="2.6" strokeLinecap="round" opacity="0.35" fill="none">
           <path d="M48 22v-7" />
-          <path d="M40 24 36 18" />
-          <path d="M56 24 60 18" />
+          <path d="M40 24 36 18" data-detail />
+          <path d="M56 24 60 18" data-detail />
         </g>
         <Eye cx={34} cy={48} iris={k.ink} brow="half" r={9} lid={0.3} />
         <Eye cx={62} cy={48} iris={v.ink} brow="half" r={9} lid={0.3} />
@@ -583,8 +613,8 @@ export function ChiebukuroMascot({ className }: MascotProps) {
         <circle cx="48" cy="15" r="9" fill={AMBER} opacity="0.4" filter={`url(#${id}-soft)`} />
         <g stroke={AMBER} strokeWidth="3" strokeLinecap="round" fill="none">
           <path d="M48 22v-8" />
-          <path d="M39 24 34 17" />
-          <path d="M57 24 62 17" />
+          <path d="M39 24 34 17" data-detail />
+          <path d="M57 24 62 17" data-detail />
         </g>
         <circle cx="48" cy="13" r="3.6" fill={AMBER} />
         <Eye cx={34} cy={48} iris={k.ink} brow="raised" r={9} />
