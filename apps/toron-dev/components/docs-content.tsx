@@ -185,7 +185,16 @@ export function Callout({
       </p>
       <div>
         <h3>{title}</h3>
-        <p>{children}</p>
+        {/*
+         * A div, not a p, and the reason is a hydration bug rather than taste: MDX
+         * wraps this body in a paragraph of its own, so a <p> here emitted `<p><p>`
+         * and the browser's parser closes the outer one before the inner one starts.
+         * The parsed DOM then has two siblings where React renders a parent and a
+         * child, and on every docs page carrying a callout React threw #418 and
+         * regenerated the whole tree on the client. Caught by comparing the served
+         * HTML against the hydrated DOM, and now asserted in the harness.
+         */}
+        <div className="toron-callout__body">{children}</div>
       </div>
     </div>
   );

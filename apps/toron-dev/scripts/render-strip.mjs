@@ -22,20 +22,27 @@
  * four files from disk and renders them through the real CSS, which is what keeps the
  * art checks runnable with no server.
  *
- * Past the art, three families of checks that are not about the drawing at all:
+ * Past the art, four families of checks that are not about the drawing at all:
  *
  *   depth    the five scroll- and view-timeline rules, read as computed styles off
  *            the real stylesheet, and read again in a reduced-motion browser where
  *            every one of them has to come back `none`
+ *   repos    the four repositories the strip links, asked of `gh` rather than read
+ *            as strings: a repository renamed upstream 404s for every reader, and
+ *            no local check can see that a URL points at nothing
  *   build    read from `.next`: the runtime split (the docs must not reference the
  *            animation chunk), the morph names (one per slug per page, declared once
- *            in the stylesheet), and the social card
+ *            in the stylesheet), the repositories the strip links, the canonical each
+ *            page declares, the nesting a browser's parser would not accept, and the
+ *            social card
  *   live     read from a running `next start`: the icon links the head emits and the
- *            files behind them, the morph on a real click, and the particle canvas
- *            drawing while it is on screen and stopped once it is not
+ *            files behind them, the errors a real page load logs, the morph on a real
+ *            click, and the particle canvas drawing while it is on screen and stopped
+ *            once it is not
  *
- * The last two print `skipped` and say why when there is no build, or no server, to
- * read, so a run without them is visibly incomplete instead of quietly green.
+ * The build, repo, and live checks print `skipped` and say why when there is no build,
+ * no authenticated `gh`, or no server to read, so a run without them is visibly
+ * incomplete instead of quietly green.
  *
  * The markup below is the strip's shape copied from components/site-content.tsx,
  * because the checks read real class names out of the real stylesheet. If the
@@ -46,6 +53,7 @@
  * Writes .mascot-out/strip.png and strip@2x.png, exits non-zero on a failed check.
  */
 
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -629,6 +637,74 @@ for (const [file, pattern, what] of CENSUS) {
 }
 
 /*
+ * The repositories the strip links.
+ *
+ * Each plane's cell is an `<a>` at that project's GitHub repository, and one of them
+ * pointed at a name the project no longer had: the tracker became `beads` upstream
+ * while the site kept saying `br`, so the link 404ed for every reader and nothing in
+ * the repo noticed, because a URL is only a string until something follows it. `gh`
+ * is what follows it, and it answers for a private repository as well, which an
+ * anonymous fetch cannot: 200 means the repository exists, 404 means the link is dead.
+ *
+ * Both halves read the app's own plane data rather than a copy of it. The first
+ * version of this check kept its own list and compared it against itself, which is
+ * how it passed while the built page still said `br`.
+ */
+const PLANE_DATA = [
+  ...readFileSync(join(APP_ROOT, "lib", "planes.ts"), "utf8").matchAll(
+    /slug:\s*"([a-z]+)",[\s\S]{0,240}?repo:\s*"(https:\/\/github\.com\/[^"]+)"/g,
+  ),
+].map(([, slug, url]) => ({ slug, url }));
+line(
+  PLANE_DATA.length === PLANES.length,
+  "plane repos",
+  `${PLANE_DATA.length} repository URL(s) declared for ${PLANES.length} plane(s), read from lib/planes.ts`,
+);
+
+const ghAnswers = (() => {
+  try {
+    execFileSync("gh", ["api", "/user", "--jq", ".login"], {
+      stdio: "pipe",
+      timeout: 20_000,
+    });
+    return true;
+  } catch {
+    unchecked = true;
+    console.log(
+      "  skipped plane repos  no authenticated `gh` to ask, so the four linked repositories were NOT checked",
+    );
+    return false;
+  }
+})();
+
+if (ghAnswers) {
+  for (const plane of PLANE_DATA) {
+    const repo = plane.url.replace("https://github.com/", "");
+    let answer = null;
+    let error = "";
+    try {
+      answer = execFileSync("gh", ["api", `/repos/${repo}`, "--jq", ".full_name"], {
+        stdio: "pipe",
+        timeout: 20_000,
+        encoding: "utf8",
+      }).trim();
+    } catch (failure) {
+      // gh writes the reason to stderr; the first line is the part worth printing.
+      error = String(failure.stderr ?? failure.message)
+        .split("\n")[0]
+        .trim();
+    }
+    line(
+      answer === repo,
+      "plane repo exists",
+      answer
+        ? `${plane.slug}'s github.com/${answer} answers`
+        : `${plane.slug}'s github.com/${repo} is not a repository anyone can open: ${error}`,
+    );
+  }
+}
+
+/*
  * The three checks that need a build.
  *
  * The runtime split is the architecture, not a detail: the docs are server-rendered
@@ -637,6 +713,12 @@ for (const [file, pattern, what] of CENSUS) {
  * components were imported from the module that also imports the client character.
  */
 const BUILD = join(APP_ROOT, ".next");
+// Read from the app rather than copied: ADR-0005 D1 makes lib/shared.ts the only
+// place an origin is written, and a check with its own copy stops noticing when the
+// canonical and the sitemap drift apart.
+const SITE_URL = readFileSync(join(APP_ROOT, "lib", "shared.ts"), "utf8").match(
+  /siteUrl\s*=\s*"([^"]+)"/,
+)[1];
 const routeHtml = (route) => readFileSync(join(BUILD, "server", "app", route), "utf8");
 const chunkDir = join(BUILD, "static", "chunks");
 // `.js` only: the source maps carry the same identifiers and would be found first.
@@ -674,6 +756,40 @@ if (!existsSync(join(BUILD, "server", "app", "index.html")) || !motionChunk) {
     "marketing pays",
     `the homepage does reference it, which is the trade: physics there, none in the docs`,
   );
+  for (const plane of PLANE_DATA) {
+    line(
+      home.includes(plane.url),
+      "plane links",
+      `the built home page carries ${plane.slug}'s ${plane.url} from the plane data`,
+    );
+  }
+
+  /*
+   * The canonical link, which is the one head element that decides which URL a
+   * search engine keeps. Four routes, because the families that need it differ: a
+   * docs page has a Markdown twin at `<path>.md` (ADR-0005 D2) and the marketing
+   * pages do not, and every one of them has to name the production origin rather
+   * than whatever host is serving the HTML. That is the whole reason the link
+   * exists — a preview deployment serving the same pages otherwise competes with
+   * the real one.
+   */
+  const canonicalOf = (html) => html.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? null;
+  const CANONICAL_ROUTES = [
+    ["index.html", "/"],
+    ["docs.html", "/docs"],
+    [join("docs", "toron.html"), "/docs/toron"],
+    ["architecture.html", "/architecture"],
+  ];
+  for (const [route, path] of CANONICAL_ROUTES) {
+    const href = canonicalOf(routeHtml(route));
+    line(
+      Boolean(href) && new URL(href).href === new URL(path, SITE_URL).href,
+      "canonical",
+      href
+        ? `${path} names ${href}`
+        : `${path} declares no canonical link, so a preview hostname and the Markdown twin both compete with it`,
+    );
+  }
 
   const globalCss = readFileSync(join(APP_ROOT, "app", "global.css"), "utf8");
   const names = new Map(
@@ -724,6 +840,34 @@ if (!existsSync(join(BUILD, "server", "app", "index.html")) || !motionChunk) {
     !existsSync(join(APP_ROOT, "components", "morph-nav.tsx")),
     "no island",
     "the hand-rolled enhancer is deleted rather than left beside the mechanism that replaced it",
+  );
+
+  /*
+   * The nesting a browser's parser will not accept.
+   *
+   * The callout rendered `<p><p>` for every docs page that had one, because MDX wraps
+   * its body in a paragraph of its own. A start tag is not how the parser reads it:
+   * a `<p>` closes any open `<p>` before it starts, so the DOM ends up with two
+   * siblings where React renders a parent and a child. React answered that with #418
+   * and regenerated the whole page on the client, on every docs page carrying a
+   * callout, for as long as nobody compared the served markup against the DOM the
+   * browser builds from it. Nothing else in a build is as quiet as this: the page
+   * still worked, so only a comparison catches it.
+   */
+  const BLOCK_IN_PARAGRAPH =
+    /<p(?:\s[^>]*)?>\s*<(?:p|div|ul|ol|h[1-6]|table|section|pre|blockquote)\b/;
+  const builtPages = readdirSync(join(BUILD, "server", "app"), { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith(".html"));
+  const split = builtPages.filter((file) =>
+    BLOCK_IN_PARAGRAPH.test(readFileSync(join(BUILD, "server", "app", file), "utf8")),
+  );
+  line(
+    split.length === 0,
+    "valid nesting",
+    split.length === 0
+      ? `all ${builtPages.length} built page(s) nest the way the parser reads them`
+      : `${split.length} built page(s) put a block element inside a <p>, which the parser splits into siblings: ${split.slice(0, 3).join(", ")}`,
   );
 
   const cardPath = join(BUILD, "server", "app", "opengraph-image.body");
@@ -844,6 +988,53 @@ if (!serving) {
       ? `${icons.manifest.name} · theme ${icons.manifest.theme_color} · icons ${icons.sizes.png.map((box) => box?.join("x")).join(" and ")}`
       : "no manifest link in the head, so a phone installs the page as a shortcut with no icon",
   );
+
+  /*
+   * Nothing on a real page load may log a React error.
+   *
+   * The nesting failure below lived for as long as it did because no check ever
+   * listened: the page loaded, looked right and worked, while React threw the tree
+   * away and rebuilt it on the client. Only a listener sees that, so the two docs
+   * pages that carry a callout are loaded here for their console rather than for
+   * their markup, and the callout's structure is read off the same load.
+   */
+  for (const route of ["/docs", "/docs/guides"]) {
+    const probe = await browser.newPage();
+    const logged = [];
+    probe.on("pageerror", (error) => logged.push(error.message));
+    probe.on("console", (message) => {
+      if (message.type() === "error") logged.push(message.text());
+    });
+    await probe.goto(`${ORIGIN}${route}`, { waitUntil: "load" });
+    await probe.waitForTimeout(2500);
+    const react = logged.filter((message) =>
+      /React error #4\d\d|Hydration|didn't match/i.test(message),
+    );
+    const callout = await probe.evaluate(() => {
+      const body = document.querySelector(".toron-callout__body");
+      const paragraph = body?.querySelector("p");
+      return body && paragraph
+        ? { tag: body.nodeName, margin: getComputedStyle(paragraph).marginTop }
+        : null;
+    });
+    await probe.close();
+    line(
+      react.length === 0,
+      "no page errors",
+      react.length === 0
+        ? `${route} logged no React error (${logged.length} other console error(s); off Vercel that is the 404 for the analytics script)`
+        : `${route} logged ${react[0].slice(0, 140)}`,
+    );
+    if (route === "/docs") {
+      line(
+        Boolean(callout) && callout.tag === "DIV" && callout.margin === "0px",
+        "callout body",
+        callout
+          ? `the body is a <${callout.tag.toLowerCase()}> whose paragraph carries no margin of its own, so the nesting fix kept the styling`
+          : "no .toron-callout__body on /docs: the callout lost either its body wrapper or its styling hook",
+      );
+    }
+  }
 
   /*
    * The morph on the click path, which is the claim ADR-0009 D5 recorded as

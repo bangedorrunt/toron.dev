@@ -1934,11 +1934,16 @@ summary:focus-visible {
   font-weight: 600;
 }
 
-.toron-callout p:last-child {
+.toron-callout__body {
   margin: 0.4rem 0 0;
   color: var(--toron-body);
   font-size: 0.875rem;
   line-height: 1.6;
+}
+
+/* The body's own paragraph carries MDX's default spacing; the callout sets it. */
+.toron-callout__body > p {
+  margin: 0;
 }
 
 .toron-cta {
