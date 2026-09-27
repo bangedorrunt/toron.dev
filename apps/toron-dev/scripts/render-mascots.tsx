@@ -32,23 +32,43 @@ const OUT = outFlag === -1 ? join(APP_ROOT, "mascots.png") : process.argv[outFla
 const SIZES = [320, 56];
 const TILE = 96; // the mascots' own viewBox
 
+// Each mascot is drawn twice, once pinned to the resting face and once to the
+// working face. The live cross-fade is a 9s cycle with per-plane offsets, so a
+// single screenshot would catch every cell at a different point in it and the
+// sheet could not answer "does the resting face read" for any of them. Pinning
+// the mood makes the artifact deterministic, which is the only reason a picture
+// is evidence at all.
+const MOODS = ["rest", "work"] as const;
 const figures = Object.entries(MASCOTS)
   .map(([name, Mascot]) => {
-    const cells = SIZES.map(
-      (s) =>
-        `<div class="cell" style="width:${s}px;height:${s}px">${renderToStaticMarkup(<Mascot className="m" />)}</div>`,
-    ).join("");
-    return `<figure>${cells}<figcaption>${name}</figcaption></figure>`;
+    const markup = renderToStaticMarkup(<Mascot className="m" />);
+    const rows = MOODS.map((mood) => {
+      const cells = SIZES.map(
+        (s) => `<div class="cell" style="width:${s}px;height:${s}px">${markup}</div>`,
+      ).join("");
+      return `<div class="moods" data-pin="${mood}"><span class="tag">${mood}</span>${cells}</div>`;
+    }).join("");
+    return `<figure>${rows}<figcaption>${name}</figcaption></figure>`;
   })
   .join("");
 
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+const html = `<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="./app/global.css"><style>
   body { margin:0; background:#08090a; font:13px/1.4 ui-monospace,monospace; color:#f7f8f8; padding:24px; }
   .row { display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; }
   figure { margin:0; display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
   figcaption { color:#8a8f98; }
+  .moods { display:flex; gap:14px; align-items:center; }
+  .tag { color:#828fff; width:3.2em; flex:none; }
   .cell { display:flex; align-items:center; justify-content:center; }
   svg { width:100%; height:100%; display:block; }
+  /* Freeze the cycle to one face per row. Without this the two mood groups
+     both animate and the sheet shows a blend of both expressions. */
+  [data-mood] { animation: none !important; }
+  [data-pin="rest"] [data-mood="rest"] { opacity: 1 !important; }
+  [data-pin="rest"] [data-mood="work"] { opacity: 0 !important; }
+  [data-pin="work"] [data-mood="work"] { opacity: 1 !important; }
+  [data-pin="work"] [data-mood="rest"] { opacity: 0 !important; }
 </style></head><body><div class="row">${figures}</div></body></html>`;
 
 const scratch = join(APP_ROOT, ".mascot-preview.html");
@@ -59,7 +79,7 @@ mkdirSync(dirname(OUT), { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({
   deviceScaleFactor: 2,
-  viewport: { width: 1500, height: 560 },
+  viewport: { width: 1500, height: 840 },
 });
 await page.goto(`file://${scratch}`);
 
@@ -134,6 +154,40 @@ const report = (await page.evaluate((tile) => {
 }, TILE)) as MascotReport[];
 
 await page.screenshot({ path: OUT });
+
+/*
+ * The two expressions have to be two expressions. A mascot whose work group was
+ * dropped, or copied from the rest group, still passes every check above: it
+ * draws, it stays in its tile, and it carries the right weight. Only a pixel
+ * comparison between the two pinned rows catches that, so the rows are
+ * screenshotted separately and compared rather than trusted to be distinct.
+ */
+/*
+ * The sheet links the real stylesheet so the grain blends the way it does on
+ * the page. A scratch page that failed to load it would still render four good
+ * pictures, just with the grain laid on flat, and the artifact would quietly
+ * stop being evidence of what ships. So the blend is read back off the element.
+ */
+const grainBlend = await page.$eval(
+  ".toron-mascot__grain",
+  (n) => getComputedStyle(n).mixBlendMode,
+);
+const grainOk = grainBlend === "overlay";
+
+const moods = await Promise.all(
+  (await page.$$("figure")).map(async (fig) => {
+    const name = (await fig.$eval("figcaption", (n) => n.textContent)) ?? "";
+    const shot = async (pin: string) =>
+      Buffer.from(
+        await (await fig.$(`.moods[data-pin="${pin}"] .cell`))!.screenshot({
+          animations: "disabled",
+        }),
+      );
+    const [rest, work] = await Promise.all([shot("rest"), shot("work")]);
+    return { name, same: rest.equals(work) };
+  }),
+);
+
 await browser.close();
 
 // The scratch file must not survive: it sits in the app root, where a stale copy
@@ -142,6 +196,10 @@ rmSync(scratch, { force: true });
 
 let bad = 0;
 console.log(`mascot render report (viewBox ${TILE}, rendered at ${SIZES.join(" and ")}px)`);
+if (!grainOk) bad++;
+console.log(
+  `  ${(grainOk ? "ok" : "GRAIN NOT BLENDED").padEnd(17)} stylesheet ${grainOk ? "loaded, grain blends as overlay" : `did not load, mix-blend-mode is ${grainBlend}`}`,
+);
 for (const r of report) {
   const empty = r.shapes < 5;
   const flag = r.escaped ? "ESCAPES ITS TILE" : empty ? "DREW NOTHING" : "ok";
@@ -171,6 +229,17 @@ if (median > 0) {
     console.log(
       `  ${"ok".padEnd(17)} set weight       smallest is ${smallest.name} at ${(ratio * 100).toFixed(0)}% of the median area`,
     );
+  }
+}
+
+for (const m of moods) {
+  if (m.same) {
+    console.log(
+      `  ${"IDENTICAL MOODS".padEnd(17)} ${m.name.padEnd(12)} the rest and work rows are the same pixels`,
+    );
+    bad++;
+  } else {
+    console.log(`  ${"ok".padEnd(17)} ${m.name.padEnd(12)} rest and work are distinct pictures`);
   }
 }
 

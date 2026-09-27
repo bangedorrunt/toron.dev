@@ -1383,6 +1383,94 @@ summary:focus-visible {
   transition: transform var(--toron-dur-base) var(--toron-ease-standard);
 }
 
+/* The grain sits over the whole tile as an overlay blend, so it darkens the
+   shadow side and lifts the highlight without tinting either. In CSS rather
+   than a JSX style object because the value never varies per mascot. */
+.toron-mascot__grain {
+  mix-blend-mode: overlay;
+}
+
+/*
+ * Two moods, one cycle.
+ *
+ * Every mascot carries a resting and a working expression in the same SVG, and
+ * this cross-fades between them on a long, offset cycle. The offsets are what
+ * stop the set blinking in unison, which is the failure mode of a shared
+ * animation and the reason each plane gets its own delay.
+ *
+ * The cycle is deliberately slow and spends most of its time at rest. This strip
+ * sits above the fold of the home page, so an animation that keeps moving is an
+ * animation nobody can finish reading past.
+ */
+/* The cycle runs on the two mood GROUPS, not on the svg. Putting it on the svg
+   would fade both expressions together, which reads as a flicker rather than a
+   change of face. The two keyframes are complements of each other, so one is
+   always up. */
+.toron-stack-strip__mascot [data-mood="rest"] {
+  animation: toron-mascot-rest 9s var(--toron-ease-standard) infinite;
+}
+.toron-stack-strip__mascot [data-mood="work"] {
+  animation: toron-mascot-work 9s var(--toron-ease-standard) infinite;
+}
+
+/* Staggered per cell, which is what stops the set blinking in unison. */
+.toron-stack-strip__item:nth-child(1) [data-mood] {
+  animation-delay: 0s;
+}
+.toron-stack-strip__item:nth-child(2) [data-mood] {
+  animation-delay: -2.4s;
+}
+.toron-stack-strip__item:nth-child(3) [data-mood] {
+  animation-delay: -4.8s;
+}
+.toron-stack-strip__item:nth-child(4) [data-mood] {
+  animation-delay: -7.1s;
+}
+
+@keyframes toron-mascot-rest {
+  0%,
+  62%,
+  100% {
+    opacity: 1;
+  }
+  72%,
+  88% {
+    opacity: 0;
+  }
+}
+
+@keyframes toron-mascot-work {
+  0%,
+  62%,
+  100% {
+    opacity: 0;
+  }
+  72%,
+  88% {
+    opacity: 1;
+  }
+}
+
+/*
+ * Pointing at a cell means the visitor is reading it, so hold the working face.
+ * The cycle is removed rather than paused: a paused animation still supplies its
+ * own opacity, and an animated value beats a plain declaration in the cascade, so
+ * pausing would leave the resting face stuck on screen and the rule below would
+ * do nothing.
+ */
+.toron-stack-strip__item:hover [data-mood],
+.toron-stack-strip__item:focus-visible [data-mood] {
+  animation: none;
+}
+.toron-stack-strip__item:hover [data-mood="rest"],
+.toron-stack-strip__item:focus-visible [data-mood="rest"] {
+  opacity: 0;
+}
+.toron-stack-strip__item:hover [data-mood="work"],
+.toron-stack-strip__item:focus-visible [data-mood="work"] {
+  opacity: 1;
+}
+
 /* Hover lifts the character rather than tinting the cell, so the tile the
    mascot already draws is not fighting a background change underneath it. */
 .toron-stack-strip__item:hover .toron-stack-strip__mascot,
@@ -2085,6 +2173,25 @@ summary:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /*
+   * The two mood groups both have an animation, and the blanket rule above ends
+   * each one immediately at its 100% keyframe. With no fill mode that reverts
+   * both to their base opacity of 1, which would stack the resting face on top
+   * of the working face: two expressions at once, which is worse than either.
+   * So the cycle is removed outright and the resting face is pinned, including
+   * over hover. A reduced-motion visitor gets one static face, not a swap.
+   */
+  .toron-stack-strip__mascot [data-mood="rest"],
+  .toron-stack-strip__mascot [data-mood="work"] {
+    animation: none !important;
+  }
+  .toron-stack-strip__mascot [data-mood="rest"] {
+    opacity: 1 !important;
+  }
+  .toron-stack-strip__mascot [data-mood="work"] {
+    opacity: 0 !important;
   }
 
   .toron-crash-flash,
