@@ -23,7 +23,7 @@
       "plane": "chiebukuro",
       "repo": "chiebukuro",
       "path": "docs/guides/quick-start.mdx",
-      "title": "chiebukuro quick start",
+      "title": "Chiebukuro quick start",
       "basis": "covers"
     },
     {
@@ -31,7 +31,7 @@
       "plane": "toron",
       "repo": "toron",
       "path": "docs/guides/quick-start.mdx",
-      "title": "toron quick start",
+      "title": "Toron quick start",
       "basis": "covers"
     },
     {
@@ -79,7 +79,7 @@
       "plane": "flywheel",
       "repo": "flywheel",
       "path": "docs/guides/quick-start.mdx",
-      "title": "flywheel quick start",
+      "title": "Flywheel quick start",
       "basis": "covers"
     },
     {

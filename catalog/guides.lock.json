@@ -6,10 +6,10 @@
       "page": "guides/beads/cli-reference",
       "repo": "beads",
       "path": "docs/guides/cli-reference.mdx",
-      "title": "br CLI reference",
+      "title": "Beads CLI reference",
       "transform": "mdx-safe-v1",
-      "source_sha256": "374f5c76cd10fd126145a7757b32528c08341a7e35585eeab638e8a341b6f629",
-      "render_sha256": "374f5c76cd10fd126145a7757b32528c08341a7e35585eeab638e8a341b6f629"
+      "source_sha256": "0add33365091b0224e4ce72054a59fb0f1b3f18bcbf95af4554efb4258e5934c",
+      "render_sha256": "0add33365091b0224e4ce72054a59fb0f1b3f18bcbf95af4554efb4258e5934c"
     },
     {
       "plane": "beads",
@@ -46,30 +46,30 @@
       "page": "guides/beads/quick-start",
       "repo": "beads",
       "path": "docs/guides/quick-start.mdx",
-      "title": "br quick start",
+      "title": "Beads quick start",
       "transform": "mdx-safe-v1",
-      "source_sha256": "4a2f36e8f0c0cadeb1e2b3d7945746d27dccd869b7cef78146b1c470f3d250f5",
-      "render_sha256": "cb3b12de5d24dae6ac86c5c76056e38815f79aec4190bf03a9728446606b965e"
+      "source_sha256": "0bcfdea28f20d71f3a1f6a7a9c8c9921d657e83fbfe15b2b523425e20d0418aa",
+      "render_sha256": "a9e2314972f9dcafe38053cc9c1a7b8b9005c3dafdd0b1258c4b456d271ff8d0"
     },
     {
       "plane": "beads",
       "page": "guides/beads/troubleshooting",
       "repo": "beads",
       "path": "docs/guides/troubleshooting.mdx",
-      "title": "br troubleshooting",
+      "title": "Beads troubleshooting",
       "transform": "mdx-safe-v1",
-      "source_sha256": "69cd599da454c622d41522245ff5d51639f22ece2930e86972b66ffcc9eacaf5",
-      "render_sha256": "69cd599da454c622d41522245ff5d51639f22ece2930e86972b66ffcc9eacaf5"
+      "source_sha256": "5be0f8f5b57fd032fb05a970bbfdd67df726490a207a9ae5b63bf7db7fcd4833",
+      "render_sha256": "5be0f8f5b57fd032fb05a970bbfdd67df726490a207a9ae5b63bf7db7fcd4833"
     },
     {
       "plane": "chiebukuro",
       "page": "guides/chiebukuro/cli-reference",
       "repo": "chiebukuro",
       "path": "docs/guides/cli-reference.mdx",
-      "title": "chiebukuro CLI reference",
+      "title": "Chiebukuro CLI reference",
       "transform": "mdx-safe-v1",
-      "source_sha256": "1146431369973931dd513194fe27544f79e6ad22bff632cec8a1ba0c97a453f6",
-      "render_sha256": "1146431369973931dd513194fe27544f79e6ad22bff632cec8a1ba0c97a453f6"
+      "source_sha256": "edb27aaf69b681e0b516dd7fee3b8bb99d6b1490989ff0430b99757e1460af34",
+      "render_sha256": "edb27aaf69b681e0b516dd7fee3b8bb99d6b1490989ff0430b99757e1460af34"
     },
     {
       "plane": "chiebukuro",
@@ -116,20 +116,20 @@
       "page": "guides/chiebukuro/quick-start",
       "repo": "chiebukuro",
       "path": "docs/guides/quick-start.mdx",
-      "title": "chiebukuro quick start",
+      "title": "Chiebukuro quick start",
       "transform": "mdx-safe-v1",
-      "source_sha256": "64a1d08aa508f32aecbcad6dc29a87ee88836259f497be1c1f0c2b9c9b0b2d02",
-      "render_sha256": "64a1d08aa508f32aecbcad6dc29a87ee88836259f497be1c1f0c2b9c9b0b2d02"
+      "source_sha256": "24c2cfca1e6a2147b841521d4cdbbe154108f250b830073978a582f4a9801b00",
+      "render_sha256": "24c2cfca1e6a2147b841521d4cdbbe154108f250b830073978a582f4a9801b00"
     },
     {
       "plane": "flywheel",
       "page": "guides/flywheel/cli-reference",
       "repo": "flywheel",
       "path": "docs/guides/cli-reference.mdx",
-      "title": "flywheel CLI reference",
+      "title": "Flywheel CLI reference",
       "transform": "mdx-safe-v1",
-      "source_sha256": "db14e0add94462d482ae75201fcb0e6aad06a0b9537947fb1543d351067d906d",
-      "render_sha256": "db14e0add94462d482ae75201fcb0e6aad06a0b9537947fb1543d351067d906d"
+      "source_sha256": "77368ec4bb9754efc5efd073bc896d8d9f91354d5b98c42dc7289f97534958a8",
+      "render_sha256": "77368ec4bb9754efc5efd073bc896d8d9f91354d5b98c42dc7289f97534958a8"
     },
     {
       "plane": "flywheel",
@@ -236,20 +236,20 @@
       "page": "guides/flywheel/pstack",
       "repo": "flywheel",
       "path": "docs/guides/pstack.mdx",
-      "title": "pstack deep dive",
+      "title": "Pstack deep dive",
       "transform": "mdx-safe-v1",
-      "source_sha256": "643331b21dd604583624ca0767dad40c35e69881cb855813352622a6769dcf58",
-      "render_sha256": "643331b21dd604583624ca0767dad40c35e69881cb855813352622a6769dcf58"
+      "source_sha256": "4b1fbef05790bcdda0bcaf170e57eb7dc5d98c305dc5820616b4a6c1d1bfaf2e",
+      "render_sha256": "4b1fbef05790bcdda0bcaf170e57eb7dc5d98c305dc5820616b4a6c1d1bfaf2e"
     },
     {
       "plane": "flywheel",
       "page": "guides/flywheel/quick-start",
       "repo": "flywheel",
       "path": "docs/guides/quick-start.mdx",
-      "title": "flywheel quick start",
+      "title": "Flywheel quick start",
       "transform": "mdx-safe-v1",
-      "source_sha256": "d7e03a1e23240d8bfff26add97e415d791d823d0f3a621a0c2d300c166302989",
-      "render_sha256": "d7e03a1e23240d8bfff26add97e415d791d823d0f3a621a0c2d300c166302989"
+      "source_sha256": "274e40012235bde78342df78e5b02975a6c3b71b1552b60f5bc722a18826e243",
+      "render_sha256": "274e40012235bde78342df78e5b02975a6c3b71b1552b60f5bc722a18826e243"
     },
     {
       "plane": "flywheel",
@@ -286,10 +286,10 @@
       "page": "guides/flywheel/troubleshooting",
       "repo": "flywheel",
       "path": "docs/guides/troubleshooting.mdx",
-      "title": "flywheel troubleshooting",
+      "title": "Flywheel troubleshooting",
       "transform": "mdx-safe-v1",
-      "source_sha256": "a2a9059d1e254c49e29f27647eea23bfd55eec278582f4529ce6c4361e89129a",
-      "render_sha256": "a2a9059d1e254c49e29f27647eea23bfd55eec278582f4529ce6c4361e89129a"
+      "source_sha256": "00ea18faff78e320e1228718c01ddeedc4f09909e69f39a27d146e37883db7db",
+      "render_sha256": "00ea18faff78e320e1228718c01ddeedc4f09909e69f39a27d146e37883db7db"
     },
     {
       "plane": "flywheel",
@@ -346,10 +346,10 @@
       "page": "guides/toron/cli-reference",
       "repo": "toron",
       "path": "docs/guides/cli-reference.mdx",
-      "title": "toron CLI reference",
+      "title": "Toron CLI reference",
       "transform": "mdx-safe-v1",
-      "source_sha256": "fe44f475b0e13f821bdb554a1ef3ec7ca9063391d683858e7028da355f51f999",
-      "render_sha256": "fe44f475b0e13f821bdb554a1ef3ec7ca9063391d683858e7028da355f51f999"
+      "source_sha256": "c6488ee7209e1cca7a83106b4c71438cc43d9cb5b9a40dc91e62e58ad05fe143",
+      "render_sha256": "c6488ee7209e1cca7a83106b4c71438cc43d9cb5b9a40dc91e62e58ad05fe143"
     },
     {
       "plane": "toron",
@@ -396,10 +396,10 @@
       "page": "guides/toron/quick-start",
       "repo": "toron",
       "path": "docs/guides/quick-start.mdx",
-      "title": "toron quick start",
+      "title": "Toron quick start",
       "transform": "mdx-safe-v1",
-      "source_sha256": "3df9070e1e287f94b83985dcee2741d529bf16c27d72120850fb08eabce12f45",
-      "render_sha256": "cfb04e1a7eb810787f0074d5a4d44a7cfd5790bf1fc6c9a10d8afd0b93dea350"
+      "source_sha256": "ca08dcdb7b36418321492f12c2edf3ab5b95bd8fa71ac429def9e249d3582422",
+      "render_sha256": "22ff3dfce2d3990bbd30b433f9a5c4a4bb08d463a11cba5fa366a430814c985a"
     },
     {
       "plane": "toron",
@@ -426,10 +426,10 @@
       "page": "guides/toron/troubleshooting",
       "repo": "toron",
       "path": "docs/guides/troubleshooting.mdx",
-      "title": "toron troubleshooting",
+      "title": "Toron troubleshooting",
       "transform": "mdx-safe-v1",
-      "source_sha256": "705de680230fdf97542efd1ba0ba1a526c8bbbaabd47b2f08baa775ffe1f3756",
-      "render_sha256": "705de680230fdf97542efd1ba0ba1a526c8bbbaabd47b2f08baa775ffe1f3756"
+      "source_sha256": "e0e978da5028297403da533b212824df0608fd7c3957c4982a01b563a6163849",
+      "render_sha256": "e0e978da5028297403da533b212824df0608fd7c3957c4982a01b563a6163849"
     },
     {
       "plane": "toron",
