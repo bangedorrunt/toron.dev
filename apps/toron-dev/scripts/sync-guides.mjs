@@ -46,9 +46,10 @@
 // Run: node scripts/sync-guides.mjs
 // Repos resolve from TORON_SYNC_<PLANE>_REPO, else ../<repo> beside toron.dev.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { atomicWriteSync } from "./atomic-write.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, "..");
@@ -185,7 +186,7 @@ for (const plane of planes) {
     if (existsSync(target) && readFileSync(target, "utf8") === rendered) {
       unchanged += 1;
     } else {
-      writeFileSync(target, rendered);
+      atomicWriteSync(target, rendered);
       copied += 1;
       console.log(`write ${rel(target)}  <- ${plane.repo}/docs/guides/${name}`);
     }
@@ -217,7 +218,7 @@ for (const plane of planes) {
   // The plane slug is lowercase because it is a path segment, but it is a
   // product name in a nav label, so it is capitalised on the way out.
   const planeLabel = plane.plane.charAt(0).toUpperCase() + plane.plane.slice(1);
-  writeFileSync(
+  atomicWriteSync(
     join(outDir, "meta.json"),
     `${JSON.stringify({ title: `${planeLabel} guides`, description: `Every canonical ${planeLabel} guide, projected from the ${plane.repo} repository.` }, null, 2)}\n`,
   );
@@ -230,7 +231,10 @@ if (problems.length > 0) {
 
 lock.guides.sort((a, b) => a.page.localeCompare(b.page));
 mkdirSync(dirname(LOCK_PATH), { recursive: true });
-writeFileSync(LOCK_PATH, `${JSON.stringify(lock, null, 2)}\n`);
+// Last, and atomically. The lock is what the freshness gate hashes against, so
+// it must never be observed as a partial document: a truncated lock would make
+// the gate's own parse fail rather than report a mismatch.
+atomicWriteSync(LOCK_PATH, `${JSON.stringify(lock, null, 2)}\n`);
 
 console.log(
   `\nsummary: ${lock.guides.length} guide(s) projected across ${planes.length} plane(s), ${copied} written, ${unchanged} already current, ${deleted} removed, lock at ${rel(LOCK_PATH)}`,

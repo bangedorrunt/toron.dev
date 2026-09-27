@@ -20,7 +20,8 @@
 // extractor in the product repo, not here.
 //
 // Run via `predev` / `prebuild` (and Vercel buildCommand).
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { atomicReplaceDirSync, atomicWriteSync } from "./atomic-write.mjs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -307,7 +308,11 @@ function mergeRootMeta(existing) {
   ];
   const known = new Set(pinned);
   const kept = (existing?.pages ?? []).filter((p) => !known.has(p));
-  return JSON.stringify({ ...existing, pages: [...pinned, ...kept] }, null, 2);
+  // The trailing newline is load-bearing. Without it every build rewrites this
+  // file with the newline missing, so the tree comes out dirty after a build
+  // that changed nothing, and the next person has to notice and revert it.
+  // Every other JSON this repo writes ends with one.
+  return `${JSON.stringify({ ...existing, pages: [...pinned, ...kept] }, null, 2)}\n`;
 }
 
 function main() {
@@ -334,23 +339,27 @@ function main() {
   if (groups.size !== 9)
     throw new Error(`catalog ${CATALOG_PATH} must contain 9 tool groups, found ${groups.size}`);
 
-  // Clean generated output: the tools/ subtree + reference page.
+  // Rebuild the tools/ subtree in a staging directory and swap it in, rather
+  // than removing the live one and writing into it. content/docs/tools/ is
+  // gitignored, so an interrupted run that deleted it first would destroy files
+  // git cannot restore, and the next build would be the only thing that puts
+  // them back.
   const toolsDir = join(CONTENT_DIR, TOOLS_PAGE);
-  rmSync(toolsDir, { recursive: true, force: true });
-  rmSync(join(CONTENT_DIR, `${REFERENCE_PAGE}.mdx`), { recursive: true, force: true });
-  mkdirSync(toolsDir, { recursive: true });
-  writeFileSync(join(toolsDir, "meta.json"), JSON.stringify({ title: "Tools" }, null, 2));
+  atomicReplaceDirSync(toolsDir, (staging) => {
+    mkdirSync(staging, { recursive: true });
+    writeFileSync(join(staging, "meta.json"), JSON.stringify({ title: "Tools" }, null, 2));
 
-  for (const [group, groupTools] of groups) {
-    const dir = join(toolsDir, slugify(group));
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "meta.json"), groupMetaJson(group, groupTools));
-    for (const tool of groupTools) {
-      writeFileSync(join(dir, `${tool.name}.mdx`), toolPageMarkdown(tool, groupTools));
+    for (const [group, groupTools] of groups) {
+      const dir = join(staging, slugify(group));
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "meta.json"), groupMetaJson(group, groupTools));
+      for (const tool of groupTools) {
+        writeFileSync(join(dir, `${tool.name}.mdx`), toolPageMarkdown(tool, groupTools));
+      }
     }
-  }
+  });
 
-  writeFileSync(join(CONTENT_DIR, `${REFERENCE_PAGE}.mdx`), referenceMarkdown(catalog));
+  atomicWriteSync(join(CONTENT_DIR, `${REFERENCE_PAGE}.mdx`), referenceMarkdown(catalog));
 
   let existingMeta = null;
   try {
@@ -358,7 +367,7 @@ function main() {
   } catch {
     // no existing root meta — first run
   }
-  writeFileSync(join(CONTENT_DIR, "meta.json"), mergeRootMeta(existingMeta));
+  atomicWriteSync(join(CONTENT_DIR, "meta.json"), mergeRootMeta(existingMeta));
 
   console.log(
     `[generate-tool-docs] ${tools.length} tools / ${groups.size} groups → ${CONTENT_DIR}`,

@@ -30,6 +30,13 @@ import { spawnSync } from "node:child_process";
 
 const PATHS = ["apps", "packages", "catalog", "bun.lock", "vercel.json", "package.json"];
 
+// Both git calls are bounded. This script runs in Vercel's Ignored Build Step,
+// where an unbounded wait is not a slow gate but a stalled production build.
+// The ceilings differ because the work differs: resolving the repository root
+// reads one file, while diffing a pushed range has to read a tree.
+const REV_PARSE_TIMEOUT_MS = 10_000;
+const DIFF_TIMEOUT_MS = 60_000;
+
 const previous = process.env.VERCEL_GIT_PREVIOUS_SHA?.trim();
 
 if (!previous) {
@@ -46,8 +53,19 @@ if (!previous) {
 // remove. The first version of this script omitted the chdir and skipped a
 // range that did contain a change under apps/. The root is resolved here rather
 // than assumed of the caller.
-const root = spawnSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" });
+const root = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+  encoding: "utf8",
+  timeout: REV_PARSE_TIMEOUT_MS,
+});
 if (root.status !== 0 || !root.stdout.trim()) {
+  // A timeout lands here too, because a killed git has no status. Name it, or
+  // the operator reads a repository problem when the real one is a stall.
+  if (root.error) {
+    console.warn(
+      `skip: git rev-parse did not return within ${REV_PARSE_TIMEOUT_MS}ms (${root.error.code}). Building.`,
+    );
+    process.exit(1);
+  }
   console.warn("skip: not inside a git repository, so the pushed range is unknown. Building.");
   process.exit(1);
 }
@@ -56,10 +74,17 @@ const top = root.stdout.trim();
 const diff = spawnSync("git", ["diff", "--quiet", `${previous}..HEAD`, "--", ...PATHS], {
   cwd: top,
   stdio: "inherit",
+  timeout: DIFF_TIMEOUT_MS,
 });
 
 if (diff.error) {
-  console.warn(`skip: git diff failed (${diff.error.message}). Building.`);
+  // ETIMEDOUT is a stall, not a diff result. Both mean the same thing here,
+  // which is build, but the operator needs to know which one they are reading.
+  const how =
+    diff.error.code === "ETIMEDOUT"
+      ? `did not return within ${DIFF_TIMEOUT_MS}ms`
+      : `failed (${diff.error.message})`;
+  console.warn(`skip: git diff ${how}. Building.`);
   process.exit(1);
 }
 

@@ -50,8 +50,32 @@ const FAILS = /^\s*(?:>\s*)?(?:\*\*)?if it fails|<Fail[\s/>]/im;
 
 // ------------------------------------------------------------------ CLI surface
 
+// A wait without a bound is a hang, not a pass. The BFS below spawns the binary
+// once per subcommand: 645 spawns across the four products, measured, so a
+// single unresponsive call is enough to stall the gate with no output and no
+// exit code. The ceiling is generous because a `--help` is a pure argument
+// parse with no I/O, and the observed cost of one is about 150ms.
+const SPAWN_TIMEOUT_MS = 30_000;
+
 function help(bin, args) {
-  const r = spawnSync(bin, [...args, "--help"], { encoding: "utf8" });
+  const r = spawnSync(bin, [...args, "--help"], {
+    encoding: "utf8",
+    timeout: SPAWN_TIMEOUT_MS,
+  });
+  // A timeout must be loud. `null` below means "this path exposes no
+  // subcommands", so returning it for a spawn that never came back would shrink
+  // the verified surface and let an invented command through: a fail-open that
+  // reports success. Fail the run instead, on the first one, so the ceiling
+  // costs 30s once rather than 30s per remaining call.
+  if (r.error) {
+    console.error(
+      `FAIL \`${bin} ${args.join(" ")} --help\` did not return within ${SPAWN_TIMEOUT_MS}ms (${r.error.code}).\n` +
+        `     An unbounded wait is a hang, not a pass, and treating it as "no subcommands" would\n` +
+        `     quietly shrink the surface this gate exists to verify. Check whether ${bin} is\n` +
+        `     blocked on a lock or waiting on stdin.`,
+    );
+    process.exit(1);
+  }
   return r.status === 0 ? r.stdout || "" : null;
 }
 
@@ -388,11 +412,17 @@ if (process.env.GUIDES_SKIP_CLI === "1") {
 } else {
   surfaces = new Map();
   for (const bin of BINARIES) {
-    const probe = spawnSync(bin, ["--help"], { encoding: "utf8" });
+    const probe = spawnSync(bin, ["--help"], { encoding: "utf8", timeout: SPAWN_TIMEOUT_MS });
     if (probe.error || probe.status !== 0) {
+      // A hang and a missing binary need different advice, so say which it was.
+      const hung = probe.error?.code === "ETIMEDOUT";
       console.error(
-        `FAIL cannot run \`${bin} --help\`, so its commands cannot be verified.\n` +
-          `     install ${bin}, or set GUIDES_SKIP_CLI=1 and say why in the report.`,
+        hung
+          ? `FAIL \`${bin} --help\` did not return within ${SPAWN_TIMEOUT_MS}ms, so its commands cannot be verified.\n` +
+              `     The binary is present but not answering. Check whether it is blocked on a lock or\n` +
+              `     waiting on stdin; an unbounded wait here stalls the whole gate.`
+          : `FAIL cannot run \`${bin} --help\`, so its commands cannot be verified.\n` +
+              `     install ${bin}, or set GUIDES_SKIP_CLI=1 and say why in the report.`,
       );
       process.exit(1);
     }
