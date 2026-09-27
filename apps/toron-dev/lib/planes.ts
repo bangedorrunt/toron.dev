@@ -72,7 +72,7 @@ export const PLANE_BY_SLUG: Record<PlaneSlug, Plane> = {
     name: "Beads",
     role: "work items · dependencies · gates · close evidence",
     owns: "claims, dependencies, verification gates, close evidence",
-    repo: "https://github.com/bangedorrunt/br",
+    repo: "https://github.com/bangedorrunt/beads",
     docs: "/docs/beads",
     art: beadsArt,
   },
