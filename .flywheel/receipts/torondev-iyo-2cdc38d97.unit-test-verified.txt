@@ -1,0 +1,31 @@
+bead: torondev-iyo
+sha: 2cdc38d97ce551b8cdaab3b93e57e8009d618298
+gate: unit-test-verified
+verify: node apps/toron-dev/scripts/render-strip.mjs
+---
+Ran at that sha, on the real build output:
+
+  bun run --filter toron-dev build        green, 213/213 static pages, no type errors
+  bun run --filter toron-dev format:check All matched files use the correct format.
+  bun run --filter toron-dev lint         0 errors
+  node apps/toron-dev/scripts/render-strip.mjs
+      all checks passed on 4 characters across 10 placements (exit 0)
+
+What the harness checked, past the art it already owned: every placement measured
+through the real stylesheet (row art 64x64 x4 in four aligned 188px tiles, plane
+mark 136x136, header marks 56x56 x4, card chip 32x32, drift layer wrapping the art
+exactly), the arrival animation running and neutralised under prefers-reduced-motion
+in a reduce browser, a ten-surface placement census, the runtime split read off the
+built HTML (no part of the motion chunk referenced by the docs index or any of the
+four plane pages, referenced by the homepage), one morph name per slug per page on
+both sides of the pairing, and the built card at 1200x630.
+
+Bytes, measured with the same instrument on the same tree with the runtime stubbed
+out: marketing routes 233.3/233.7 KB to 270.7/271.0 KB gzipped, docs unchanged
+(257.1 to 256.9, within noise, and separately asserted to reference no part of the
+chunk). Behaviour observed in Chrome against next start: drift and tilt on the
+matrix, both still under reduce, layout shift 0 on /docs and /docs/toron, and an
+in-app navigation that keeps the same document and starts no view transition, which
+is recorded in ADR-0009 D5 rather than claimed as a morph.
+
+ADR-0009 supersedes ADR-0007 D6, which named this reversal condition itself.
