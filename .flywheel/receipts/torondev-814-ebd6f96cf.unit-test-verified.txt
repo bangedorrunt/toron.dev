@@ -1,0 +1,32 @@
+bead: torondev-814
+sha: ebd6f96cfee45b09e30134894b803e1a6a96fa3e
+gate: unit-test-verified
+command: node apps/toron-dev/scripts/render-strip.mjs
+exit: 0
+---
+  ok    tokens loaded      --toron-ease-standard resolved, so the sheet is styled like the site
+  ok    background         the page paints the site's own #08090a --toron-bg
+  ok    cells painted      a strip cell paints rgb(8, 9, 10)
+  ok    set matches        assets hold exactly beads, chiebukuro, flywheel, toron
+  ok    toron loads        natural 512x512
+  ok    toron box          56x56 as the stylesheet says
+  ok    toron fit          object-fit is contain, so the crop's aspect survives the square box
+  ok    toron framed       silhouette is 500 of 512px (98%), so the art is cropped to itself
+  ok    flywheel loads     natural 512x512
+  ok    flywheel box       56x56 as the stylesheet says
+  ok    flywheel fit       object-fit is contain, so the crop's aspect survives the square box
+  ok    flywheel framed    silhouette is 500 of 512px (98%), so the art is cropped to itself
+  ok    beads loads        natural 512x512
+  ok    beads box          56x56 as the stylesheet says
+  ok    beads fit          object-fit is contain, so the crop's aspect survives the square box
+  ok    beads framed       silhouette is 500 of 512px (98%), so the art is cropped to itself
+  ok    chiebukuro loads   natural 512x512
+  ok    chiebukuro box     56x56 as the stylesheet says
+  ok    chiebukuro fit     object-fit is contain, so the crop's aspect survives the square box
+  ok    chiebukuro framed  silhouette is 500 of 512px (98%), so the art is cropped to itself
+
+  sheets    /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/.mascot-out/strip.png
+            /Users/bangedorrunt/workspace/toron.dev/apps/toron-dev/.mascot-out/strip@2x.png
+
+  all checks passed on 4 characters; the artwork itself is judged by eye at the sheets above
+

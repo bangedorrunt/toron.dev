@@ -1,0 +1,13 @@
+bead: torondev-rig
+sha: d9479ef56db9ec9f022d79ade20158b861c1c735
+gate: triage-verified
+command: rg -l "MASCOTS|data-mood|data-detail" apps/toron-dev -g "!node_modules" -g "!.next" || echo "no code references remain"
+exit: 0
+---
+no code references remain
+no tracked mascots.tsx / render-mascots.tsx / probe-art.mjs
+
+triage: the bead subject (the hand-drawn vector set, and the band gate that would
+have held it) was deleted in this commit. Its acceptance named a band assertion
+inside the deleted harness, so no verified-work close was reachable and none is
+claimed here.
