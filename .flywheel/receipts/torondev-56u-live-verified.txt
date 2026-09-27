@@ -1,6 +1,10 @@
 bead: torondev-56u
 gate: live-verified
-commit: f4d98536609d1ec9f2c4c8bad91da0d57dd6da1d
+commit: 6994fd81c8babe9b9a8eddbeba93d273c1d266a2
+note: the six commits carrying this bead were reworded to Conventional Commits
+      and force-pushed, so this sha moved from the dead f4d9853. The tree hash
+      is unchanged at 53c482401eae11c1e137d5d9ad7874c14bee5e99, and every
+      command below was re-run green against that tree.
 agent: SwiftOtter
 date: 2026-09-27
 
