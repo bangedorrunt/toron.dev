@@ -96,9 +96,10 @@ export function Section({
  *   chiebukuro  4910c028-64cd-4865-a886-6c750628d670
  * (grok.com/imagine/post/<id>; the 1024px masters stay out of the repo).
  *
- * The hand-drawn svg characters in ./mascots.tsx are no longer rendered by the
- * strip. They stay in the tree for now: whether the vector set is worth keeping
- * is a separate decision, and deleting it is not this change's business.
+ * The hand-drawn svg characters that used to live in ./mascots.tsx, and the
+ * harness that rendered and measured them, are gone (torondev-rig). The raster
+ * set replaced them and nothing referenced either one, so keeping them would
+ * have left a second art system that only ever read as current by mistake.
  */
 const MASCOT_ART = {
   toron: toronArt,
