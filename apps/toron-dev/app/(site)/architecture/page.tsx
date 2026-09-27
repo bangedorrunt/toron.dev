@@ -12,7 +12,7 @@ import {
 } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Architecture — the four planes",
+  title: "Architecture: the four planes",
   description:
     "Which plane owns mail, dispatch, work evidence, and memory, what each one refuses to do, and how they hand off to each other.",
 };

@@ -11,7 +11,7 @@ import {
 } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Security — signed, sealed, recoverable",
+  title: "Security: signed, sealed, recoverable",
   description:
     "How toron protects agent identity, message privacy, operator authority, and the work record, and what it deliberately does not protect.",
 };

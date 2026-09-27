@@ -85,7 +85,7 @@ const jsonLd = [
 export const metadata: Metadata = {
   // governed-by: ADR-0005 D1 — the origin is the one constant in lib/shared.
   metadataBase: new URL(siteUrl),
-  title: { default: "toron.dev — the autonomous agent stack", template: "%s | toron.dev" },
+  title: { default: "toron.dev: the autonomous agent stack", template: "%s | toron.dev" },
   description: "The mailbox is the transport. The stack is what keeps autonomous work moving.",
   keywords: [
     "autonomous agents",
@@ -100,14 +100,14 @@ export const metadata: Metadata = {
     type: "website",
     url: siteUrl,
     siteName: "toron.dev",
-    title: "toron.dev — the autonomous agent stack",
+    title: "toron.dev: the autonomous agent stack",
     description:
       "Signed mail, orchestration, work evidence, and memory for autonomous multi-agent workflows.",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "toron.dev — the autonomous agent stack",
+    title: "toron.dev: the autonomous agent stack",
     description:
       "Signed mail, orchestration, work evidence, and memory for autonomous multi-agent workflows.",
     images: ["/opengraph-image"],

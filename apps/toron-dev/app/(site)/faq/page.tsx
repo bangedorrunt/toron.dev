@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CTABand, PageFooter, Section, SitePage } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "FAQ — the autonomous agent stack",
+  title: "FAQ: the autonomous agent stack",
   description:
     "Answers about ownership, privacy, autonomous execution, and how toron, flywheel, beads, and chiebukuro relate to each other.",
 };

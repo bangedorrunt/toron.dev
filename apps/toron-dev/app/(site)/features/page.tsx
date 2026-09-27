@@ -12,7 +12,7 @@ import {
 } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Features — the autonomous stack",
+  title: "Features: the autonomous stack",
   description:
     "The capabilities that turn a collection of agent processes into an accountable autonomous workflow, grouped by the plane that owns them.",
 };

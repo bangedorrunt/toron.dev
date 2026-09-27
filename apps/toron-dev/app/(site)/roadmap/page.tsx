@@ -4,7 +4,7 @@ import { ApiSurface } from "@/components/product-surfaces";
 import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Roadmap — what ships next",
+  title: "Roadmap: what ships next",
   description:
     "The next layer of the autonomous agent stack: legible loops, legible recovery, and guides that track the products.",
 };

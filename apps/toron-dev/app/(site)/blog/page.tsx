@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Blog — the receipt is the proof",
+  title: "Blog: the receipt is the proof",
   description:
     "Notes on autonomous agents, durable workflows, and the records that make them trustworthy.",
 };

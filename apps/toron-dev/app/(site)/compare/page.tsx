@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CTABand, PageFooter, Section, SitePage, SurfaceCard } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Compare — pick the smallest tool for each failure",
+  title: "Compare: pick the smallest tool for each failure",
   description:
     "How the toron.dev stack sits next to swarmtools, herdr, plain MCP memory servers, and coordinating by hand.",
 };

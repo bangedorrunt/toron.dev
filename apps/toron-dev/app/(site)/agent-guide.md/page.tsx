@@ -12,7 +12,7 @@ import {
 } from "@/components/site-content";
 
 export const metadata: Metadata = {
-  title: "Agent guide — set up the stack",
+  title: "Agent guide: set up the stack",
   description:
     "Give an agent a mailbox and a signed identity, then send the first handoff, with the output each step should produce.",
 };
