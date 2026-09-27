@@ -167,12 +167,99 @@ await page.screenshot({ path: OUT });
  * the page. A scratch page that failed to load it would still render four good
  * pictures, just with the grain laid on flat, and the artifact would quietly
  * stop being evidence of what ships. So the blend is read back off the element.
- */
-const grainBlend = await page.$eval(
+ */ const grainBlend = await page.$eval(
   ".toron-mascot__grain",
   (n) => getComputedStyle(n).mixBlendMode,
 );
 const grainOk = grainBlend === "overlay";
+
+/*
+ * "Does it look expensive" is a judgement no reviewer can repeat, so measure the
+ * thing the judgement is actually about.
+ *
+ * Cheap vector art fails in a specific, measurable way: large regions of a fill
+ * that never changes value. Paint has modulation almost everywhere, because
+ * every surface has a gradient across it whether or not a person drew one. So
+ * the useful number is not colour count, it is FLAT AREA: the share of pixels
+ * whose neighbours are effectively identical. A flat-filling mascot scores high
+ * on it no matter how many gradients it declares, and that is the regression
+ * worth failing on.
+ */
+const paint = await page.evaluate(async () => {
+  const rasterise = async (svg: SVGSVGElement) => {
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("width", "192");
+    clone.setAttribute("height", "192");
+    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      new XMLSerializer().serializeToString(clone),
+    )}`;
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = 192;
+    c.height = 192;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, 192, 192);
+    return ctx.getImageData(0, 0, 192, 192).data;
+  };
+
+  const out = [];
+  for (const fig of document.querySelectorAll("figure")) {
+    const name = fig.querySelector("figcaption")?.textContent ?? "";
+    const svg = fig.querySelector('.moods[data-pin="rest"] svg');
+    if (!svg) continue;
+    const px = await rasterise(svg as SVGSVGElement);
+    if (!px) continue;
+    const W = 192;
+    // The tile is a rounded square on a dark page, so the corner pixels are not
+    // character. Measuring them would reward a mascot for being small.
+    let lum = 0;
+    let dark = 0;
+    let n = 0;
+    const seen = new Set<number>();
+    let flat = 0;
+    for (let y = 22; y < 170; y++) {
+      for (let x = 22; x < 170; x++) {
+        const i = (y * W + x) * 4;
+        const r = px[i];
+        const g = px[i + 1];
+        const b = px[i + 2];
+        const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        lum += L;
+        if (L < 34) dark++;
+        n++;
+        seen.add(((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3));
+        // Compare against the pixel to the right and below. Both deltas under
+        // 2/255 means this neighbourhood is one flat fill.
+        const j = (y * W + x + 1) * 4;
+        const k = ((y + 1) * W + x) * 4;
+        const dR =
+          Math.abs(r - px[j]) +
+          Math.abs(r - px[k]) +
+          Math.abs((g - px[j + 1]) / 3) +
+          Math.abs((g - px[k + 1]) / 3) +
+          Math.abs((b - px[j + 2]) / 3) +
+          Math.abs((b - px[k + 2]) / 3);
+        if (dR < 2) flat++;
+      }
+    }
+    out.push({
+      name,
+      colors: seen.size,
+      flatPct: +((flat / n) * 100).toFixed(1),
+      meanLum: +(lum / n).toFixed(1),
+      // Dark mass INSIDE the picture. The tile itself is INK, so this is
+      // reported rather than gated: the tile contributes a known floor and the
+      // number is only meaningful compared against a previous run. It is the
+      // one measure that separates an outlined drawing from a painted one, since
+      // an outline is nothing but extra dark mass laid along a contour.
+      darkPct: +((dark / n) * 100).toFixed(1),
+    });
+  }
+  return out;
+});
 
 const moods = await Promise.all(
   (await page.$$("figure")).map(async (fig) => {
@@ -230,6 +317,17 @@ if (median > 0) {
       `  ${"ok".padEnd(17)} set weight       smallest is ${smallest.name} at ${(ratio * 100).toFixed(0)}% of the median area`,
     );
   }
+}
+
+// A tile that is more than a third unmodulated is reading as a flat fill with a
+// gradient declared on it, which is the cheap look. 30% is the floor, not a
+// target: the point is to catch a regression to flat, not to reward noise.
+for (const p of paint) {
+  const flatArt = p.flatPct > 30;
+  if (flatArt) bad++;
+  console.log(
+    `  ${(flatArt ? "TOO FLAT" : "ok").padEnd(17)} ${p.name.padEnd(12)} ${String(p.flatPct).padStart(5)}% unmodulated, ${p.colors} tones, ${String(p.darkPct).padStart(5)}% dark mass`,
+  );
 }
 
 for (const m of moods) {
