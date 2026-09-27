@@ -1372,6 +1372,24 @@ summary:focus-visible {
   --toron-veil-wash: var(--toron-surface);
 }
 
+/* The mascot leads the cell and the name sits under it, so the four read as a
+   set of characters first and a list of products second. Sized to clear the
+   name's cap height without letting the row get taller than the copy needs. */
+.toron-stack-strip__mascot {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.75rem;
+  transition: transform var(--toron-dur-base) var(--toron-ease-standard);
+}
+
+/* Hover lifts the character rather than tinting the cell, so the tile the
+   mascot already draws is not fighting a background change underneath it. */
+.toron-stack-strip__item:hover .toron-stack-strip__mascot,
+.toron-stack-strip__item:focus-visible .toron-stack-strip__mascot {
+  transform: translateY(-2px) rotate(-2deg);
+}
+
 .toron-stack-strip__name {
   font-family: var(--toron-font-mono);
   font-size: 0.9375rem;

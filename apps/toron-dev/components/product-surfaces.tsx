@@ -305,7 +305,8 @@ const MEMORY = [
   },
   {
     source: "docs/learnings/next-16-fonts.md",
-    claim: "Next 16.2.x mis-resolves fonts under Turbopack, so pin the version and check the build.",
+    claim:
+      "Next 16.2.x mis-resolves fonts under Turbopack, so pin the version and check the build.",
   },
   {
     source: "wiki://toron/mail-plane",

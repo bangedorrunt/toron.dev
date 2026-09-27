@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { MASCOTS } from "./mascots";
 
 /*
  * governed-by: ADR-0004 D3/D5/D6
@@ -105,7 +106,7 @@ export function StackStrip() {
       role: "curated knowledge · episodic memory · synthesis",
       href: "https://github.com/bangedorrunt/chiebukuro",
     },
-  ];
+  ] as const;
 
   return (
     <div className="toron-stack-strip" aria-label="The four planes of the autonomous agent stack">
@@ -117,6 +118,10 @@ export function StackStrip() {
           rel="noreferrer"
           className="toron-stack-strip__item"
         >
+          {(() => {
+            const Mascot = MASCOTS[plane.slug];
+            return <Mascot className="toron-stack-strip__mascot" />;
+          })()}
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
         </a>
