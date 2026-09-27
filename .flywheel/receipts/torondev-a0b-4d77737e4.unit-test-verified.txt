@@ -1,0 +1,41 @@
+bead: torondev-a0b
+sha: 4d777377a0268a8b6c39be9f4edba0c5f9a94856
+gate: unit-test-verified
+verify: node apps/toron-dev/scripts/render-strip.mjs
+---
+Recorded after the close. The gate row for this bead named this path before the file
+existed — the row was written and the close done, the receipt never was. It is written
+now from the same evidence the close reason cites, and the gap is named here rather than
+papered over.
+
+Ran against the built app at that sha:
+
+  bun run --filter toron-dev build         green, 215/215 static pages
+  bun run --filter toron-dev format:check  All matched files use the correct format.
+  bun run --filter toron-dev lint          0 errors
+  bunx next start -p 3111 && node apps/toron-dev/scripts/render-strip.mjs
+      all checks passed (exit 0)
+
+The mechanism. The tile-to-page morph is React's own <ViewTransition>, not a hand-rolled
+enhancer: the docs index tiles are next/link again, both sides of the pair are wrapped in
+a named boundary in components/docs-content.tsx, and React assigns view-transition-name
+and calls document.startViewTransition during the router's transition. The names React
+writes were read out of the installed react-dom (getViewTransitionName returns a supplied
+name verbatim), so the inline names are the four literals the stylesheet already pairs.
+
+The island, and its bytes. components/morph-nav.tsx is deleted with it. Measured with the
+same instrument as ADR-0009 on the same tree: the docs pages went 257.2 to 256.9 KB
+gzipped, back under the number ADR-0009 recorded, because a client component in the docs
+catch-all is registered per route. Gone with it: the pathname-watching settle signal, its
+1500ms bail-out, and the whole class of bug that deadlocked the first build (a frame wait
+inside a view-transition callback never returns).
+
+What the harness asserts about it, unchanged in intent by the swap:
+
+  morph is React's      <ViewTransition> in a server-only module, no "use client"
+  no island             components/morph-nav.tsx is gone, not merely unreferenced
+  morph on click        on /docs against the built app: exactly one call to the runtime's
+                        startViewTransition, landed on /docs/toron
+  morph plays           ::view-transition-group(toron-character-toron) sampled on a timer,
+                        ready and finished both settled
+  page still ticking    frames over the 500ms after the transition
