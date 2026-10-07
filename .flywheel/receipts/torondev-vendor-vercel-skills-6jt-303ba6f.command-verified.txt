@@ -1,0 +1,25 @@
+bead: torondev-vendor-vercel-skills-6jt   sha: 303ba6ff37da3df466482d17fb861ff35bea7543
+gate: command-verified      date: 2026-10-07 (mikasa)
+
+FENCE (the bead's own verify, green on the committed bytes):
+  timeout 60 python3 -c "import json,os,sys;l=json.load(open('skills-lock.json'));
+    m=[k for k in l['skills'] if not os.path.isfile('.agents/skills/'+k+'/SKILL.md')];
+    print('missing',m) if m else print('ok',len(l['skills']),'skills');sys.exit(1 if m else 0)"
+  -> ok 9 skills (exit 0)
+
+WHAT LANDED (165 files, +21804/-16):
+  .agents/skills/vercel-optimize/              NEW  (source vercel-labs/agent-skills)
+  .agents/skills/vercel-react-view-transitions/ NEW (same source)
+  skills-lock.json                             M  (both added; react-best-practices hash refreshed)
+  .agents/skills/vercel-react-best-practices/metadata.json  D (dropped by the re-sync; the rest of that
+    skill dir — AGENTS.md, README.md, rules/, SKILL.md — is unchanged)
+
+REVIEW (what was deliberately NOT committed):
+  .agents/mcp.json — untracked, agent-harness-local MCP endpoint on a private tailnet
+  ({"mcpServers":{"executor":{"type":"http","url":"https://mcp.alpine-tilapia.ts.net/mcp"}}).
+  Never tracked in this repo's history (`git log --all -- .agents/mcp.json` is empty); the sibling
+  toron checkout's agent stashed the same file to keep its tree clean. Still untracked after this
+  commit, as intended — the operator can override explicitly.
+
+CHECKED, NOT NEEDED: no secrets in the vendored skills (scan for sk-/ghp_/PRIVATE KEY markers came back
+empty); no live reservation conflicted with the paths (27-row board read first).
