@@ -1,7 +1,29 @@
+import Image from "next/image";
 import type { BaseLayoutProps, LinkItemType, MainItemType } from "fumadocs-ui/layouts/shared";
 import type { ReactNode } from "react";
 import { IconGithub } from "@/components/ui/icons";
+import { PLANE_BY_SLUG } from "./planes";
 import { appName, gitConfig } from "./shared";
+
+function SiteBrand() {
+  return (
+    <span className="toron-brand">
+      <Image
+        src={PLANE_BY_SLUG.toron.art}
+        alt=""
+        width={30}
+        height={30}
+        sizes="30px"
+        priority
+        className="toron-brand__mark"
+      />
+      <span className="toron-brand__copy">
+        <span className="toron-brand__name">{appName}</span>
+        <span className="toron-brand__descriptor">fully autonomous multi agent workflows</span>
+      </span>
+    </span>
+  );
+}
 
 // ADR-0004 D7: the top nav surfaces the walkthroughs, because a reader who
 // wants to do something should not have to dig through the reference to find
@@ -45,7 +67,7 @@ export function baseOptions(options?: SiteNavOptions): BaseLayoutProps {
   }
 
   return {
-    nav: { title: appName, children: options?.commandMenu },
+    nav: { title: <SiteBrand />, children: options?.commandMenu },
     links: items,
   };
 }

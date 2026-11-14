@@ -2873,6 +2873,60 @@ summary:focus-visible {
 
 /* ============================================================ app chrome */
 
+.toron-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-end: 0.75rem;
+}
+
+.toron-brand__mark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  object-fit: contain;
+}
+
+.toron-brand__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toron-brand__name {
+  color: var(--toron-ink);
+  font-family: var(--toron-font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.toron-brand__descriptor {
+  color: var(--toron-muted);
+  font-family: var(--toron-font-body);
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.055em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#nd-sidebar .toron-brand__descriptor,
+#nd-sidebar .toron-cmd-trigger__label,
+#nd-sidebar .toron-cmd-trigger kbd {
+  display: none;
+}
+
+@media (max-width: 360px) {
+  #nd-subnav .toron-brand__descriptor {
+    display: none;
+  }
+}
+
 .toron-nav-tools {
   display: flex;
   align-items: center;
