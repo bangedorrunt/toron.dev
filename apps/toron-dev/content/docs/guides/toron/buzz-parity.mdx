@@ -7,9 +7,9 @@ Living tracker of what toron **steals / adapts / rejects** from [block/buzz](htt
 
 **Audience:** harness authors and agents integrating Buzz-parity semantics on toron (mail settle honesty, fences, DeliveryCursor, DLQ / ProvenFailed, wake liveness). Not a Firstmate / factory / crew process doc.
 
-**Sources of truth:** ADR-0003 (`docs/decisions/0003-nostr-mailbox-fabric.md`) · comparison note (`docs/notes/2026-08-07-buzz-agentmail-comparison.md`) · historical landings GS-061 / GS-062 (ship ids are markers only).
+**Sources of truth:** the mailbox fabric decision (`docs/decisions/0003-nostr-mailbox-fabric.md`) · the Aug-07 comparison note (`docs/notes/2026-08-07-buzz-agentmail-comparison.md`). Buzz PR numbers (`#7337`) are cited per row.
 
-**Last updated:** 2026-09-25 (Melbourne AEST)
+**Last updated:** 2026-11-01 (Melbourne AEDT)
 
 ## Status legend
 
@@ -20,34 +20,34 @@ Living tracker of what toron **steals / adapts / rejects** from [block/buzz](htt
 | **Rejected** | Explicit non-goal — do not open as "Buzz has it" |
 | **Hold** | Scouted / library-only / needs an explicit maintainer open — no invent-green |
 
-## Parity table (GS-061 / GS-062 markers)
+## Parity table
 
-| Pattern | Buzz signal | Toron surface (integrating harness) | Status | Ship | Notes |
-|---------|-------------|-------------------------------------|--------|------|-------|
-| Busy-owner bound + generation fence | ACP hold bound + fence `#7337`/`#7340` | `busy_owner` + `DispatchPool::try_acquire_fenced` / `fork_rebind` / deadline wake | **Landed** | GS-062 | No ACP harness required. Drop→Release. Stale gen cannot reclaim |
-| Presence fail-closed | OK false when Redis fails `#7532` | `presence_admit(store.is_healthy())` via SQLite `SELECT 1` | **Adapted → Landed** | GS-062 | **Never Redis**. Never hardcoded `true` |
-| Convergence leave/close | Kick at convergence `#7298` | Propose→Commit→FireLive (`Kick`/`Disable`) + ReAdd fence + hold authority | **Landed** | GS-062 (A) | Join attempted gen from **held**; cross-channel safe |
-| DeliveryCursor | ACP session delivery dedup `#7620` | Session delivery cursor; assignee = session | **Landed** | GS-062 | Agent-key signed ≠ delivery proof |
-| verify-before-route | Verify id+sig before prompt route `#7010` | Ingress stage order + forge tripwires | **Landed** | GS-061/062 | Boundary discipline; no double-validate in pure core |
-| soft_delete / WorkflowLifecycle | Workflow deletion honesty `#7735` | Soft-delete clears executable under one lock; host gates `try_start` | **Landed** | GS-062 | Settlement ≠ business done (ADR-0032) |
-| Arc workflow defs | Shared definition list | `Arc` shared registry so Clone sees soft_delete | **Landed** | GS-062 (B) | No Vec-copy blind to delete |
-| SleepUntilDeadline journal/park | Deadline wake of held ACP | Journaled park effect on fenced busy-owner | **Landed** | GS-062 (C) | Effect settlement ≠ provider done |
-| wake_liveness Quiet/Live/Deaf/NeverStamped | WS recovery telemetry `#7546` | Classifier on host `/health` and doorbell `:18980` (flywheel serve / doorbell plane) | **Landed** | GS-062 (E) | Split stamps: `.event` / `.hb`. Never `max(event,hb)` into `last_event_ms` |
-| F worst-of across alive hosted | — | Aggregate pipe = worst class; `wake.workspace` = worst winner | **Landed** | GS-062 (F) | Deaf+Live → pipe=Deaf, workspace=ws-deaf |
-| ADV-5 try_send / stamp-after-Ok / Died | Capacity-paced recovery | `try_send`; stamp only after Ok; Full → Died + `blocking_send` | **Landed** | GS-062 | No silent drop under Full |
-| T1(a) Deferred→Accepted | — | Deferred is **not** Settled-Delivered until published | **Landed** | GS-062 | Never claim Settled before publish |
-| T2(b) Transient Exhausted→ProvenFailed | Missing models without retry `#7538` | Exhausted Transient → ProvenFailed + DLQ whole batch | **Landed** | GS-062 | Never force-retry Exhausted Transient |
-| T3 Buffered→timer NoSigner | — | Timer NoSigner → durable fail / DLQ | **Landed** | GS-062 | Fail-closed, journaled |
-| Side Q A: DeliveryCursor honesty | Session delivery vs agent-key | Cursor honesty on session delivery | **Adapted** | GS-061/062 | **Reject** channel-wide chat memory / ACP harness |
-| Redis presence | `#7532` Redis storage | — | **Rejected** | — | Local-first SQLite only |
-| AgentServer / OTP | Buzz agent identity UX | — | **Rejected** | — | herdr+MCP (ADR-0003 Adapt) |
-| Casual new kinds / Forge wire | NIP-MP / Forge | — | **Rejected / Hold epic** | — | ADR-0033 freeze; kinds need explicit maintainer open |
-| Funnel / dual SoT | — | — | **Rejected** | — | GS-053/054 locks |
-| NIP-FI runtime | Federated JWKS `#7109` | — | **Rejected** | — | No federation epic without an explicit open |
-| Channel-wide conversational UX / ACP | ACP session harness | — | **Rejected** | — | Mailbox-first; Tick Law Msg immutable |
-| Newest-first thread windows / read-state snapshots | `#7823` `#7572` | Optional query shapes | **Hold** | — | Needs an explicit context-assembly open |
-| L1 toron-audit hash-chain + TLV | `#7492` | Opt-in chain over bus/journal | **Hold** | Aug-07 L1 | Maintainer authorize; no Postgres |
-| ifc-core lattice runtime | `#7293` | Vocabulary only | **Rejected (runtime)** | — | Adapt labels, not lattice on Tick |
+| Pattern | Buzz signal | Toron surface (integrating harness) | Status | Notes |
+|---------|-------------|-------------------------------------|--------|-------|
+| Busy-owner bound + generation fence | ACP hold bound + fence `#7337`/`#7340` | `busy_owner` + `DispatchPool::try_acquire_fenced` / `fork_rebind` / deadline wake | **Landed** | No ACP harness required. Drop→Release. Stale gen cannot reclaim |
+| Presence fail-closed | OK false when Redis fails `#7532` | `presence_admit(store.is_healthy())` via SQLite `SELECT 1` | **Adapted → Landed** | **Never Redis**. Never hardcoded `true` |
+| Convergence leave/close | Kick at convergence `#7298` | Propose→Commit→FireLive (`Kick`/`Disable`) + ReAdd fence + hold authority | **Landed** | Join attempted gen from **held**; cross-channel safe |
+| DeliveryCursor | ACP session delivery dedup `#7620` | Session delivery cursor; assignee = session | **Landed** | Agent-key signed ≠ delivery proof |
+| verify-before-route | Verify id+sig before prompt route `#7010` | Ingress stage order + forge tripwires | **Landed** | Boundary discipline; no double-validate in pure core |
+| soft_delete / WorkflowLifecycle | Workflow deletion honesty `#7735` | Soft-delete clears executable under one lock; host gates `try_start` | **Landed** | Settlement ≠ business done |
+| Arc workflow defs | Shared definition list | `Arc` shared registry so Clone sees soft_delete | **Landed** | No Vec-copy blind to delete |
+| SleepUntilDeadline journal/park | Deadline wake of held ACP | In-process deadline wait + `pool.deadline_wake` on the fenced busy-owner | **Adapted** | NO journaled park effect: the busy-owner park writes no `Parked` row and no journal row, so a crash leaves nothing to resume from. Effect settlement ≠ provider done |
+| wake_liveness Quiet/Live/Deaf/NeverStamped | WS recovery telemetry `#7546` | Classifier on host `/health` and doorbell `:18980` (flywheel serve / doorbell plane) | **Landed** | Split stamps: `.event` / `.hb`. Never `max(event,hb)` into `last_event_ms` |
+| F worst-of across alive hosted | — | Aggregate pipe = worst class; `wake.workspace` = worst winner | **Landed** | Deaf+Live → pipe=Deaf, workspace=ws-deaf |
+| ADV-5 try_send / stamp-after-Ok / Died | Capacity-paced recovery | `try_send`; stamp only after Ok; Full → Died + `blocking_send` | **Landed** | No silent drop under Full |
+| T1(a) Deferred→Accepted | — | Deferred is **not** Settled-Delivered until published | **Landed** | Never claim Settled before publish |
+| T2(b) Transient Exhausted→ProvenFailed | Missing models without retry `#7538` | Exhausted Transient → ProvenFailed + DLQ whole batch | **Landed** | Never force-retry Exhausted Transient |
+| T3 Buffered→timer NoSigner | — | Timer NoSigner → durable fail / DLQ | **Landed** | Fail-closed, journaled |
+| Side Q A: DeliveryCursor honesty | Session delivery vs agent-key | Cursor honesty on session delivery | **Adapted** | **Reject** channel-wide chat memory / ACP harness |
+| Redis presence | `#7532` Redis storage | — | **Rejected** | Local-first SQLite only |
+| AgentServer / OTP | Buzz agent identity UX | — | **Rejected** | hc+MCP, adapted |
+| Casual new kinds / Forge wire | NIP-MP / Forge | — | **Rejected / Hold epic** | Kinds freeze; kinds need explicit maintainer open |
+| Funnel / dual SoT | — | — | **Rejected** | Locked |
+| NIP-FI runtime | Federated JWKS `#7109` | — | **Rejected** | No federation epic without an explicit open |
+| Channel-wide conversational UX / ACP | ACP session harness | — | **Rejected** | Mailbox-first; Tick Law Msg immutable |
+| Newest-first thread windows / read-state snapshots | `#7823` `#7572` | Optional query shapes | **Hold** | Needs an explicit context-assembly open |
+| L1 toron-audit hash-chain + TLV | `#7492` | Opt-in chain over bus/journal | **Hold** | Maintainer authorize; no Postgres |
+| ifc-core lattice runtime | `#7293` | Vocabulary only | **Rejected (runtime)** | Adapt labels, not lattice on Tick |
 
 ## Explicit REJECT / HOLD (do not re-open casually)
 
@@ -69,14 +69,14 @@ These are toron surface contracts. A harness that sits on toron (or mirrors Buzz
 ## How to update this page
 
 1. **Buzz PR scouted** — add or revise a row; cite Buzz PR/SHA; set Status=Hold until call sites land.
-2. **After a landing PR** — flip Status to Landed/Adapted/Rejected; record the ship id (e.g. GS-061/062) as a historical marker when useful.
+2. **After a landing PR** — flip Status to Landed/Adapted/Rejected.
 3. **Never invent-green** — Landed requires call site + test (or live gate evidence). Library-only stays Hold.
-4. Keep ADR-0003 Prior Art and the Aug-07 comparison note in sync when status flips.
+4. Keep Prior Art in `docs/decisions/0003-nostr-mailbox-fabric.md` and the Aug-07 comparison note in sync when status flips.
 
 ## Related
 
-- ADR-0003 Rev10+ — Prior Art & Leverage (steal/adapt/reject)
-- [`docs/notes/2026-08-07-buzz-agentmail-comparison.md`](../notes/2026-08-07-buzz-agentmail-comparison.md) — historical GS-061/062 deltas
+- [`docs/decisions/0003-nostr-mailbox-fabric.md`](../decisions/0003-nostr-mailbox-fabric.md) Rev10+ — Prior Art & Leverage (steal/adapt/reject)
+- [`docs/notes/2026-08-07-buzz-agentmail-comparison.md`](../notes/2026-08-07-buzz-agentmail-comparison.md) — the historical Buzz deltas this table started from
 - AM-Rust catalogs under `docs/parity/` (tool surface / known divergences — separate from this Buzz tracker)
 
 &#123;/* governed-by: ADR-0003 */}

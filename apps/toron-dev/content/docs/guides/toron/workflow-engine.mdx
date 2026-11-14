@@ -3,9 +3,9 @@ title: The workflow engine
 description: YAML workflows as signed events. Durable approvals, @mention triggers, and the action vocabulary.
 ---
 
-toron runs YAML workflows as a standalone fabric; orchestration (catalogs, cron, crews) belongs to flywheel. Each run is a kind-46xxx event and a Resonate promise, which is what makes a suspended run survive a crash.
+toron runs YAML workflows as a standalone fabric; orchestration (catalogs, cron, crews) belongs to flywheel. Each run is a kind-46xxx event and a durable run model (`RunModel`/`GraphModel` driven by `DurableRun` over `OurEngine`), which is what makes a suspended run survive a crash.
 
-> **ADR-0032** ([workflow-engine honesty and Jido action contracts](../decisions/0032-workflow-engine-honesty-jido-contracts.md), **proposed**, not accepted) is the design target. Its fixed point is **truthful durable orchestration under at-least-once external effects, with explicit reconciliation where the outcome is uncertain**. It is not exactly-once execution, not rollback of completed side effects, and a successful `engine.run` does not mean business completion. Docs below describe **shipped** behavior; proposed gates are labeled **(proposed)**.
+> [Workflow-engine honesty and Jido action contracts](../decisions/0032-workflow-engine-honesty-jido-contracts.md) is the design target. Its fixed point is **truthful durable orchestration under at-least-once external effects, with explicit reconciliation where the outcome is uncertain**. It is not exactly-once execution, not rollback of completed side effects, and a successful `engine.run` does not mean business completion. Docs below describe **shipped** behavior; anything still open is labeled as such rather than presented as shipped.
 
 ```bash
 toron workflow lint <file.yaml>        # static: schema, guards, refs, acyclicity
@@ -20,7 +20,7 @@ $ toron workflow lint crates/toron-workflow/tests/fixtures/playbook-lint/bugfix_
 0
 
 $ toron workflow lint crates/toron-workflow/tests/fixtures/playbook-lint/bugfix_no_repro.yaml ; echo $?
-  error bug-fix workflow has no `repro` node — a fix without a reproduction fails lint (ADR-0019 Spec 6: fix-root-causes)
+  error bug-fix workflow has no `repro` node — a fix without a reproduction fails lint (fix-root-causes)
 toron: error: 1 blocking lint issue(s)
 1
 
@@ -45,15 +45,15 @@ cheap way to see which ref is missing before wiring a trigger.
 
 ## Durability
 
-`request_approval` suspends the run, writes state, and exits. The run resumes when the approval lands, even across a daemon restart, because the Resonate promise and the signed kind-46xxx event together reconstruct position. This is the difference between toron workflows and a shell script: the approval gate is a checkpoint, not a blocking loop.
+`request_approval` suspends the run, writes state, and exits. The run resumes when the approval lands, even across a daemon restart, because the persisted model plus the signed kind-46xxx event together reconstruct position — approvals are in-process waiters resolved by run id, spawns by spawn key. This is the difference between toron workflows and a shell script: the approval gate is a checkpoint, not a blocking loop.
 
-`park` (bd-ynef) is the same idea for time, and it closes the loop the busy-owner fence opened: `DispatchAcquire::Park` can hand back "park until T", and a step that can actually wait there is what makes the fence re-drivable instead of merely parkable. Its wake time is **data on the step** (an absolute `until_ms`), and the leaf compares it against a clock the **host** supplies — the Resonate SDK deliberately gives a durable function no wall clock, so a leaf cannot take ambient time as authority. Two consequences worth knowing: a re-driven park whose `T` has already passed resumes immediately instead of sleeping again, and the wait is always bounded (`max_wait_secs` is required), because an unbounded wait is a hang with extra syntax.
+`delay` is the same idea for time, and it closes the loop the busy-owner fence opened: `DispatchAcquire::Park` can hand back "park until T", and a step that can actually wait there is what makes the fence re-drivable instead of merely parkable. Its wake time is **data on the step** (an absolute `until_ms`), and the leaf compares it against a clock the **host** supplies — a leaf never takes ambient time as authority. Two consequences worth knowing: a re-driven delay whose `T` has already passed resumes immediately instead of sleeping again, and the wait is always bounded, because an unbounded wait is a hang with extra syntax. (`park` as a standalone action stays refused — use `delay`.)
 
 ## Two stores, four states
 
-Mailbox receipts and workflow effects are **different stores**. The mailbox `ReceiptStore` tracks message lifecycle (`owed → acked → resulted`, plus `degraded`): it proves a message moved, never that a workflow effect happened. The workflow **effect_key / effect journal** (intent → dispatch → settlement, with an explicit `unknown`/reconcile state) **ships** per ADR-0032 Spec 5: the `workflow_effects` tables land in toron-core migration `0010`, and the engine's `EffectJournalMode` (`Recording` default / `Enforced`) decides what an effectful leaf with no injected runner does — `Enforced` **refuses**, `Recording` marks the bypass loudly. The engine also reports its own run lifecycle (`Started` → `Running` → `Succeeded`/`Failed`) through an injected `RunJournal`, so a run row and its effect rows agree on `run_id` (`bd-mi9n`). A workflow-originated mail **may** project `effect_key` as transport `corr`, but the receipt row never replaces the journal row. `thread_id` is conversation identity and is never `corr` or `effect_key`.
+Mailbox receipts and workflow effects are **different stores**. The mailbox `ReceiptStore` tracks message lifecycle (`owed → acked → resulted`, plus `degraded`): it proves a message moved, never that a workflow effect happened. The workflow **effect_key / effect journal** (intent → dispatch → settlement, with an explicit `unknown`/reconcile state) **ships**: the `workflow_effects` tables land in toron-core migration `0010`, and the engine's `EffectJournalMode` (`Recording` default / `Enforced`) decides what an effectful leaf with no injected runner does — `Enforced` **refuses**, `Recording` marks the bypass loudly. The engine also reports its own run lifecycle (`Started` → `Running` → `Succeeded`/`Failed`) through an injected `RunJournal`, so a run row and its effect rows agree on `run_id`. A workflow-originated mail **may** project `effect_key` as transport `corr`, but the receipt row never replaces the journal row. `thread_id` is conversation identity and is never `corr` or `effect_key`.
 
-Four claims that must not be conflated: **suspended** (parked on a durable promise, resumable, never failed) ≠ **terminal** (one semantic run end, published once per `terminal_digest`) ≠ **settled** (a contract-valid action outcome at the action boundary) ≠ **business completion** (the external world actually did it). `settled` never implies a human read the message or the business process finished.
+Four claims that must not be conflated: **suspended** (parked on a durable run, resumable, never failed) ≠ **terminal** (one semantic run end, published once per `terminal_digest`) ≠ **settled** (a contract-valid action outcome at the action boundary) ≠ **business completion** (the external world actually did it). `settled` never implies a human read the message or the business process finished.
 
 ## Actions
 
@@ -64,11 +64,11 @@ Four claims that must not be conflated: **suspended** (parked on a durable promi
 | `dispatch_job` | Creates a plane J job (kind-43001); supports `phase:` for per-harness mechanics. |
 | `request_approval` | Durable suspension; resumes on approval. |
 | `delay` | Timed pause; a message producer, not a blocked thread. |
-| `park` | Durable wait until an **absolute** `until_ms` (bd-ynef). `max_wait_secs` is required and caps one wait; the intent is journaled **before** waiting, so a crash mid-park leaves a `Parked` row a later run resumes from. Interruption, not failure: the value carries `parked` / `resumed` / `redrive_key` and `EffectState::Parked` is non-terminal, so `on_error` does not fire. Re-drive key is `park:<run_id>:<node>:<until_ms>`, so parking the same step to the same T twice resumes once. A T already past resumes immediately. Requests over the 24h cap are **refused**, never truncated — a truncated park resumes early and reads as a successful step. |
+| `park` | Wait until an **absolute** `until_ms`. `max_wait_secs` is required and caps one wait; the intent is handed to the journal seam **before** waiting. A host with NO runner either refuses the park (Enforced) or records the bypass (Recording) — the leaf itself never writes a `Parked` row, so a crash mid-park leaves nothing to resume from. The `Parked` row a later run resumes from is written by the host's pending drain under its own key scheme (`park:<run_id>:<node>:<until_ms>`), on the approval/spawn trigger. Interruption, not failure: the value carries `parked` / `resumed` / `redrive_key` and `EffectState::Parked` is non-terminal, so `on_error` does not fire. Re-drive key is `park:<run_id>:<node>:<until_ms>`, so parking the same step to the same T twice resumes once. A T already past resumes immediately. Requests over the 24h cap are **refused**, never truncated — a truncated park resumes early and reads as a successful step. |
 | `spawn` | Engine-parked sequenced control; `await: true` parks. `no_claim_timeout` defaults to **600s**; explicit `0` is the only no-timeout spelling. |
 | `verify` | Embedding-owned `VerifySink` effect; the engine never shells out. |
-| `react` | **Deprecated, fail-closed** (bd-i6kc): parses for migration but the boundary rejects it with `unsupported_action`. It does not post kind 7. |
-| `call_webhook` | **Deprecated, fail-closed** (bd-i6kc): parses for migration but the boundary rejects it with `unsupported_action`. No webhook sink is wired; there is no SSRF guard to rely on because nothing is dispatched. |
+| `react` | **Deprecated, fail-closed**: parses for migration but the boundary rejects it with `unsupported_action`. It does not post kind 7. |
+| `call_webhook` | **Deprecated, fail-closed**: parses for migration but the boundary rejects it with `unsupported_action`. No webhook sink is wired; there is no SSRF guard to rely on because nothing is dispatched. |
 
 Control-flow actions (`branch`, `retry`, `foreach`, `parallel`, `call_workflow`) are engine-sequenced and never reach an effect runner; a misdispatch fails typed, never `Ok(Null)`.
 
@@ -81,7 +81,7 @@ Control-flow actions (`branch`, `retry`, `foreach`, `parallel`, `call_workflow`)
 - One retry coordinator over the frozen `FailureKind` set; nested retry wrappers flatten. `rate_limit`/`timeout` retry only when the effect is known safe or the provider honors the stable key, otherwise reconcile.
 - CLI refuses parked-action runs when the required host/sink is unavailable, instead of parking forever.
 
-**Shipped** (ADR-0032 Spec 5/6): the normalized `ActionInvocation`/`ActionOutcome`/`ActionFailure` boundary, the per-variant contract table with parse/lint/invoke gates, canonical graph digest with stable node/iteration identity, the workflow-effect journal with crash-matrix reconciliation, and engine-side run-lifecycle rows through the injected journal. **Still open** (tracked, not a re-open): the full host-owned sink drain — the engine builds the kind-46012 terminal record and exposes the pending binding, and the host lifecycle manager per Spec 6 drives parked/pending/terminal publication. No new MCP tools or Nostr kinds are planned for any of this.
+**Shipped**: the normalized `ActionInvocation`/`ActionOutcome`/`ActionFailure` boundary, the per-variant contract table with parse/lint/invoke gates, canonical graph digest with stable node/iteration identity, the workflow-effect journal with crash-matrix reconciliation, and engine-side run-lifecycle rows through the injected journal. **Still open** (tracked, not a re-open): the full host-owned sink drain — the engine builds the kind-46012 terminal record and exposes the pending binding, and the host lifecycle manager drives parked/pending/terminal publication. No new MCP tools or Nostr kinds are planned for any of this.
 
 ## Triggers
 

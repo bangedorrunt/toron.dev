@@ -7,8 +7,10 @@ description: File leases (kind 30031), conflict semantics, transfers, the pre-co
 
 Reserve paths before editing. A reservation (kind 30031) has three states: `intent` (plan to edit, roughly a 5-minute TTL), `held` (the live lease; the default state of an acquisition), `released`.
 
+Liveness oracle: held leases expire 180 s after grant; `reserve with-lease` renews every half-TTL while the command runs. Every authenticated command (inbox read — empty inbox counts — acquire, renew, send) stamps the holder's liveness, so an expired lease held by a live agent still blocks; with no oracle installed, expiry clears (pure NIP-40).
+
 ```bash
-toron reserve acquire --project <slug> --as <Pin> --paths 'crates/x/src/**' --reason bd-z2d0
+toron reserve acquire --project <slug> --as <Pin> --paths 'crates/x/src/**' --reason <bead-id>
 toron reserve conflicts --project <slug> --as <Pin> --paths 'crates/x/src/**'
 toron reserve renew --project <slug> --as <Pin> --paths 'crates/x/src/**' --extend-secs 600
 toron reserve release --project <slug> --as <Pin>
@@ -16,7 +18,7 @@ toron reserve release --project <slug> --as <Pin>
 
 ```text
 $ toron reserve acquire --project toron --as QuietHarbor \
-    --paths 'docs/guides/*,docs/guides/**/*' --reason bd-f5g1
+    --paths 'docs/guides/*,docs/guides/**/*' --reason <bead-id>
 {
   "conflicts": [],
   "reservations": [
@@ -24,7 +26,7 @@ $ toron reserve acquire --project toron --as QuietHarbor \
       "expires_ts_us": 1798155045000000,
       "id": "fc70c49b609083f3ba043fb5060f445a022e6aaa6638104f1732a35f7128d08a",
       "path_pattern": "docs/guides/*",
-      "reason": "bd-f5g1" }
+      "reason": "<bead-id>" }
   ],
   "soft_conflicts": []
 }
@@ -57,7 +59,7 @@ Two board verbs close the loop when a bead closes or a lane needs to see holders
 # The active lease board the strict guard evaluates (holder, path, reason, expiry).
 toron reserve list --project <slug> [--holder <Pin>] [--path 'crates/x/src/**']
 # Release-on-bead-close: revoke every lease whose reason is the bead id.
-toron reserve release-by-reason bd-z2d0 --project <slug> --as <Pin>
+toron reserve release-by-reason <bead-id> --project <slug> --as <Pin>
 ```
 
 ```text
@@ -67,13 +69,13 @@ $ toron reserve list --project toron
   "project_key": "toron",
   "reservations": [
     { "holder": "BrashOtter", "path": "docs/notes/2026-09-26-run-state-checkpoint-design.md",
-      "reason": "bd-langgraph-b2b3-spec", "expires_ts_us": 1798151492000000 },
+      "reason": "<bead-id>", "expires_ts_us": 1798151492000000 },
     { "holder": "QuietHarbor", "path": "docs/guides/*",
-      "reason": "bd-f5g1", "expires_ts_us": 1798155045000000 }
+      "reason": "<bead-id>", "expires_ts_us": 1798155045000000 }
   ]
 }
 
-$ toron reserve release-by-reason bd-f5g1 --project toron --as QuietHarbor
+$ toron reserve release-by-reason <bead-id> --project toron --as QuietHarbor
 {
   "leases": [
     { "holder": "QuietHarbor", "mode": "shared", "path": "docs/guides/*" }
@@ -92,6 +94,44 @@ by releasing with a path glob instead: a glob release widens to whatever the
 pattern matches, while the reason form is keyed to exactly one bead.
 
 `reserve list` is read-only and filters by exact holder and/or symmetric-glob path overlap. `release-by-reason` is operator-signed (no staleness heuristic: the closed bead IS the evidence) and exits with `released: 0` as a clean no-op when nothing matches. Neither adds an MCP tool; both drive the existing `list_file_reservations` / `release_file_reservations_by_reason` operators.
+
+### Stale leases: when a bead closed but its leases did not
+
+A lease whose holder closed the reason bead without releasing leaves the
+always-serialize gate holding that path forever (bd-close-releases-leases-qkbo).
+Two surfaces close that gap without the operator correlating by hand:
+
+```bash
+# The audit: rows whose reason bead is tracker-CLOSED gain `stale: true`
+# (+ `stale_hint`). Default repo is the current directory (`--repo` to point it);
+# no `.beads/issues.jsonl` there means no annotation, never an error.
+toron reserve list --project <slug> --repo <path-to-repo>
+# The sweep: one operator-signed revocation per CLOSED reason still held.
+toron reserve sweep --closed-beads --project <slug> --as <Pin> --repo <path-to-repo>
+```
+
+```text
+$ toron reserve sweep --closed-beads --project toron --as QuietHarbor --repo .
+{
+  "project_key": "toron",
+  "repo": ".",
+  "closed_beads": 805,
+  "stale_reasons": ["bd-close-releases-leases-qkbo"],
+  "released": 2,
+  "leases": [
+    { "holder": "QuietHarbor", "path": "src/a.rs", "reason": "bd-close-releases-leases-qkbo" }
+  ]
+}
+```
+
+`--closed-beads` is required — it is the only sweep source — and a missing
+tracker fails loud (run from the repo root or pass `--repo`). The sweep is
+idempotent: a second run reports `released: 0`. `--no-notify` skips the
+NIP-17 notice to previous holders; without it they are told which leases a
+closed bead revoked. The closed set is read from `.beads/issues.jsonl`
+(issues only; gate verdicts live in `gates.jsonl` and are never consulted).
+No new MCP tool: the daemon arm composes `list_file_reservations` +
+`release_file_reservations_by_reason`.
 
 ## Conflicts
 

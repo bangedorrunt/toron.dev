@@ -7,13 +7,13 @@ description: Send, inbox, threads, corr, the receipt state machine, and the tag 
 
 ```bash
 toron mail send --project <slug> --as <Pin> --to captain \
-  --subject "[bd-z2d0] done" --body "<REPORT>" --thread bd-z2d0 \
+  --subject "[<bead-id>] done" --body "<REPORT>" --thread <bead-id> \
   --corr <corr> --wake tasked --result-path docs/guides/REPORT.md
 ```
 
 ```text
 $ toron mail send --project toron --as QuietHarbor --to captain \
-    --subject "[bd-f5g1] starting" --thread bd-f5g1 --body "claiming bd-f5g1"
+    --subject "[<bead-id>] starting" --thread <bead-id> --body "claiming <bead-id>"
 {
   "count": 1,
   "deliveries": [
@@ -42,9 +42,28 @@ is a failure even when it printed an event id.
 | `--priority` | Normal or low ordering. |
 | `--audience` | Audience narrowing tag. |
 | `--result-path` | Where the deliverable landed; pairs with the file-first rule. |
-| `--verdict approve\|deny` | Closes exactly one human decision per corr (ADR-0028 E4). |
+| `--verdict approve\|deny` | Closes exactly one human decision per corr. |
 | `--importance urgent` | Outer urgency tag, visible without decrypting, injected immediately. Spend it on file-conflict blocks, unanswered request-releases, wedges. Never on status or FYI. |
 | `--resolve-bead <bead>` | Stamps the structural done-hold tag the flywheel dispatch guard matches (CLI-only; the guard matches the tag, not a subject line). |
+
+### Addressing
+
+A recipient is one of the following:
+
+| Form | Resolves to |
+|---|---|
+| `Pin` | the pin's one key, in whatever project it is registered. A send from project A to a pin registered only in B arrives, and B's inbox shows it. |
+| `Pin@project` | that pin's key as registered in `project`. Parsed as qualified only when `project` has registered agents; otherwise the whole string is a literal name and fails as an unknown recipient. |
+| npub (64 hex) | that key, always. |
+| `captain`, `role:<name>` | the alias, then as above. |
+
+An unregistered name fails loud (`unknown recipient: …`) and nothing is sent. A **legacy split pin**, one that still holds a different key in different projects, is refused when bare, because a bare name cannot say which key the recipient reads. The refusal (abridged) lists every qualified form:
+
+```text
+"CedarFixture" is bound to 2 different keys across projects (a legacy per-project split). A bare name cannot say which one the recipient reads. Address one explicitly: CedarFixture@proj-c (5f3c0a9e21d4…), CedarFixture@proj-d (abababababab…) — or use the npub. Refusing to send.
+```
+
+Each message carries its sending project inside the encrypted rumor, so search and the product-wide inbox file it under the project it was sent from, and a product inbox shows it once.
 
 Recipients are explicit: `reply_message` does not default to the sender (the flywheel facade fills the parent sender when omitted). `mail ack` and `mark_message_read` take the hex `message_id`, never an integer.
 
@@ -64,13 +83,13 @@ $ toron mail inbox --project toron --as QuietHarbor --since last
   "messages": []
 }
 
-$ toron mail thread-summarize --project toron --thread bd-f5g1
+$ toron mail thread-summarize --project toron --thread <bead-id>
 {
   "action_items": [],
-  "key_points": [ "[bd-f5g1] starting" ],
+  "key_points": [ "[<bead-id>] starting" ],
   "message_count": 1,
   "participants": [ "QuietHarbor" ],
-  "thread_id": "bd-f5g1"
+  "thread_id": "<bead-id>"
 }
 
 $ toron mail whois toron QuietHarbor
@@ -79,10 +98,10 @@ $ toron mail whois toron QuietHarbor
   "model": "flywheel",
   "name": "QuietHarbor",
   "npub": "86112aa8bacf5a7f0ab94e113dff52fc47108b7293638f19d756d835bf3b26a8",
-  "pane_id": "wK:p2",
+  "pane_id": "hc:t7",
   "program": "flywheel",
   "stale": false,
-  "workspace_id": "wK"
+  "workspace_id": "hc:t1"
 }
 ```
 

@@ -9,7 +9,7 @@ import { source } from "@/lib/source";
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "The four-plane execution loop as eight build-time diagrams, from goal to evidence and memory.",
+    "One verified run through the four planes, with the receipt, bead, run/effect, dispatch, coalition, close, and memory state machines as eight build-time diagrams.",
 };
 
 export default function HowItWorksPage() {
@@ -23,7 +23,7 @@ export default function HowItWorksPage() {
     <SitePage
       eyebrow="How it works"
       title="A goal becomes a system that keeps going."
-      description="The stack works because each plane hands a durable artifact to the next. These eight diagrams trace the loop one mechanism at a time, from the first sealed message to the recovery path after a crash."
+      description="The stack works because each plane hands a durable artifact to the next. These eight diagrams trace one run from arrival to recall, naming the state that survives the pane and the refusal that keeps it honest."
     >
       <DocsBody>
         <MDX components={getMDXComponents({ a: createRelativeLink(source, page) })} />

@@ -5,7 +5,7 @@ description: Pins, profiles, strict model routing, spawn verification, and dispa
 
 ## Names
 
-A **pin** (adjective + noun, `DustySparrow`) is the public mail name. `flywheel mail whois <project> <name>` resolves pin to npub. A spawned crew member gets a unique pin drawn at spawn, registered in `agent-names.json` as `mail_identity`, and injected into the pane; crews never self-register a second name.
+A **pin** (adjective + noun, `DustySparrow`) is the public mail name. `flywheel mail whois <name> <project>` resolves pin to npub. A spawned crew member gets a unique pin drawn at spawn, registered in `agent-names.json` as `mail_identity`, and injected into the pane; crews never self-register a second name.
 
 Composed names pass through unhashed: `crew-<workflow>-<role>` and `flywheel-<base>-<profile>` are legal in `--as`/`--to` as-is. A raw harness pane with no registry entry is addressable by its agent kind (`--to grok`) or its pane id; the send error lists every raw pane as `kind (pane_id)`. Never `--to coder1`: the seq-1 grammar is invalid, the first agent of a profile has no suffix. Unregistered free strings fail loud; there is no silent hash rewrite.
 
@@ -24,7 +24,7 @@ is raw and has to be addressed by its agent kind or pane id instead. Do not
 reroute silently to whatever does resolve: a message that lands on the wrong
 agent is worse than one that fails.
 
-The tracker uses different names: br claims take the herdr slug (`flywheel-toron-coder`), never a pin.
+The tracker uses different names: br claims take the plane slug (`flywheel-toron-coder`), never a pin.
 
 ## Profiles and spawn
 
@@ -45,7 +45,7 @@ A profile with an empty harness is one whose route comes from a slot alias
 (`@standard`, `@premium`) rather than a pinned harness, so the effective
 harness is resolved at spawn time and recorded in the ledger.
 
-Unsure of the role: list first. Bare harness flags (`--oc/--pi/--gk`) count only under an explicit captain harness constraint, recorded in the trail. `--join-channel` auto-joins every spawned pin at pane creation (join-before-post: a non-member post fails loud and names the remedy).
+Unsure of the role: list first. Bare harness flags (`--oc/--pi/--gk`) count only under an explicit captain harness constraint, recorded in the trail. `--join-channel` auto-joins every spawned pin at pane creation (join-before-post: a non-member post fails loud and names the remedy). Extending a live swarm is `flywheel add <project> --pi N` (or `--kind <kind=N>`): it splits new panes into the running workspace. `spawn --join` only attaches and arrives — it does not add panes.
 
 **Identity is immutable; the binding is not.** The pin and npub (`AgentRef`) never change. Profile, harness, and model are a replaceable, journaled `AgentBinding`: move them with `flywheel binding-rebind <project> --pin <pin> [--profile|--harness|--note]`, which updates the live binding and does not edit `profiles.toml`. Never re-mint a pin to change a role. `--model` here is fail-loud, because no spawn/pane/headless consumer reads it yet.
 
@@ -56,13 +56,13 @@ Spawn fails closed:
 - `launch_pending` is not idle. Wait; never add a second harness.
 - After settle, exit 1 if any pane is missing, empty-named, or wrong-named.
 - `--retire-orphans` is opt-in; default never silently reaps.
-- `flywheel status` may briefly show `workspaces: []` after a verified spawn. Trust the spawn verification; take names from the send error's `available:` list or `herdr workspace list`.
+- `flywheel status` may briefly show `workspaces: []` after a verified spawn. Trust the spawn verification; take names from the send error's `available:` list or `flywheel status / hc ls`.
 
 Panes are peer-aware by default (`integrations/peer-aware.md.tpl`). Opt out per spawn with `--no-peer-aware`; never pass `--peer-aware`.
 
 ## Model routing (strict)
 
-Registry keys are composite `provider/model`, for example `[models."opencode-go/deepseek-v4-flash"]`. `Profile.provider` pins the composite key; bare ids fall back to the default provider (user-file entries first, else alphabetically first). `resolve_strict` adds the prefix and enforces `caps`; an unregistered id or a caps-excluded harness fails the spawn and names the fix (`flywheel model add <id> --provider <p>`). Nothing bypasses the registry.
+Registry keys are composite `provider/model`, for example `[models."opencode-go/deepseek-v4.1-flash"]`. `Profile.provider` pins the composite key; bare ids fall back to the default provider (user-file entries first, else alphabetically first). `resolve_strict` adds the prefix and enforces `caps`; an unregistered id or a caps-excluded harness fails the spawn and names the fix (`flywheel model add <id> --provider <p>`). Nothing bypasses the registry.
 
 Compiled slots: `cheap` (opencode/big-pickle), `standard` (pi + muse-spark), `premium` (omp + glm, fallback grok). The grok harness runs only its own proprietary model; grok models are available on pi, omp, and opencode. Dotted ids need quotes: `[models."glm-5.2"]`.
 
@@ -101,4 +101,4 @@ Stage payloads substitute `{{k}}` slots from repeatable `--param k=v`. Reserved 
 
 ## The send receipt
 
-The send JSON reports `dispatched: true` plus `prior_status` (herdr status at target time). `prior_status: idle` is not a miss: the brief landed while the target was idle. `landed: true` appears only after `--wait`/`--confirm`. Exit 0 with `dispatched` is success for fire-and-forget. Never probe with `READY?`. Never interrupt an agent herdr shows `working`; interrupt of a working agent needs `--force`.
+The send JSON reports `dispatched: true` plus `prior_status` (plane status at target time). `prior_status: idle` is not a miss: the brief landed while the target was idle. `landed: true` appears only after `--wait`/`--confirm`. Exit 0 with `dispatched` is success for fire-and-forget. Never probe with `READY?`. Never interrupt an agent the plane shows `working`; interrupt of a working agent needs `--force`.

@@ -24,9 +24,9 @@ toron.dev/
 
 ## Stack (ADR-0002 D6 — supersedes ADR-0001 D3)
 
-Next.js 16.3.x (App Router, Turbopack, React 19.2) · Fumadocs v16 ·
-Tailwind CSS v4.3 · Mermaid at build time (rehype-mermaid → inline SVG, zero
-client JS) · Vercel Web Analytics · Vercel Hobby → Pro on triggers.
+Next.js 16.3.x (App Router, Turbopack, React 19.3) · Fumadocs v16 ·
+Tailwind CSS v4.3 · Mermaid at build time (Pele → inline SVG, zero client JS) ·
+Vercel Web Analytics · Vercel Hobby → Pro on triggers.
 
 ## Dev setup
 

@@ -6,12 +6,16 @@ description: Keys, daemon, project, and first mail in five minutes.
 ## Operator, once per host
 
 ```bash
+# ~/.config/toron/operator_nsec is the ONE canonical path (XDG_CONFIG_HOME wins
+# over HOME), so exporting it is a pin, not a requirement: `key generate`, the
+# daemon unit, the mailbox host and `doctor` all resolve the same file. The
+# export is still worth doing for a shell that runs operator-signed commands.
 export TORON_OPERATOR_KEY=$HOME/.config/toron/operator_nsec   # a PATH, not a key
 toron key generate --role operator
 toron daemon install && toron daemon start
 toron doctor
 toron project ensure /path/to/project
-flywheel toron setup-mcp --flywheel
+flywheel setup-mcp
 ```
 
 ```text
@@ -20,8 +24,9 @@ running (launchd com.toron.serve)
 
 $ toron doctor
 toron doctor
-  ok   herdr — herdr socket reachable at /Users/you/.config/herdr/herdr.sock
+  ok   hc — hc socket reachable at /Users/you/.local/state/herdr-core/default/default.sock
   ok   git — git version 2.55.0
+  ok   daemon_build — build — /path/to/toron (booted 2026-09-30T11:41:39+00:00, from a build written 2026-09-30T11:41:09+00:00)
   ok   legacy_slug_identities — 6 leftover legacy registration(s): ...
 ```
 
@@ -29,13 +34,27 @@ toron doctor
 readout; a bare pid means an unmanaged instance, which `stop` refuses to touch.
 `doctor` prints one line per check and only the `FAIL` lines need action.
 
-If it fails: `FAIL keys — operator_key not configured` means the operator key was
-never exported or the path is wrong **for the daemon's environment** — the
-secret is a path in `TORON_OPERATOR_KEY`, so a typo reads as "not configured"
-rather than as a bad key. `FAIL resonate` is not toron's problem to fix: the
-workflow fabric needs `http://127.0.0.1:8001` up, and the check refuses to
-invent a green (GS-037) instead of degrading silently. `doctor --check` exits 3
-when any check failed, so a wrapper can gate on the exit code alone.
+If it fails: the `keys` line names **which source resolved**, so read it before
+acting. "not configured" means no key exists at the canonical path either; a red
+naming a **LEGACY** key means an old data-root `operator/operator.ncryptsec` is
+sitting where nothing reads it — that is a *different identity*, so move the one
+you mean to keep (`mv` is spelled out in the message) rather than letting two
+exist. The secret is a path in `TORON_OPERATOR_KEY`, so a typo reads as "not
+configured" rather than as a bad key. `key generate` refuses to overwrite an
+existing key (exit 1, bytes untouched), so a re-run needs the old file moved
+first. `FAIL engine store` is a local problem to fix: the check opens the
+engine-store sqlite, parks a scratch run, and drains its wake — a missing or
+unwritable store reads as DOWN, never as silent success. `doctor --check`
+exits 3 when any check failed, so a wrapper can gate on the exit code alone.
+
+`FAIL daemon_build` is the one red you can cause yourself, and it is the only
+check that knows what the daemon is *running*. A process keeps executing the
+file it was exec'd from, so a rebuild under a live daemon leaves it serving the
+previous build: the check compares the artifact the daemon booted from against
+the file on disk now, by identity (inode and size) rather than by timestamp, so
+a `touch` deliberately does not trip it while a rebuild does. `toron daemon
+status --json` prints the same facts as data (`build.verdict`,
+`build.restart_required`, both times); `toron daemon restart` clears it.
 
 `daemon install` writes the launchd/systemd unit and a 0600 passphrase file, so the secret never lands in a plist or process env. The env var is `TORON_KEY_PASSPHRASE` (never `TORON_OPERATOR_PASSPHRASE`); resolution order is env, `TORON_KEY_PASSPHRASE_FILE`, `~/.config/toron/passphrase`, then the `toron` dev default.
 
@@ -50,7 +69,7 @@ $ toron agent bootstrap --project toron --as QuietHarbor --json
 {
   "agent": "QuietHarbor",
   "next": "export AGENT_NAME=<pin> (or pass --as on every call); reserve before edit — the strict guard blocks unattributed or unreserved commits",
-  "pane_id": "wK:p2",
+  "pane_id": "hc:t7",
   "project": "toron",
   "registration": {
     "created": false,
@@ -78,13 +97,13 @@ substitute a pane slug or a captain-looking name for a taken pin.
 
 ```bash
 toron mail send --project <slug> --as <Pin> --to captain \
-  --subject "[bd-z2d0] starting" --body "claiming bd-z2d0" --thread bd-z2d0
+  --subject "[<bead-id>] starting" --body "claiming <bead-id>" --thread <bead-id>
 toron mail inbox --project <slug> --as <Pin> --since last
 ```
 
 ```text
 $ toron mail send --project toron --as QuietHarbor --to captain \
-    --subject "[bd-f5g1] starting" --thread bd-f5g1 --body "claiming bd-f5g1"
+    --subject "[<bead-id>] starting" --thread <bead-id> --body "claiming <bead-id>"
 {
   "count": 1,
   "deliveries": [
@@ -117,7 +136,7 @@ toron doctor --check    # exit 3 on any failure
 ```text
 $ toron status --json
 {
-  "backend": "herdr",
+  "backend": "hc",
   "data_dir": null,
   "envelope_ttl_days": 90,
   "operator_key": null,

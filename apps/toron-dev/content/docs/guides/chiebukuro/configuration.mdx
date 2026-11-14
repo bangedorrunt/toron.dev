@@ -1,9 +1,9 @@
 ---
 title: Configuration
-description: Create and revise ~/.config/chiebukuro/config.toml — precedence, keys, model roles with fallbacks, Jev gates, migration, troubleshooting.
+description: Create, revise, and migrate ~/.config/chiebukuro/config.toml — precedence, keys, model roles with fallbacks, Jev gates, schema version and migrations, troubleshooting.
 ---
 
-One file holds every setting: `$XDG_CONFIG_HOME/chiebukuro/config.toml` (default `~/.config/chiebukuro/config.toml`, on macOS too). `.env` files are not read at runtime (ADR-0037).
+One file holds every setting: `$XDG_CONFIG_HOME/chiebukuro/config.toml` (default `~/.config/chiebukuro/config.toml`, on macOS too). `.env` files are not read at runtime (ADR-0037). The file is **versioned** (`config_version`): keys renamed or removed by an upgrade are folded in place on the first run of a newer binary — see [Migrate](#migrate).
 
 **Precedence:** CLI flag > process environment > `config.toml` > builtin default. Every TOML key maps to one environment variable; the file only fills variables that are not already set, so systemd `Environment=` and shell exports keep winning.
 
@@ -26,22 +26,47 @@ $EDITOR "$(chie config path)"
 chie diagnostic           # confirm keys resolve
 ```
 
+The starter file documents the whole surface, including the keys most people never
+set (`[discord]`, `[line]`, and the `[env]` operational overrides). `chie config show
+--keys` lists the full TOML → environment mapping. Both are kept comprehensive by
+tests, not by convention.
+
 ```text
 $ chie config path
 /Users/you/.config/chiebukuro/config.toml
 ```
 
-Have an existing `.env`?
+## Migrate
+
+`chie config migrate` has two jobs, and the default is the schema.
 
 ```bash
-chie config migrate --dry-run     # redacted preview: typed keys vs [env] pass-through
-chie config migrate               # writes config.toml; leaves .env for you to delete
+chie config migrate --dry-run          # schema migration plan; nothing written
+chie config migrate                    # apply it; config.toml.bak is written first
+chie config migrate --dotenv <path>    # convert a legacy .env instead
 ```
 
 ```text
 $ chie config migrate --dry-run
-Sources:
-  /Users/you/.env
+/Users/you/.config/chiebukuro/config.toml (schema v0)
+  rename `deriver.model` -> `memory.model`
+  remove `llm.failover_model` (ADR-0040: write the fallback as `llm.fallback_model`, provider-qualified)
+  record `config_version = 1`
+(dry run — nothing written)
+```
+
+An older file is migrated automatically on the first run of a newer binary (every
+command except the `chie config` family): renamed keys move to their live slot,
+removed keys are deleted, each change is printed once, and the previous file is
+kept at `config.toml.bak`. Comments and layout survive the rewrite, and a second
+run is a no-op. If the file's version is *higher* than the binary's, it is reported
+and left untouched — upgrade chie rather than downgrade the file.
+
+An existing `.env` still converts, explicitly:
+
+```text
+$ chie config migrate --dotenv ~/.env --dry-run
+Source: /Users/you/.env
 Target: /Users/you/.config/chiebukuro/config.toml
 Keys:   12 typed, 7 pass-through under [env]
   [env]: CONTEXT7_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, KIMI_API_KEY, OPENCODE_ZEN_API_KEY, QWEN_API_KEY, RESONATE_URL, TORON_MCP_URL
@@ -51,17 +76,16 @@ connectors.twitter_auth_token = [REDACTED 40 chars]
 env.CONTEXT7_API_KEY = [REDACTED 43 chars]
 ```
 
-The dry run is where you find out what will be **typed** versus what lands under
-`[env]`: a key with no matching TOML field is pass-through, which is how a
-provider nothing reads keeps working after migration. `[REDACTED <n> chars]`
-proves the key length without printing the value — the preview is safe to paste
-into a report.
+The conversion dry run is where you find out what will be **typed** versus what
+lands under `[env]`: a key with no matching TOML field is pass-through, which is
+how a provider nothing reads keeps working after migration.
+`[REDACTED <n> chars]` proves the key length without printing the value — the
+preview is safe to paste into a report.
 
-If it fails: a `--dry-run` that lists no sources means the `.env` path it looked
-for does not exist — check the working directory you ran it from, since it reads
-the nearest `.env`. Running `migrate` without the dry run first is how a
-pass-through key becomes an `unknown key` warning later; the preview is the cheap
-way to spot it.
+If it fails: pass the path you actually have — only the file named by `--dotenv` is
+read, and a bare `chie config migrate` runs the schema migration instead of
+searching for one. Converting without the dry run first is how a pass-through key
+becomes an `unknown key` warning later; the preview is the cheap way to spot it.
 
 ## Revise
 
@@ -75,6 +99,7 @@ chie preflight --quick            # config file row: applied / shadowed / warnin
 ```text
 $ chie config show
 /Users/you/.config/chiebukuro/config.toml
+schema v1 (current)
 ------------------------------------------------------------
 connectors.twitter_auth_token = [REDACTED 40 chars]  (shadowed by process env)
 llm.context_window = 200000
@@ -110,6 +135,7 @@ Rules of thumb:
 ## Minimal working file
 
 ```toml
+config_version = 1                       # written by init/migrate; current is 1
 wiki_path = "~/workspace/notetoself"
 role = "builder"                         # builder | consumer
 
@@ -129,10 +155,22 @@ max_turns = 50                           # default. Per-run override: --max-turn
 token_budget = 200000                    # default 50000
 
 [memory]
-dual_write = true
-llm = false
+llm = true
+tree = true
+reason = true
 model = "zai/glm-4.5-air"
-fallback_model = "google/gemini-2.5-flash-lite"
+fallback_model = "google/gemini-3.5-flash-lite"  # the builtin default; Gemini 2.5 models answer
+#                                       # 404 "no longer available to new users" to new keys
+# multiwriter = false                   # open the store through the sqlite-multiwriter
+#                                       # VFS (ADR-0053). Requires the installed
+#                                       # extension: scripts/install-extensions.sh multiwriter
+# semantic_recall = "rrf"               # "rrf" fuses the embedding rank with the bm25
+#                                       # rank; "semantic" trusts the embeddings alone;
+#                                       # "off" keeps the lexical order. Default "rrf"
+#                                       # (ADR-0059).
+# dreamer_mode = "both"                  # "consolidate" (NREM), "rem" (REM cross-scope),
+#                                       # or "both" (ADR-0065 two-tier dreaming).
+# synaptic_prune = true                 # prune event claim buffers after upward distillation.
 ```
 
 ## Naming a model: `provider/model`
@@ -166,7 +204,7 @@ Where the fallback runs depends on how it is written. Bare, it stays on the prim
 | Role | Used by | Model key | Fallback key | Default fallback |
 |---|---|---|---|---|
 | `primary` | extraction, synthesis, the RLM agent + analyst, anything without a narrower route | `llm.model` | `llm.fallback_model` | none |
-| `memory` | derivation polish, summaries, dreamer, `chie memory chat` | `memory.model` | `memory.fallback_model` | `google/gemini-2.5-flash-lite` |
+| `memory` | derivation polish, summaries, dreamer, `chie memory chat` | `memory.model` | `memory.fallback_model` | `google/gemini-3.5-flash-lite` |
 | `vision` | image description on ingest | `vision.model` | `vision.fallback_model` | `glm-4v` |
 | `jev` | TypeSafe gates (ADR-0036) | `typesafe.model` | `typesafe.fallback_model` | `jev-latest` |
 
@@ -176,7 +214,7 @@ Resolution for both model and fallback: process env / `config.toml` > builtin. A
 
 ```bash
 chie model --show                              # model, fallback, and both endpoints per role
-chie model memory glm-4.5-air --fallback google/gemini-2.5-flash-lite
+chie model memory glm-4.5-air --fallback google/gemini-3.5-flash-lite
 chie model primary zai/glm-4.5-air --fallback deepseek/deepseek-chat
 chie model memory --fallback ""                # clear
 chie model primary --provider opencode-go      # route rides another gateway
@@ -187,7 +225,7 @@ $ chie model --show
 role          model                        fallback                     endpoint (fallback endpoint)
 --------------------------------------------------------------------------------------------------------------
 primary       zai/glm-4.5-air              opencode-go/muse-spark-1.3-contributor https://api.z.ai/api/coding/paas/v4  ->  https://opencode.ai/zen/go/v1
-memory        zai/glm-5.3-flash            google/gemini-2.5-flash-lite https://api.z.ai/api/coding/paas/v4  ->  https://generativelanguage.googleapis.com/v1beta/openai
+memory        zai/glm-5.3-flash            google/gemini-3.5-flash-lite https://api.z.ai/api/coding/paas/v4  ->  https://generativelanguage.googleapis.com/v1beta/openai
 vision        zai/glm-4.6v                 glm-4v                       https://api.z.ai/api/coding/paas/v4
 jev           jev-1.13.0 (fallback: jev-latest)                https://api.typesafe.ai
 ```
@@ -210,12 +248,16 @@ When a fallback fires you get one stderr line: `[TEL] llm_model_fallback role=�
 api_key = "…"
 model = "jev-1.13.0"
 fallback_model = "jev-latest"
-gates = ["rerank", "rag_classify"]     # add ingest_triage, compile_faithfulness deliberately
+gates = ["rerank", "rag_classify"]     # omit `gates` for the six defaults; "none" for no gate
 [typesafe.thresholds]
 rag_injection = 0.70
+rerank_injection = 0.70                # a candidate that argues for its own ranking
+window_triage_completeness_min = 0.25  # below this the window is resplit (ADR-0060)
 ```
 
-Gates are off unless listed. `rerank`, `rag_classify`, and `ingest_triage` skip on any failure; `compile_faithfulness` fails closed at `chie promote` (`--force` overrides). Details and thresholds: ADR-0036, `chie preflight`.
+With a key present and `gates` unset, the six gates `rerank`, `ingest_triage`, `rag_classify`, `compile_faithfulness`, `window_triage` and `derive` run; a list runs exactly what it names, and `"none"` runs none. The read-only gates skip on any failure; `compile_faithfulness` fails closed at `chie promote` (`--force` overrides). The `rerank` gate also asks the prompt-injection question in the same request as its relevance question and drops a candidate that argues for its own ranking (ADR-0059); `window_triage` asks whether the *sampled* text is represented in the extraction and resplits below its line (ADR-0060).
+
+The memory gates `memory_extract` and `memory_reason` (ADR-0058 §Jev checks) are never on by default: name them to have Jev check every extracted fact and every reasoned conclusion before it is written. They fail closed — while Jev is unreachable, extraction and reasoning write nothing and retry next run. Details and thresholds: ADR-0036, `chie preflight`.
 
 ## Multi-host
 
@@ -234,5 +276,8 @@ Builder (mikasa) and consumer (eren) keep their own `config.toml`; only `role` n
 | `provider/model` treated as a literal model id | The prefix is not a registry id (typo, or an alias like `z.ai`). `chie model` warns; the known ids are above |
 | A named provider always 401s | No key for it: `chie auth login <id>`, or set its key in `[providers]` |
 | Scanned PDF fails with OCR error during compile | Set `FIRECRAWL_API_KEY` (optional, lifts rate limits) in `[providers]` or the environment; self-hosted Parse via `FIRECRAWL_API_URL` (ADR-0044) |
-| `llm.failover_model` no longer does anything | Removed in ADR-0040. Write the fallback as `<provider>/<model>` instead |
+| `llm.failover_model` no longer does anything | Removed in ADR-0040; the schema migration deletes it. Write the fallback as `<provider>/<model>` instead |
+| An `unknown key` warning persists after upgrading | No rename rule covers it — it is yours to fix or move under `[env]`. `chie config migrate --dry-run` shows what the schema migration does know |
+| `migration skipped` warning at startup | The file is unwritable (permissions, read-only FS). The old keys still load through the rename rules; re-run `chie config migrate` once writable |
+| A `config.toml.bak` appeared | The one backup taken before a schema rewrite. Delete it once `chie config show` reads current |
 | Daemon sees old values | Restart it; the file is read once per process |

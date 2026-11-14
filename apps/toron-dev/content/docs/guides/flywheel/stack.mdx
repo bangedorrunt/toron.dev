@@ -1,6 +1,6 @@
 ---
 title: The Stack
-description: Flywheel x toron x beads x chiebukuro on herdr. What each tool owns, how they share state, and where to start.
+description: Flywheel x toron x beads x chiebukuro on the pane plane. What each tool owns, how they share state, and where to start.
 ---
 
 Four local-first tools turn a directory of terminal agents into a fleet that plans work, claims it, verifies it, and remembers what it learned. No server to rent, no database to provision.
@@ -12,13 +12,13 @@ Four local-first tools turn a directory of terminal agents into a fleet that pla
 | **br** | The work ledger: beads with dependencies, gate rows, fail-closed closes | `br` |
 | **chiebukuro** | Knowledge and memory: compiled wiki (BM25 + vector), episodic memory, durable map-reduce | `chie` |
 
-**herdr** is the runtime under all of it: a terminal multiplexer that keeps real panes running, classifies agent state (`working`, `blocked`, `idle`, `done`), and survives client detach. flywheel drives herdr panes. Nothing in this stack replaces it.
+**hc/rex** is the runtime under all of it: a terminal multiplexer that keeps real panes running, classifies agent state (`working`, `blocked`, `idle`, `done`), and survives client detach. flywheel drives hc/rex panes. Nothing in this stack replaces it.
 
 ## How they fit
 
 ```mermaid
 flowchart TB
-    subgraph H["herdr (runtime)"]
+    subgraph H["pane plane (hc/rex)"]
         P["terminal panes"]
     end
     subgraph F["flywheel (orchestration)"]
@@ -64,7 +64,7 @@ One `bd-###` id joins all four tools. Work is real when the ledger says so; ever
 toron key generate --role operator
 toron daemon install && toron daemon start
 toron project ensure /path/to/project
-flywheel toron setup-mcp --flywheel
+flywheel setup-mcp --flywheel
 flywheel deps
 ```
 
@@ -104,13 +104,13 @@ crews end up contending for the same files. `topology: none` with an empty
 `argv` is also a legitimate result rather than an error: it means no catalog
 route matched, so declare a trigger or author one with `compose --agent`.
 
-The door is not ceremony. `arrive` publishes presence, drains the session-start report (open decisions, unread status, divergence), and claims the captain alias first-come-first-served. The briefing classifier picks the vehicle: open, loop, swarm, or coalition. You run what it returns. The rulebook and its bypass ledger are in [integration](./integration).
+The door is not ceremony. `arrive` publishes presence, drains the session-start report (open decisions, unread status, divergence), and claims the captain alias first-come-first-served. The briefing classifier picks `open` or `swarm`. A loop is the work plus one verify check. The command `loop-mode run` stays. You run the argv briefing returns, and you read the one skill in `mode_text`. The rulebook and its bypass ledger are in [integration](./integration).
 
 ## Vocabulary
 
 | Term | Meaning |
 |---|---|
-| **pin** | Your public name, adjective + noun (`ToronScribe`). Mail `--as`/`--to` take pins. br `--assignee` takes the herdr slug (`flywheel-toron-coder`). |
+| **pin** | Your public name, AdjectiveNoun (`IvoryRidge`). The env is `AGENT_NAME`. Mail `--as`/`--to` and `br --assignee` take that pin. |
 | **bead** | One unit of ledgered work. `bd-###`. |
 | **corr** | Correlation id minted by the sender. `toron wait --corr` parks until the receipt lands. Never reuse the thread id. |
 | **plane** | One toron wire surface: P private gift-wrap, S shared rooms, J jobs, N presence, W live watch. |
@@ -124,7 +124,7 @@ The door is not ceremony. `arrive` publishes presence, drains the session-start 
 
 ## Guides
 
-Each project has its own page set, herdr-style: index, quick-start, mechanics, CLI reference, troubleshooting.
+Each project has its own page set, plane-style: index, quick-start, mechanics, CLI reference, troubleshooting.
 
 1. [flywheel](./flywheel): the door, the classifier, spawn and send, the doorbell, loops, workflows, fleet ops.
 2. toron (toron repo, docs/guides): identity, planes, mail, channels and jobs, reservations, workflow engine, daemon ops.

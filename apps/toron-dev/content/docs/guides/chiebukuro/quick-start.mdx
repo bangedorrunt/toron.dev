@@ -69,8 +69,9 @@ never appears in `review list` was not compiled into the queue; check
 ```bash
 chie qmd search "retry budget" --agent
 # L0: scan the gists (~350 chars each). A gist is a summary, not an answer.
-chie get <path> --agent
+chie get <path-or-ref> --agent
 # L1: fetch the top hit's full content before answering.
+# Prefer the indexed ref/path from search; `chie get` also accepts existing local paths.
 ```
 
 ```text

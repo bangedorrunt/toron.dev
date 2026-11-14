@@ -62,9 +62,9 @@ Monitor git and beads for truth, not mail. Address the captain by pin: `flywheel
 
 ## Harness integration
 
-Lifecycle-authority kinds (idle/working/blocked from hook events): pi, omp, kimi, opencode, kilo, mastracode, grok. `pa` reports via built-in socket but has no herdr kind: spawn via recipe fallback and drive with `pane.send_text`. Unknown kinds fail `agent.start` with `unsupported_agent_kind`; kinds with a spawn recipe fall back to `pane.run`.
+Lifecycle authority is the program's own OSC 7501 report (idle/working/done/blocked/error): pi, omp, kimi, opencode, kilo, mastracode, grok. hc has no agent-kind enum: `terminal.send` types into any terminal, and an unknown kind is a flywheel catalog error, not an hc one. A harness that reports nothing stays `unknown` — readable and typeable, but not injectable (`should_inject` = idle|done|blocked), so its wakes go to the digest.
 
-Symptom `agent_not_ready: not an active named agent`, or a pane without lifecycle state in `herdr agent list`: load the harness-integration reference (env injection, boot prime, preflight, pane primitives, alt-screen ladder) before prompting.
+Symptom: a pane that never leaves `unknown` in `hc ls`, or a send that reports `started:false`. Load the harness-integration reference (env injection, boot prime, preflight, pane primitives, read ladder) before prompting.
 
 ## Teardown
 
@@ -95,6 +95,38 @@ abandonment path.
 `--drain` asks each working agent to finish its VERIFY fence, records the drain on the active loop, enforces a 3-poll grace, then force-stops with the bead id; the close is skipped. Do not kill working agents casually.
 
 Orphan crews follow `on_captain_death` in config: `stop` (default) kills attributed children; `continue` keeps crews and the doorbell and clears the `captain` alias (mail to `captain` fails until `recover` or `adopt` rebinds); `--reap-crews` overrides unconditionally.
+
+## Disk maintenance
+
+The `flywheel engine gc` command was removed with the vendor store it
+managed — there is no vendor store, no settled-promise table, and no
+`/health` refusal anymore. Durable engine rows (runs, parks, journal)
+live in the toron index sqlite alongside the mailbox; they are bounded by
+the journal's own retention, not by a gc command. The doorbell audit trail
+remains the one per-workspace growth to watch (below).
+
+The doorbell audit trail is the other per-workspace growth: one `<workspace>.audit.jsonl` per workspace that ever ran a dispatcher, including the throwaway temp roots of gate runs. Rotation caps a live file at 5 MB; `doorbell gc` removes the files of workspaces nothing will serve again.
+
+```bash
+flywheel doorbell gc
+```
+
+```text
+{
+  "applied": false,
+  "files": [],
+  "freed_bytes": 0,
+  "hint": "pass --yes to delete",
+  "older_than_days": 30,
+  "prunable_bytes": 0,
+  "prunable_files": 0,
+  "state_dir": "/Users/bangedorrunt/.local/state/flywheel/doorbell"
+}
+```
+
+A file is a candidate only when **both** hold: no live dispatcher holds its `.pid`, and one of two death signals fires. Either the `.project` sidecar records an absolute project path that no longer exists (a finished gate run's temp root, dead immediately however recently it wrote), or the file has not been touched for `--older-than-days` (default 30). A bare project name like `flywheel` cannot be tested for existence, so it only ever expires on age. The small sibling files (`.pid`, `.gen`, `.unanswered`, `.audit.loudmiss`) are never candidates, so `doorbell status` still reports the workspace.
+
+If it fails: an empty `files` list means nothing is dead under that horizon, not that the command did nothing. `--yes` deletes the audit rows for good; `doorbell why` for that workspace then has no history, which is why the write is gated and the reason per file (`project-gone` or `idle`) is printed before you pass it.
 
 ## Forensics
 

@@ -8,7 +8,7 @@ description: Lifecycle, service units, health checks, crash reconstruction, fede
 ```bash
 toron daemon status                    # managed vs unmanaged
 flywheel deps                          # every dependency in one readout
-flywheel preflight                     # herdr socket, operator key, toron mail, orders
+flywheel preflight                     # hc socket, operator key, toron mail, orders
 ```
 
 ```text
@@ -18,8 +18,8 @@ running (launchd com.toron.serve)
 $ flywheel deps
 br: idle
 bv: idle
-herdr: idle
-resonate server: idle
+hc: idle
+engine store: idle
 mail (toron): idle
 config: /Users/you/.config/flywheel/config.toml
 ```
@@ -41,12 +41,12 @@ Default bind `127.0.0.1:18080`, label `com.toron.serve`. macOS runs launchd (`~/
 ## Health
 
 ```bash
-toron doctor [--check]     # herdr, git, keys, resonate; exit 3 on any failure with --check
+toron doctor [--check]     # hc, git, keys, engine store; exit 3 on any failure with --check
 toron status --json        # quick health/config overview
 toron metrics              # in-process operator counters: tool calls, errors, latency
 toron catalog --json       # the tool / resource / CLI contract
 toron bench startup        # mailbox scenarios: startup|inbox|send|search|threads
-toron tui                  # operator dashboard (refuses non-TTY)
+toron tui                  # operator console: Mail/Channels/Agents/Dashboard/Settings (refuses non-TTY)
 ```
 
 ```text
@@ -59,8 +59,8 @@ $ toron metrics
 }
 
 $ toron catalog --json    # shape, read with python/jq
-schema_version 1  toron_version 1.5.0
-38 tools  25 resources  29 cli_commands
+schema_version 1  toron_version 1.7.2
+38 tools  25 resources  34 cli_commands
 first tool: register_agent {description, example, group, input_schema, name, output_schema, parity}
 
 $ toron bench startup
@@ -70,9 +70,9 @@ $ toron tui
 toron: error: toron tui requires a TTY (refusing to run on a pipe)
 ```
 
-The catalog is a contract, not documentation: CI's catalog freshness gate fails on drift between the emitted catalog and the docs. `catalog --output PATH` snapshots it. Read the counts off the emitted catalog rather than a guide — 38 tools / 25 resources / 29 CLI verbs is what this host emits today, and the guide index's older "40 tools" is exactly the drift the gate is for.
+The catalog is a contract, not documentation: CI's catalog freshness gate fails on drift between the emitted catalog and the docs. `catalog --output PATH` snapshots it. Read the counts off the emitted catalog rather than a guide — 38 tools / 25 resources / 34 CLI verbs is what this host emits today, and the guide index's older "40 tools" is exactly the drift the gate is for.
 
-If it fails: `bench` requires a case, and `toron bench --project <slug>` fails with `unexpected argument '--project'` because the verb takes a positional and nothing else. `tui` refusing on a pipe is correct behaviour, not a broken dashboard. `doctor --check` exits 3 on any failure — read the `FAIL` lines, since the exit code alone does not say which subsystem is down.
+If it fails: `bench` requires a case, and `toron bench --project <slug>` fails with `unexpected argument '--project'` because the verb takes a positional and nothing else. `tui` refusing on a pipe is correct behaviour, not a broken dashboard — it needs a real terminal for its five tabs and vim keys, so run it from a shell, not from a log-capture harness. `toron tui --project <slug> --as <pin>` selects the mailbox and identity; without either the tab fails loud rather than guessing. Flags, tabs, folders, and keymap: [CLI reference](./cli-reference). `doctor --check` exits 3 on any failure — read the `FAIL` lines, since the exit code alone does not say which subsystem is down.
 
 ## Recovery
 
@@ -100,7 +100,7 @@ If it fails: a relay that accepts an event and drops it looks identical to a hea
 ```text
 $ toron config
 toron config (effective)
-  backend: "herdr"
+  backend: "hc"
   data_dir: null
   envelope_ttl_days: 90
   federation_allowlist: []

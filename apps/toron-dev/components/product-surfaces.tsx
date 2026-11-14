@@ -225,16 +225,21 @@ type LogLine = { text: string; tone?: "key" | "ok" | "warn" | "bad" | "accent" |
 // figure shows. A second copy of this data would drift from the figure, and a
 // reader comparing the two would be reading fiction in one of them.
 export const LOOP: LogLine[] = [
-  { text: '$ flywheel briefing "ship the change" --project torondev --json', tone: "key" },
-  { text: "  vehicle: none (raw) — no catalog route, no live fleet", tone: "dim" },
-  { text: "  ready_beads: 4 · held_paths: 0 · dispatcher: absent", tone: "dim" },
+  { text: "$ flywheel arrive torondev --as QuietHarbor", tone: "key" },
+  { text: '$ flywheel briefing "ship the landing grammar" --project torondev --json', tone: "key" },
+  { text: "  FLEET none live · ready_beads 1 · held_paths 0", tone: "dim" },
   { text: "$ br ready --json", tone: "key" },
-  { text: "  br-xo2  Ready     landing page grammar        verify: bun run build", tone: "ok" },
-  { text: "  br-k71  Ready     walkthrough: first mail    verify: sh -n install.sh", tone: "ok" },
-  { text: '$ toron reserve acquire --paths "apps/toron-dev/app/*"', tone: "key" },
-  { text: "  granted · conflicts: [] · reason: br-xo2", tone: "accent" },
+  { text: "  torondev-landing-grammar-xo2  Ready  verify: bun run build", tone: "ok" },
+  { text: "$ toron reserve acquire --reason torondev-landing-grammar-xo2", tone: "key" },
+  { text: "  granted · conflicts: [] · 2 paths held", tone: "accent" },
+  { text: "$ flywheel loop-mode run torondev --work", tone: "key" },
+  { text: "  poll 1 · dispatched → QuietHarbor", tone: "ok" },
   { text: "… daemon restart …", tone: "warn" },
-  { text: "  ↻ resumed from journal — 0 work items re-dispatched", tone: "ok" },
+  { text: "  ↻ resumed from journal · claim + lease preserved", tone: "ok" },
+  { text: "$ br gate report ... --status pass --to closed", tone: "key" },
+  { text: "$ br close ... --commit-sha 4c9e1a2", tone: "key" },
+  { text: "  closed · commit=4c9e1a2", tone: "ok" },
+  { text: "$ chie memory record --kind decision", tone: "key" },
 ];
 
 export function LoopSurface() {
@@ -273,7 +278,7 @@ const GATES: GateRow[] = [
     name: "gate · catalog freshness",
     status: "pass",
     tone: "green",
-    evidence: "38 tools · 25 resources",
+    evidence: "38 parity + 3 additive · 25 resources",
   },
   { name: "gate · route smoke", status: "pass", tone: "green", evidence: "12/12 → 200" },
   {

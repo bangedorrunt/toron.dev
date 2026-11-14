@@ -3,7 +3,7 @@ title: Cron
 description: First-class scheduled primitives (ADR-0012). A cron is not a workflow with a schedule trigger; it owns its own body, policy, and fixer loop.
 ---
 
-A **cron** is a scheduled primitive, distinct from a workflow. It has its own multi-step body that composes workflows via `call_workflow`, plus cron-specific policy (owner, scope, repeat escalation, no-claim timeout). Both run on the same toron-workflow engine; the cron manager is a Resonate durable-sleep loop (`ctx.sleep` until the next tick), not systemd. Missed ticks follow `catchup: latest` (run the most recent due tick on wake), so a flywheel restart loses nothing.
+A **cron** is a scheduled primitive, distinct from a workflow. It has its own multi-step body that composes workflows via `call_workflow`, plus cron-specific policy (owner, scope, repeat escalation, no-claim timeout). Both run on the same toron-workflow engine; cadence comes from `ElmCron` (the host ticks every 30s, one idempotent fire per due schedule, last-fired checkpoints in the state file) and bodies run on the durable body driver — not systemd, not a server. Missed ticks follow `catchup: latest` (run the most recent due tick on wake), so a flywheel restart loses nothing.
 
 ## The 5-minute author
 
@@ -38,8 +38,26 @@ flywheel cron status                  # one line per cron: due | paused | runnin
 flywheel cron lint weekly-review      # fail-stop gate; run always
 flywheel cron run weekly-review       # on demand (25s dry-run default; --live fires once)
 flywheel cron history weekly-review   # NAME is required here, not optional
-flywheel cron start                   # start or resume the durable cron loops
+flywheel cron start                   # run the host in the foreground (debugging)
+flywheel daemon start                 # supervise the host (installs dev.flywheel.cron)
+flywheel daemon status                # serve + cron supervision state
 ```
+
+`cron start` is the host; it blocks and ticks every 30s. Nothing else starts
+it — `flywheel serve` is the HTTP/wake daemon and does not tick. In normal
+operation the **supervisor** owns it: `flywheel daemon start` installs and
+starts a second unit, `dev.flywheel.cron` (launchd on macOS, a systemd user
+unit on Linux), whose argv is `flywheel cron start --project <p>` and whose
+working directory is the project root. That cwd matters: the per-project tier
+(`<project>/.flywheel/crons/`) is detected from it, and `on_failure: bead`
+files into that project's `.beads`.
+
+Cron is a separate unit from `serve` on purpose. A crashed HTTP daemon, a bind
+conflict, or a handler panic must not stop ticks, and a stuck body must not
+take down the HTTP surface. Both units are `RunAtLoad` + restart-on-failure, so
+a reboot brings the whole host back. A host that is not supervised stops
+ticking the moment its terminal closes; `flywheel daemon status` prints both
+lines, and a stopped cron line names the command that fixes it.
 
 ```text
 $ flywheel cron list
@@ -67,6 +85,29 @@ and would fail silently into human-in-the-loop. `lint` always runs first, before
 `start`.
 
 Sources and precedence: built-ins (compiled-in), global (`~/.config/flywheel/crons/`), per-project (`<project>/.flywheel/crons/`). Per-project wins over global wins over built-in.
+
+## The awareness digest (host-native, no agent)
+
+`awareness-digest` is **not** a workflow cron. Its facts are local, so the host
+computes them every 15 minutes (`*/15 * * * *`) in `src/awareness.rs`:
+
+```text
+awareness flywheel 06:15 · dispatcher: up pid=1234 · doorbell: ok · agents 5 (busy 2, idle 3, dead 0) · held 4
+```
+
+It is silent unless something moved: no swarm spawned means no digest at all
+(an idle host is not an outage), an unchanged line writes nothing, and a
+**new** conflict files one bead — dispatcher down with panes, an unanswered
+doorbell pin, or two pins holding one reservation path. The beads poller wakes
+an idle captain on a ready bead, so the escalation costs no tokens. One bead
+per conflict episode: while the same conflict persists the digest stays quiet,
+and a cleared conflict resets so a recurrence can ring again. State lives in
+`~/.local/state/flywheel/awareness/<project>.json`.
+
+The catalog entry `awareness-digest` remains as the **on-demand narrative**
+(`flywheel workflow run awareness-digest --execute`): a housekeeper explains
+the numbers when a human asks. It carries no schedule trigger on purpose; a
+trigger would schedule the LLM path this replaced.
 
 ## The self-reporting loop (never "self-healing")
 

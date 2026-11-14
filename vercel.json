@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
-  "buildCommand": "node scripts/vercel-chromium.mjs && node scripts/generate-tool-docs.mjs && node scripts/check-freshness.mjs && playwright install chromium && next build",
+  "buildCommand": "node scripts/generate-tool-docs.mjs && node scripts/check-freshness.mjs && next build",
   "ignoreCommand": "node apps/toron-dev/scripts/should-skip-deploy.mjs"
 }

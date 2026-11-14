@@ -44,14 +44,14 @@ design.
 ```bash
 br create "Landing page grammar" \
   -t feature -p 2 --slug landing-grammar \
-  --verify 'npx pnpm@11.21.0 --filter toron-dev build' \
+  --verify 'bun run build' \
   --principle 'redesign-from-first-principles — rebuilt the layout grammar rather than restyling the old blocks' \
   -d 'Rebuild the landing page on the numbered-section grammar.'
 ```
 
 ```text title="You should see"
 { "id": "torondev-landing-grammar-xo2",
-  "verify": "npx pnpm@11.21.0 --filter toron-dev build",
+  "verify": "bun run build",
   "principles": [ { "name": "redesign-from-first-principles",
                     "decision": "rebuilt the layout grammar rather than restyling the old blocks" } ],
   "ac_shape": "checkable", "status": "open", "priority": 2 }

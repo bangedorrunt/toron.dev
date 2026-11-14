@@ -10,16 +10,16 @@ what the command prints, and every step names what to do when it prints somethin
 
 ```bash
 toron daemon start                      # mailbox + MCP on 127.0.0.1:18080
-flywheel toron setup-mcp --flywheel     # point flywheel and harnesses at the same daemon
-flywheel deps --ensure                  # toolchain health; starts resonate if down
+flywheel setup-mcp --flywheel     # point flywheel and harnesses at the same daemon
+flywheel deps --ensure                  # toolchain health
 ```
 
 ```text
 running (launchd com.toron.serve)
 br: idle
 bv: idle
-herdr: idle
-resonate server: idle
+plane: idle
+engine store: idle
 mail (toron): idle
 config: /Users/you/.config/flywheel/config.toml
 ```
@@ -32,9 +32,9 @@ expects of a harness and what the installed harness provides — for example a p
 that the installed binary does not have. Read the `WARNING` line it prints, because that names
 the exact function or agent list to update. `flywheel deps --ensure` repairs missing
 dependencies, but it cannot repair drift, by design: drift needs a human to decide which side
-is right. `flywheel preflight` adds herdr socket, operator key, toron mail, and standing orders
+is right. `flywheel preflight` adds hc socket, operator key, toron mail, and standing orders
 to the same check; fix FAILs there before any fleet work, because the loop and compose engine
-need resonate at `http://localhost:8001`.
+need the local engine store answering (open, park, wake).
 
 ## Every session
 
@@ -155,5 +155,5 @@ If it fails: `--status` is not a flag. The loop's status readout is one of the `
 machine doors, so `flywheel loop-mode run <p> --status` errors with `unexpected argument`.
 Use `--robot-status`, and use `flywheel watch` when you want the human view.
 
-Monitor git and the ledger for truth, not mail. `flywheel mail whois <project> captain`
+Monitor git and the ledger for truth, not mail. `flywheel mail whois captain <project>`
 resolves the captain alias, and `flywheel mail watch <p> --thread <t>` blocks on one thread.

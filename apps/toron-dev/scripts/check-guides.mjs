@@ -97,7 +97,10 @@ function extractSurface(bin) {
     for (const line of text.split("\n")) {
       const m = line.match(/^\s+(?:-(\w),\s+)?--([a-z0-9][a-z0-9-]*)(.*)$/);
       if (!m) continue;
-      const takesValue = /<[^>]+>/.test(m[3]);
+      // The option column ends at the first run of two spaces. A `<repo>` in
+      // the description is prose, not a value placeholder.
+      const optionSpec = m[3].split(/\s{2,}/)[0];
+      const takesValue = /<[^>]+>/.test(optionSpec);
       flags.set(m[2], takesValue);
       if (m[1]) {
         shorts.set(m[1], takesValue);

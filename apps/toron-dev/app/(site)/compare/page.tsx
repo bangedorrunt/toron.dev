@@ -21,19 +21,35 @@ const ROWS: [string, string[]][] = [
     "Keeps a terminal run alive",
     ["composes with one", "yes", "yes · its whole job", "no", "a terminal you guess at"],
   ],
-  ["Work item closes on evidence", ["yes · gate row + sha", "no", "no", "no", "a status message"]],
   [
-    "Recovers work after a crash",
-    ["yes · journal replay", "partial", "yes · for the pane", "no", "re-read the scrollback"],
+    "Work item closes on evidence",
+    ["yes · pass row + cited sha", "no", "no", "no", "a status message"],
+  ],
+  [
+    "Recovers a claim and lease after a crash",
+    [
+      "yes · journal + original TTL",
+      "partial",
+      "yes · for the pane",
+      "no",
+      "re-read the scrollback",
+    ],
   ],
   [
     "Serializes a shared file",
     ["yes · reservation guard", "no", "no", "no", "asking nicely in chat"],
   ],
-  ["Reachable over MCP", ["yes · 38 tools, 25 resources", "yes", "varies", "yes", "n/a"]],
   [
-    "Knowledge carries across runs",
-    ["yes · wiki + episodic", "no", "no", "yes · vector recall", "no"],
+    "Effect result can be Unknown",
+    ["yes · explicit reconcile state", "no", "no", "no", "assume it worked"],
+  ],
+  [
+    "Knowledge and memory keep authority",
+    ["yes · wiki + labelled conclusions", "no", "no", "one vector store", "no"],
+  ],
+  [
+    "Reachable over MCP",
+    ["yes · 38 parity + 3 additive, 25 resources", "yes", "varies", "yes", "n/a"],
   ],
   [
     "Runs local-first, no account",
@@ -41,17 +57,11 @@ const ROWS: [string, string[]][] = [
   ],
 ];
 
-/*
- * The fourth field is the character the entry is about, and it is deliberately
- * absent on the first row: the process-dies entry is about herdr, which is not one
- * of the four planes, and a card that claims a character it does not own is worse
- * than a card with no art at all. The three that do name a plane get it.
- */
 const COMPOSE: [string, string, string, PlaneSlug?][] = [
   [
     "The process dies",
     "herdr keeps the runtime",
-    "Panes stay alive and visible. toron keeps the signed relationship and the archive, so a crash does not erase the work record.",
+    "Panes stay alive and visible. toron keeps the signed relationship, the receipt, the path lease, and the effect journal, so a crash does not erase the work record.",
   ],
   [
     "The work is ambiguous",
@@ -144,6 +154,10 @@ export default function ComparePage() {
           <li>Local-first means you own the relay, the archive, and the backups.</li>
           <li>Reservation and gate ceremony is real overhead on a one-line change.</li>
           <li>
+            An Unknown effect needs reconciliation. The stack keeps it visible; it does not make the
+            provider answer.
+          </li>
+          <li>
             MCP client support varies by harness, and the parity surface is not the whole product
             surface.
           </li>
@@ -152,10 +166,13 @@ export default function ComparePage() {
 
       <CTABand
         title="See the loop instead of picking a side."
-        body="The architecture page names the owner of every capability, and states what each plane refuses to do."
+        body="The architecture page names the owner of every capability, states what each plane refuses to do, and lists the durable state machines."
       >
         <Link href="/architecture" className="toron-btn toron-btn--primary toron-btn--lg">
           Map the four planes
+        </Link>
+        <Link href="/architecture#states" className="toron-btn toron-btn--lg">
+          Read the state models
         </Link>
       </CTABand>
 

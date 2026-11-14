@@ -32,6 +32,21 @@ typing `TORON_OPERATOR_PASSPHRASE`, which is not read at all.
 
 Identity is npub / `key_path` / profile event id. One pin, one key: never mint a second key for a taken pin, and never use a pane slug or a captain-looking name. Reuse one npub across projects with `flywheel mail register <project> --name <pin> --from-project <other>`.
 
+### One pin, one key, in every project
+
+A pin is one identity with one key, no matter how many projects it is registered in. The project is a property of each message, not of the key.
+
+- **Registering a known pin in another project reuses its key.** `toron agent bootstrap --project <new> --as <Pin>` finds the pin's key in the other project, proves possession by signing with it, and registers the same npub. The JSON reports `reused_key_from: "<project>"`. If the pin holds more than one key (see below), name the key to keep with `--key-from <project>`.
+- **Nothing else can mint a second key for a taken pin.** The MCP `register_agent` (and `create_agent_identity`) refuse, and the database refuses the row too. The refusal names the pin, the projects it already holds, and the bootstrap command to run on the host that holds the key (abridged):
+
+```text
+pin AmberFixture is already registered in proj-a (fcddc09a8c1d…) — one pin, one key: it cannot get a second key in project proj-c. Reuse its key with proof of possession: run `toron agent bootstrap --project proj-c --as AmberFixture` on the host that holds the key
+```
+
+- **Legacy split pins.** Stores created before this rule can hold a pin with a different key per project. Those pins are re-keyed by an operator one at a time, choosing the surviving key. Until a pin is re-keyed, a bare send to it is refused (see [Mail](mail.mdx#addressing)), and you address it as `Pin@project` or by npub.
+
+If it fails: "already registered in …" from MCP registration means you are on a path that cannot prove possession. Run `toron agent bootstrap` on the host that holds the key file. "holds N different keys" means a legacy split; pass `--key-from <project>` to pick one, or wait for the operator re-key.
+
 Passphrase resolution: `TORON_KEY_PASSPHRASE`, then `TORON_KEY_PASSPHRASE_FILE`, then `~/.config/toron/passphrase`, then the `toron` dev default. The single most common setup error is typing `TORON_OPERATOR_PASSPHRASE`.
 
 ## Names
@@ -39,7 +54,7 @@ Passphrase resolution: `TORON_KEY_PASSPHRASE`, then `TORON_KEY_PASSPHRASE_FILE`,
 | Surface | Name form |
 |---|---|
 | mail `--as` / `--to` | pin (`DustySparrow`) or `crew-*` / `flywheel-*` pass-through |
-| br claim `--assignee` | herdr slug (`flywheel-toron-coder`) |
+| br claim `--assignee` | hc agent name (`flywheel-toron-coder`) |
 | mail `--to captain` | the project's registered orchestrator alias, never the host username |
 | `mail --to role:<name>` | resolves through kind-30013 `role=` tags via identity/whois |
 
@@ -63,9 +78,11 @@ $ toron mail whois toron captain
 
 Read the pane fields, not `stale`, when asking whether anyone will read the mail:
 all four pane fields `null` means the alias resolves to a pin with no live pane,
-no dispatcher and no presence heartbeat. This host's `flywheel arrive` reports it
-in as many words and names the rebind (`toron contact captain --project &lt;slug>
---pin &lt;pin>`, or `--clear` to vacate for parent-death semantics).
+no dispatcher and no presence heartbeat. On hc `tab_id` is always empty — there
+are no tabs, so `pane_id`/`workspace_id` carry the answer. This host's
+`flywheel arrive` reports it in as many words and names the rebind
+(`toron contact captain --project <slug> --pin <pin>`, or `--clear` to vacate
+for parent-death semantics).
 
 AM-Rust rejects non adjective+noun names; toron is more permissive, but other stacks are not: stay adjective+noun.
 
@@ -86,7 +103,7 @@ applied but is missing in the resolved migrations` is a binary/DB mismatch — t
 database has an applied migration the installed binary cannot resolve, so the
 store refuses to open. Rebuild from this checkout or upgrade the installed
 binary; no flag fixes it, and a stale binary makes several verbs look broken at
-once. Role pinning is operator CLI: `flywheel spawn --profile` does not auto-bind a role (profile fields are name, program, model, task). Run it after spawn so `role:<name>` mail resolves. Spawn-time auto-bind is designed (GS-030) and not folded at stack HEAD; do not invent it.
+once. Role pinning is operator CLI: `flywheel spawn --profile` does not auto-bind a role (profile fields are name, program, model, task). Run it after spawn so `role:<name>` mail resolves. Spawn-time auto-bind is designed and not folded at stack HEAD; do not invent it.
 
 ## Contacts
 

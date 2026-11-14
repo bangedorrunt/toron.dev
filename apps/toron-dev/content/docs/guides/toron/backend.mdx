@@ -1,40 +1,155 @@
 ---
 title: The backend
-description: How toron drives herdr. One shared client in toron-core, pane primitives, agent_read sources, and the protocol-22 gotchas.
+description: How toron selects its pane plane (rex first, herdr-core fallback), plus the shared hc OpenRPC client, terminal primitives, OSC 7501 status, and the 0.1.16 gotchas.
 ---
 
-The `Backend` trait abstracts process supervision. **herdr** is the default backend (protocol v22, herdr 0.9.0); tmux is on hold and returns `Unsupported`.
+The `Backend` trait abstracts process supervision. Two planes implement it:
+**rex** (Superlogical, over the `rex` CLI) as the primary, and **hc**
+(herdr-core, over one OpenRPC socket) as the transport fallback. The old herdr
+TUI client and the tmux stub are gone. Both clients live in
+`toron-core::backend` and are shared with flywheel.
 
-## Why the herdr client lives in toron-core
+## Plane selection
 
-Dependency direction is one way: flywheel depends on toron, never the reverse (ADR-0003 Decision 3A). Both flywheel (spawn and dispatch) and toron (mailbox, workflow engine) need a herdr client, so the client lives on the side everyone already reaches: `toron-core::backend::herdr`. There is exactly one `fn agent_prompt` definition and one shared socket client; flywheel's old copies were deleted. A test asserts the count stays at one.
+`toron_plane::backend::plane` is the only place that decides which plane serves:
 
-## Pane primitives (no agent lifecycle needed)
+| `TORON_BACKEND` | rex CLI | serves | fallback |
+|---|---|---|---|
+| unset / `auto` | found | rex | hc, on a transport failure |
+| unset / `auto` | missing | hc | n/a (resolved up front, reason printed once) |
+| `rex` / `superlogical` | found | rex | never (a pin) |
+| `rex` / `superlogical` | missing | error naming the missing CLI | never |
+| `hc` | any | hc | never (a choice) |
+| anything else | any | `Unsupported` naming `auto \| rex \| hc` | never |
+
+`resolve(&PlaneEnv)` is a **pure** function: the parsed choice plus a `RexCli`
+probe snapshot. The probe (`RexCli::detect`) reads `$REX_BIN_DIR/rex` when that
+variable is set (no PATH fall-through, matching `Rex::resolve`), else scans
+PATH, and never executes rex — `--autostart` defaults to true, so even
+`rex whoami` would start a server. `connect(&PlaneEnv)` is the one construction
+site; `connect_default()` reads the process environment for callers with no
+`Config`.
+
+## The fallback is per effect
+
+`FallbackBackend` (`name() == "auto"`) replays a call on hc only when the
+failure provably changed nothing:
+
+| call kind | replays on | why |
+|---|---|---|
+| read (`workspace_list`, `pane_list`, `agent_list`, `agent_read`, `subscribe`) | `Connect`, `Io`, `Timeout` | no state behind any failure |
+| bounded wait (`agent_wait`, `pane_wait_output`) | `Connect`, `Io` | its timeout is the caller's answer; a replay spends the budget twice |
+| write (`pane_split`, `pane_close`, `pane_run`, `prompt`, `agent_send_keys`, …) | `Connect` only | a timeout or mid-stream `Io` may already have committed; there is no idempotency key |
+
+`Unsupported`, semantic rejects, and malformed replies always surface. They are
+verdicts about the call, not transport faults, and falling back would mask a
+gap as a working call.
+
+Mail identity follows the plane: `resolve_pane_identity` and
+`cleanup_pane_identities` take `&dyn Backend`. hc writes
+`toron_pin`/`toron_project`/`toron_npub` labels; rex carries the pin as the
+block label from creation, so a bootstrap stamp is a no-op there. The rex
+adapter maps that label onto the canonical `toron_pin` token, so the pure
+identity cores need no rex special case, and a pane read answers from
+`pane_list` without the per-block `agent_list` sweep.
+
+## Bounded roster reads on rex
+
+`agent_list` costs one subprocess per block (`program_status`, plus a
+`process` probe when the program reports nothing). It is bounded twice:
+`AGENT_SCAN_CAP` (512 blocks) and `AGENT_STATUS_BUDGET` (3 s, checked between
+blocks). Past either bound the block is still listed, with `Unknown` — which
+can never prove completion, so a truncated scan cannot fake readiness. A
+single in-flight call is bounded separately by `REX_WAIT` (12 s), so the
+sweep ends within the budget plus at most one call.
+
+## Session scope on rex
+
+`subscribe` resolves each requested pane's session before it opens the stream
+and passes `-s`, because `rex events` without `-s` follows the **caller's**
+session. A pane set that spans sessions — or an empty set — is refused with a
+pointer to `subscribe_session`, never silently narrowed to one session.
+`workspace_close` refuses `close_group=false`: rex's one close primitive is
+`session kill`, which closes the whole session, and a narrower request must not
+be widened silently.
+
+## flywheel shares the resolver
+
+flywheel does not keep a second factory: `flywheel::backend::factory` wraps
+`resolve`/`connect` and passes only its configured name and its
+`[backend] socket_path` (via `PlaneEnv::with_hc_socket`). The duplicate
+`fallback.rs` and the local `Plane`/`ResolvedPlane` types are deleted, so a
+write-replay bug can only ever be fixed once.
+
+## Why the hc client lives in toron-plane
+
+Dependency direction is one way: flywheel depends on toron, never the reverse.
+Both flywheel (spawn and dispatch) and toron (mailbox, workflow engine) need an
+hc client, so the client lives in the leaf crate everyone already reaches
+without a cycle (`toron-plane` depends only on `toron-core`):
+`toron_plane::backend::hc::Client`. There is exactly one `fn agent_prompt`
+definition and one shared socket client; flywheel's old copy is deleted.
+
+## Terminals, not workspaces
+
+hc has no workspace/tab/pane hierarchy. A terminal is the unit:
 
 | Primitive | Does |
 |---|---|
-| `pane_send_text(pane_id, text)` | Raw bytes into the terminal, no Enter. Boot primes ride this: `agent.send_keys` rejects multi-char text (`invalid_key`). |
-| `pane_send_input(pane_id, keys)` | Modifier chords and named keys. |
-| `pane_run(pane_id, command)` | send_text + Enter composite (protocol 19 has no raw `pane.run`). |
-| `pane_wait_for_output(pane_id, source, match_type, pattern, timeout_ms)` | Bounded wait for output. |
+| `terminal.run` | Start a program (or a shell with empty `argv`). Accepts `cwd`, `env`, `parent`, `no_parent`, `outlive_parent`, `labels`, `name`, `wait`. |
+| `terminal.send` | Paste text, then press Enter once a person has paused (~3 s). Refuses a `blocked` program unless `force`; `status_mismatch` when `if` names another status. |
+| `terminal.keys` | Named keys (`enter`, `esc`, `ctrl+c`, `up`, …). |
+| `terminal.read` | The screen plus `lines` of history as text; `ReadResult` also carries `complete` and `how` (`screen`/`history`/`stitched`). |
+| `terminal.wait` | Wait until the program is not `working`, or until post-wait output contains `output`. A timeout is a check-in (`ended: false`). |
+| `terminal.get` | One terminal's facts, including `pid`, `foreground` (group leader, name, argv), `status`, `records`, `reported`, `labels`. |
+| `terminal.label` | Set or remove free-form labels (`key=` removes). Mail identity rides `toron_pin`/`toron_project`/`toron_npub`. |
+| `terminal.kill` / `terminal.rm` | End the program; remove a finished terminal. |
 
-## agent_read sources
+The `Backend` trait maps the old workspace/pane surface onto that:
+`workspace_create` runs a shell and names the workspace by its address,
+`pane_list(Some(ws))` is the root plus its descendants (walk `parent`),
+`workspace_close` kills and removes every pane in that tree (children are
+created `outlive_parent`, so killing the root alone would leave them), and
+`agent_start` types the launch line into the existing pane rather than
+creating a second terminal.
 
-| Source | Returns |
-|---|---|
-| `recent` | Recent rendered output, including soft wraps. |
-| `recent_unwrapped` | Soft wraps joined. Prefer for logs and transcripts. |
-| `visible` | The currently rendered viewport only (no alt-screen history). |
-| `detection` | Plain-text bottom-buffer snapshot used by agent detection. |
+## OSC 7501 is the status source
 
-Alt-screen TUIs (Claude Code, OpenCode, prime-agent) never write transcripts to host scrollback, so `--lines N` cannot recover them. The ladder: `recent_unwrapped`, then `agent_not_idle` wait plus one retry, then `visible`, then ask the agent to write output to a file and reply with the path.
+A program writes one report on its pty; hc stores it on the terminal. The fold
+is `toron_plane::osc7501::fold` with `FoldPolicy::Attention` (blocked beats
+working beats done beats idle) or `RootWins` (the root record speaks). `error`
+maps to `Unknown`, never `done`; OSC `idle` is "at rest", not the
+finished-and-seen idle of a turn. `Report::osc_status()` returns `None` for
+`idle`/`error`/`clear`, so a direct status update never invents completion.
 
-## agent_not_idle
+## Events
 
-`agent.read` and `agent.prompt --wait` return `agent_not_idle` while the agent is working, blocked, or unknown. Wait with `agent_wait(target, until, timeout)` first, then read. Check `err.code()` (`BackendErrorCode::AgentNotIdle`), never the message text.
+`events.subscribe` takes one terminal (or none = all). The client subscribes
+once and filters at the edge to the requested pane set. A subscriber that
+falls behind gets a `missed` notification carrying a fresh snapshot; the
+client queues those status rows, then reports `EventsLost`. Event kinds are
+`status`, `turn`, `finished`/`lost`/`removed`, `created`/`restarted`, plus
+`labels`/`title`/`size`/`foreground`/`keep`/`doc` which do not change the
+status fold.
 
-## Protocol-22 gotchas (herdr 0.9)
+## 0.1.16 gotchas
 
-- Lifecycle subscriptions are **live-only**: subscribe before any snapshot, never after. Replay is gone once you snapshot first.
-- `workspace.close` keeps a primary with open worktree workspaces open unless `close_group: true`. Teardown callers pass true; a captain-close that should let children survive passes false.
-- `agent.prompt` gates on `effective_known_agent()`: herdr's agent enum is a closed kind set. Unknown kinds (for example `pa`) report lifecycle over the socket but cannot be prompted until herdr ships the kind; drive them with `pane_send_text`.
+- **No integration surface.** There is no `hc integration install|status`; the
+  H3 preflight warns and continues. Do not prescribe a command that does not
+  exist.
+- **`wait` is a bool, `timeout` is seconds.** `terminal.send` takes
+  `wait: true` plus `timeout` seconds; `terminal.wait` takes `timeout`
+  seconds. The old `wait: {timeout_ms}` shape is rejected.
+- **`terminal.send` ties a later wait to its turn** through `caller`. The
+  client passes a stable per-client caller, so `agent_prompt` followed by
+  `agent_wait` waits for the turn the send started instead of returning while
+  the agent is still idle.
+- **`started: false` is a stalled prompt.** The send landed but the program
+  did not go `working` in hc's start window; `prompt_coded` reports
+  `agent_prompt_stalled`.
+- **Errors classify on `data.kind`**: `blocked` → `AgentBlocked`,
+  `status_mismatch` → `AgentNotIdle`, `timeout` → `Timeout`; everything else
+  stays opaque.
+- **hc 0.1.16's `hc schema` has no top-level `protocol` field.** The socket
+  `hello.generation` is the protocol generation; the client enforces it on
+  connect.

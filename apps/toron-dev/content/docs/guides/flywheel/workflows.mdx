@@ -93,9 +93,9 @@ A step fails when its value is `{ok:false}` or `{status:failed}`. `{skipped:true
 
 Step policies: `on_error: continue` (default) or `fail_run` (the step's failure fails the run, kind-46012 `status=failed`); `await: true` blocks for the agent's result. Role conditioning is always on: every spawn and dispatch prompt is prepended with the profile's behavior preamble, which is how a role takes effect at runtime.
 
-Execution modes: `--mode pane` (crew pre-spawned in herdr panes, bus-auditable, best for interactive work) and `--mode headless` (one-shot harness run, no panes, local, best for cron and short idempotent work). `--execute` opts into real dispatch; without it, `workflow run` records control flow only. A workflow is usable from open mode too: keep the current pane as the topology, and invoke a bounded workflow directly (`workflow run <name> --execute --mode headless`, or pane mode against an existing workspace); compose tokens remain explicit and do not silently spawn. Lint (fail-stop) checks graph acyclicity, stage and alias resolution, `@profile` resolution, required inputs, and guard syntax.
+Execution modes: `--mode pane` (crew pre-spawned in hc/rex panes, bus-auditable, best for interactive work) and `--mode headless` (one-shot harness run, no panes, local, best for cron and short idempotent work). `--execute` opts into real dispatch; without it, `workflow run` records control flow only. A workflow is usable from open mode too: keep the current pane as the topology, and invoke a bounded workflow directly (`workflow run <name> --execute --mode headless`, or pane mode against an existing workspace); compose tokens remain explicit and do not silently spawn. Lint (fail-stop) checks graph acyclicity, stage and alias resolution, `@profile` resolution, required inputs, and guard syntax.
 
-Session routing is continuous, not a first-prompt decision: on each new objective or material context change, inspect `workflow list --brief --json` and `stage list`, trigger the smallest matching workflow/stage, or explicitly choose `none: raw`. Re-run selection after each meaningful work unit when the task changes shape (bug-fix, review, verify, compound, or resume), while preserving the current topology unless the operator chooses loop/swarm.
+Session routing is continuous, not a first-prompt decision: on each new objective or material context change, inspect `workflow list --brief --json` and `stage list`, trigger the smallest matching workflow/stage, or explicitly choose `none: raw`. Re-run selection after each meaningful work unit when the task changes shape (bug-fix, review, verify, compound, or resume), while preserving the current mode unless the operator chooses swarm. Open stays this pane. `loop-mode run` is the bead command, not a mode.
 
 Three gates validate the same closed action contracts: parse/normalize, lint, and invoke. Unknown fields, bad refs, invalid collections, and phase typos fail loud at the earliest gate; a valid template that renders an invalid runtime value is re-validated at invoke. Guards are explicit: a false guard is a skipped outcome with node identity, while a syntax/type/unresolved-ref error is a contract failure, never a silent false.
 
@@ -126,11 +126,27 @@ flowchart LR
 
 Nested workflows use durable `ctx.run` children. The engine carries a serialized lineage envelope and refuses cycles, nesting beyond 8 workflows, or more than 32 child calls along one lineage branch before creating the child promise. This is an execution guard, not prompt guidance.
 
+## Formal Statechart Verification
+
+`SwarmLifecycle` and `P2PNegotiation` are `elm-effect-xstate` charts. `flywheel workflow verify` checks their topology (ADR-0021 D5): every state is reachable, and every reachable leaf can reach its goal (a final state for `SwarmLifecycle`, `Idle` for the long-lived `P2PNegotiation`).
+
+```bash
+flywheel workflow verify
+```
+
+```text
+workflow verify scope: topology only: every guard counts as enabled and data is not modelled, so a listed state is a real defect and an empty list is not a proof; no model checker runs
+workflow verify SwarmLifecycle: ok
+workflow verify P2PNegotiation: ok
+```
+
+`--json` prints `schema: flywheel-workflow-verify.v2` with `checks.reachable.unreachable` and `checks.can_finish.stuck` per chart; `scripts/clean-proof.sh` gates on it. `--export-tla` prints a topology-only TLA+ module (states and edges, no guards or data). It is input for a model checker, not a result from one.
+
 ## Authoring and graduation
 
 Ladder: `stage new`, `stage lint`, `stage promote`; `workflow new`, `workflow lint` (fail-stop), `workflow evaluate` (GS-049 evaluate-without-commit — validated partition candidates, no journal), promote. A same-named catalog file overrides a builtin; never edit the builtin. Ephemeral compose stays out of the catalog: `--keep <n>` graduates a green run through `workflow new` + lint. `--agent`-authored YAML is lint-gated: a failing lint bails before any dispatch.
 
-Cron: `flywheel cron lint` then `flywheel cron start` owns recurring ticks. `cron run <name>` is a 25-second dry-run by default; `--live` force-fires once through the durable-loop runner. Cron YAML authoring mirrors workflow YAML; the P4.3 manager ticks off the registry.
+Cron: `flywheel cron lint` then `flywheel daemon start` supervises recurring ticks (`dev.flywheel.cron` runs the `cron start` host loop; `cron start` alone is the foreground form). `cron run <name>` is a 25-second dry-run by default; `--live` force-fires once through the durable-loop runner. Cron YAML authoring mirrors workflow YAML; `ElmCron` ticks off the registry.
 
 After verified work, capture the learning once: `flywheel workflow run ce-compound --execute --inputs '{"source":"<what>"}'`. It files learnings into `docs/learnings/`, which chiebukuro indexes.
 

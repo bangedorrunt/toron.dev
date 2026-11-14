@@ -44,6 +44,6 @@ flywheel repo extractor.
 
 The stub below was a SEED so the tool-page generator could be built before the
 toron-repo extractor landed (lane 4). The extractor's output replaced it
-2026-08-14: `toron-mcp.json` is now the live 38-tool / 25-resource / 19-command
+2026-08-14: `toron-mcp.json` is now the live 38-tool / 25-resource / 34-command
 catalog emitted by `toron catalog --json`, freshness-gated by
 `cargo test catalog_freshness` in the toron repo.

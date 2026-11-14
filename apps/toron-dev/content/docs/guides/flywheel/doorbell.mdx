@@ -3,16 +3,16 @@ title: The doorbell
 description: The wake plane. A supervised daemon turns room posts, mentions, and jobs into one prompt line, with journals that survive crashes.
 ---
 
-Nothing pushes into an agent's head; agents are woken. The doorbell follows the ADR-0016 effect-kernel boundary: observations become `Msg`, `doorbell-core::tick` returns commands, and `doorbell-rt` interprets them. Wake is plane D, owned by a dedicated daemon, not by spawn: `doorbell-core` is a pure tick reducer, `doorbell-rt` wires brain, sensors, and sinks, and the `doorbell` daemon listens on a UDS plus `127.0.0.1:18980`. Spawn records a subscription row and defers to a healthy daemon, starting one when `[doorbell]` is configured and none is running (`FLYWHEEL_NO_DOORBELL_ENSURE=1` opts out); only then does an embedded degraded mode run locally, with a WARNING naming the remediation. `flywheel kill` never touches the daemon.
+Nothing pushes into an agent's head; agents are woken. The doorbell follows the ADR-0016 effect-kernel boundary: observations become `Msg`, `doorbell-core::tick` returns commands, and `doorbell-rt` interprets them. Wake is plane D, consolidated directly into the toron daemon on `127.0.0.1:18080` (port `:18980` is retired per ADR-0020). `doorbell-core` is a pure tick reducer; `doorbell-rt` wires brain, sensors, and sinks within the unified Toron serve runtime. Spawn records a subscription row and defers to a healthy daemon, starting one when `[doorbell]` is configured and none is running (`FLYWHEEL_NO_DOORBELL_ENSURE=1` opts out); only then does an embedded degraded mode run locally, with a WARNING naming the remediation. `flywheel kill` never touches the daemon.
 
 ```mermaid
 sequenceDiagram
     participant W as watched plane (kind 9, mention, job)
-    participant DB as doorbell daemon (18980)
+    participant DB as doorbell / toron daemon (18080)
     participant A as agent pane
     W->>DB: event lands
     DB->>DB: journal it (seq-stamped, at-least-once)
-    DB->>A: herdr agent prompt with one [doorbell] line
+    DB->>A: hc send with one [doorbell] line
     A->>DB: presence working (20001), or one kind-9 line within 120s
     Note over A: silence marks the pin unanswered
 ```
@@ -23,11 +23,14 @@ The runtime brain is an interpreter and single writer, not a second policy engin
 
 See [Functional effect kernel](./effect-kernel) for the reducer/interpreter laws.
 
-- Wake stamps (`last_wake`) come only from real observations: herdr status or delivered prompt pins. Planned injects never forge them.
+- Wake stamps (`last_wake`) come only from real observations: plane status or delivered prompt pins. Planned injects never forge them.
+- A pane wake is a **mail** event (`kind 9/14` on the wake bus) carried by the flywheel inbox host. `doorbell inject` journals a Fact for the digest only: the core reducer answers every `Fact` with `fact_miss`, so an inject never rings a pane on either plane.
+- **Who hosts under the comms flag.** `doorbell serve` stays standby: it holds no workspace and types nothing (`mode: standby`, `hosted: []` is healthy, not degraded). Each workspace is hosted by its own `flywheel __doorbell` loop, which owns the workspace lease and runs the brain + bus watch that types the pane. A daemon that armed hosts under comms took the lease as `no-text`, the local loop deferred to it as an inbox-only pane writer, and the workspace went deaf to ordinary `toron mail send` — this is why the daemon refuses to host while comms is on.
 - One live workspace model per workspace; sends are doorbell-with-inbox; waiters park on `WaitCorr` until a receipt drains them (on ndjson and sweep).
 - Budgets 5/30/3 are dispatcher-enforced.
 - After `[doorbell]`, publish presence `working` or post one kind-9 line within 120 seconds, or the pin is `unanswered`.
 - Journals (v2, rotated, seq-stamped) and subscriptions persist, so pending wakes survive crashes at-least-once.
+- Cursors hold rather than skip: a high-water only advances on input it could read, a cursor-less pin backfills from the 24h floor, and a position older than retention is named (`first foldable seq` / `first replayable seq`). The rules live in [effect-kernel discipline](../agent-instructions/effect-kernel).
 - `flywheel doorbell why <project> <pin> --seq <n> --corr <id>` folds the tick from default and explains a named wake.
 
 
@@ -39,12 +42,13 @@ module. The live edges that feed `workspace::tick` (and the doorbell plane) are:
 | Sensor edge | Msg arm | Role |
 |-------------|---------|------|
 | **WatchNdjson** | `Msg::WatchNdjson` | Room/kind-9 / job / reservation wire lines |
-| **Herdr** | `Msg::HerdrStatus` | Pane status observations (feeds presence verdict) |
+| **Hc/Rex** | `Msg::PlaneStatus` | Pane status observations (feeds presence verdict) |
 | **AckSla** | `Msg::AckSlaTick` | Ack SLA clock payload (clock enters as Msg only) |
 | **InboxSweep** | `Msg::InboxItems` / `Msg::InboxRows` / `FetchInbox` Cmd | Mail inbox drain → classified wakes |
+| **BeadsPoller** | `Msg::Fact` (`bead <id> ready`, hold expiry, status flips) | Read-only br sqlite poll (`sqlite3 --readonly`, 30s cadence). Ready-bead appearances ring an idle captain, so a supervisor is woken when work lands; runs in both the embedded host and the daemon, resolving the repo from the host's project key (absolute key exact, slug under `~/workspace`). Default on — `beads_poller = false` opts out. |
 
 **Presence is not a Sensor GenServer and not a primary sensor Msg arm.**
-Reachability / injectable|busy|dead is derived via **Herdr status + roles**
+Reachability / injectable|busy|dead is derived via **plane status + roles**
 (and the trusted dispatcher-internal `Msg::Presence` edge for jsonl-timeout
 paths). Do not invent a `PresencePoll` sensor module or a second presence
 oracle beside `Model.presence`.
@@ -107,7 +111,7 @@ delivery.
 
 ## Waking a human with zero swarm (webhook sink)
 
-The herdr sink needs a pane, and a human operator pin normally has none. Point
+The hc sink needs a pane, and a human operator pin normally has none. Point
 the subscription at an HTTP endpoint instead — the endpoint *is* the human:
 
 ```bash
@@ -169,7 +173,7 @@ subscribed? The journal is the only surface that answers all four.
 
 ## What the daemon execs (CLI resolution)
 
-The daemon shells out to `toron` (bus watch + inbox fetch) and `herdr`
+The daemon shells out to `toron` (bus watch + inbox fetch) and `hc`
 (prompt sink). It is normally started by launchd/systemd, whose `PATH` is
 `/usr/bin:/bin:/usr/sbin:/sbin` — neither tool is there, and a bare-name
 spawn fails as an ordinary child death: the watcher respawns on the retry
@@ -187,14 +191,14 @@ So the daemon resolves both to an absolute path at startup, first hit wins:
 Shims go last on purpose: a mise shim is a dispatcher that must infer a
 tool version from env and cwd, so under launchd it dies with
 `mise ERROR No version is set for shim: toron` — a resolved-looking path
-that cannot run. Set `DOORBELL_TORON_BIN` / `DOORBELL_HERDR_BIN` to pin an
+that cannot run. Set `DOORBELL_TORON_BIN` / `DOORBELL_HC_BIN` to pin an
 explicit binary; an override is used verbatim. `doorbell serve` logs the
 resolved pair on startup and `/health.binaries` reports it:
 
 ```json
 "binaries": { "toron": "/Users/me/.cargo/bin/toron",
-              "herdr": "/Users/me/.local/bin/herdr",
-              "resolved": { "toron": true, "herdr": true } }
+              "hc": "/Users/me/.local/bin/hc",
+              "resolved": { "toron": true, "hc": true } }
 ```
 
 ### Reading `/health.degraded`
@@ -204,18 +208,21 @@ plane's own files rather than tracked in RAM, so it survives a restart:
 
 | Value | Means |
 |---|---|
-| `cli_unresolved` | `toron`/`herdr` not found anywhere above — wakes will not be delivered |
+| `cli_unresolved` | `toron`/`hc` not found anywhere above — wakes will not be delivered |
+| `stale_build` | the RUNNING daemon binary is older than a source file it was built from (mtime comparison, not uptime). Reinstall the current source and `launchctl kickstart -k` (or the systemd equivalent); a healthy daemon stays `degraded: []` however long it runs |
 | `inbox_fetch_failing` | an `inbox_error` audit row inside the last 120s: the sweep is failing |
+| `inbox_store_skew` | the toron store is **ahead** of the binary the daemon shells (`/health.binaries.toron`): every fetch refuses with `migration N is applied in <store> but this toron build resolves at most M`. One workspace's row is enough — the store is shared, so the all-workspaces shape `inbox_fetch_failing` waits for can never hold. Fix: reinstall toron from the source that wrote the store. The probe greps for the machine marker `toron-error=store_skew` (or the refusal sentence) in **any** audit row, not for one arm's `kind`, because the arm that opens the store may be `scan_ack_sla` — that row is `ack_sla_store_skew` — and a probe keyed on `inbox_store_skew` alone reads `degraded: []` while the store is refusing |
 | `watch_restart_loop` | more than ~2× the healthy watcher restart rate in 300s. A **quiet** watcher restarts by design (90s idle-exit + retry gate ≈ every 109s); a handful in five minutes is healthy, dozens is a loop |
 | `journal_torn_tail` | the journal has a torn tail; folds stop at the gap |
+| `audit_rows_torn` | the AUDIT file is losing rows **right now**: a line in `doorbell/<ws>.audit.jsonl` does not parse, and the last datable row in front of it is under 120s old, so the tearing is happening. Historical tears are reported in `audit_torn_rows` (with `tear_after_age_s`, the bound on when they happened) and do NOT degrade, so one bad week cannot pin the daemon red forever. The rows are still lost either way |
 | `standby_with_known_workspaces` | the daemon is hosting nothing while workspaces that expect rings exist — re-arm it |
-| `no_injectable_panes` | the exact opposite of a bug: hosting, registry pins exist, and `herdr agent list` knows the panes of **none** of them. Wakes classify, queue, and digest, and no prompt can land — start agents (`herdr agent start`) or fix the stale registry |
+| `no_injectable_panes` | the exact opposite of a bug: hosting, registry pins exist, and `hc ls` knows the panes of **none** of them. Wakes classify, queue, and digest, and no prompt can land — start agents (`hc run --bg`) or fix the stale registry |
 
 
 ### Reading `/health.wake`
 
 GS-062 (PR #16) puts wake-pipe liveness on both operator doorbell `/health`
-(`:18980`) and flywheel `serve` `/health`. The object is the same shape on
+(`:18080` unified daemon, legacy `:18980`) and flywheel `serve` `/health`. The object is the same shape on
 both surfaces:
 
 ```json
@@ -265,11 +272,11 @@ Two live faults were *found* only by reading the plane's own files, and both
 were buried under self-inflicted noise (gs-044):
 
 - **Stale spawn-registry rows.** The registry is never garbage-collected, so
-a dead fleet's pins live on forever (live: three pins on `w11:*` panes herdr
+a dead fleet's pins live on forever (live: three pins on `w11:*` panes the plane
 had long GC'd). The sweep fetched them every tick. A registry pin whose pane
-is absent from `herdr pane list` now drops out of the sweep after a 120s
+is absent from `hc ls` now drops out of the sweep after a 120s
 grace, with ONE `registry_pin_stale` audit row naming pin, pane, and grace.
-A pane that reappears un-reaps it; an **empty** pane list means herdr did not
+A pane that reappears un-reaps it; an **empty** pane list means the plane did not
 answer, so nothing is reaped on a transient failure. `/health.injection`
 counts sweep-set pins only (reaped pins are excluded, bd-2i96), so the count
 matches the pins actually costing a fetch per tick; the reap itself stays
@@ -280,20 +287,29 @@ per day). The beat now fires on a **change** only: new overdue ids audit
 `ack_sla_fired`, the backlog clearing audits `ack_sla_cleared`. A steady
 backlog is one fact, not one row per minute.
 
+The file is bounded twice. `file_host::rotate_audit_if_oversized` rewrites a
+live file at **5 MiB** down to its last **4000 lines** (tail-read from
+`len - 5 MiB`, dropping the partial first line — never a full parse), so one
+noisy arm cannot grow the plane without limit. `flywheel doorbell gc` removes
+the audit logs of workspaces no dispatcher will serve again: report-only
+without `--yes`, and `--older-than-days` (default 30) also covers a quiet
+workspace whose status file is gone. Rotation caps a live file; GC is what
+deletes an abandoned one.
+
 ### The prompt hop's precondition (`/health.injection`)
 
 A wake reaching a pane needs an *injectable* pane: one typed `InjectGate`
-(bd-zawk) unifies the herdr-status gate with the presence parse, so `blocked`
+(bd-zawk) unifies the plane-status gate with the presence parse, so `blocked`
 means exactly one thing everywhere — `blocked` + urgent injects, `blocked` +
 routine digests with its reason, never a silent drop. Statuses come from
-`herdr agent list` mapped through the spawn registry. When herdr knows no agent, no wake can ever be
+`hc ls` mapped through the spawn registry. When the plane knows no agent, no wake can ever be
 injected — a property of the environment, not a doorbell bug — and it used
 to be invisible: `mode: hosted, degraded: []` while nothing landed. `/health`
 now counts it:
 
 ```json
 "injection": { "pins": 3, "panes_seen": 0, "injectable": 0,
-               "panes_missing": 3, "prompt_hop": "no_pane_in_herdr" }
+               "panes_missing": 3, "prompt_hop": "no_pane_in_plane" }
 ```
 
 `panes_seen` counts panes in **any** status on purpose: a fleet caught
@@ -303,9 +319,9 @@ wake and drains on the next `idle` — so only `panes_seen == 0` with
 hosting:
 
 ```
-doorbell serve: hosting flywheel/flywheel-flywheel — 3 pin(s), 0 pane(s) in herdr, 0 injectable now
-doorbell serve: WARNING hosting flywheel/flywheel-flywheel — 3 pin(s) but herdr knows none of their
-  panes: NO wake can be injected here (inbox wakes queue/digest instead). Start agents (`herdr agent start`)
+doorbell serve: hosting flywheel/flywheel-flywheel — 3 pin(s), 0 pane(s) on the plane, 0 injectable now
+doorbell serve: WARNING hosting flywheel/flywheel-flywheel — 3 pin(s) but the plane knows none of their
+  panes: NO wake can be injected here (inbox wakes queue/digest instead). Start agents (`hc run --bg`)
   or fix the stale registry
 ```
 
@@ -325,8 +341,8 @@ serve/migrate/ping).
 | Subscriptions | `flywheel doorbell subscribe\|subscriptions\|unsubscribe` (`--project` names the auto-host pair and is required: a project-less row is refused loud, bd-zawk — it would never ring) |
 | Cross-workspace | `flywheel doorbell subscribe --workspace wA --pin P --extra wB --project <slug>` (scope printed, never implicit; `--project` required) |
 | Human wake (no pane) | `flywheel doorbell subscribe --sink webhook --url http://host:port/path` + `DOORBELL_WEBHOOK_ALLOWLIST=host` on the daemon (see above) |
-| Always-on | `flywheel daemon start` (flywheel + doorbell daemons in one command); `doorbell install` persists across reboots (launchd/systemd, idempotent); `curl 127.0.0.1:18980/health` shows `mode`, `hosted`, `binaries`, `injection`, `degraded`, and `wake` (see Reading `/health.wake` above) |
+| Always-on | `flywheel daemon start` (flywheel + doorbell daemons in one command); `doorbell install` persists across reboots (launchd/systemd, idempotent) and is the durability door: the unit re-runs a job that is not running (`StartInterval 60` + `KeepAlive{SuccessfulExit=false}` on launchd, `Restart=` on systemd), `install` waits out `bootout` and retries `bootstrap` (a failed install fails loud instead of leaving the daemon down), and `stop` writes a `stopped-by-operator` marker so `status` reads STOPPED by operator (deliberate, not an outage) instead of DOWN — `start`/`install` clear it. `/health` answers from the in-memory snapshot and never shells; a cold start answers typed `starting`. `curl 127.0.0.1:18080/health` shows `mode`, `hosted`, `binaries`, `injection`, `degraded`, and `wake` (see Reading `/health.wake` above) |
 
 Cross-project wake is a captain hold: `br hold --kind captain --corr external:<proj>:<bead> <your-bead>` rings once when the foreign bead closes; you still resolve the hold.
 
-A foreign owner on port 18980 fails `doorbell start` loud ("answered by foreign owner, not child &lt;pid>"). That is a port conflict, not corruption: stop the foreign holder or relocate the daemon.
+A foreign owner on port 18080 or legacy 18980 fails `doorbell start` loud ("answered by foreign owner, not child &lt;pid>"). That is a port conflict, not corruption: stop the foreign holder or relocate the daemon.

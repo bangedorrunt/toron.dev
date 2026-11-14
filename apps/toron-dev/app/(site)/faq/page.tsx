@@ -39,7 +39,7 @@ const QUESTIONS: [string, string][] = [
   ],
   [
     "What does it cost?",
-    "Nothing. toron and flywheel are MIT, beads and chiebukuro are Apache-2.0. The license is the pricing, so there is no per-seat tier to compare against.",
+    "Nothing. toron is dual-licensed MIT/Apache-2.0; flywheel, beads, and chiebukuro are MIT. The license is the pricing, so there is no per-seat tier to compare against.",
   ],
   [
     "Where should I actually start?",

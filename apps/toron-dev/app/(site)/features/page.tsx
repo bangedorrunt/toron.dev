@@ -14,7 +14,7 @@ import {
 export const metadata: Metadata = {
   title: "Features: the autonomous stack",
   description:
-    "The capabilities that turn a collection of agent processes into an accountable autonomous workflow, grouped by the plane that owns them.",
+    "The current capabilities of toron, flywheel, beads, and chiebukuro, grouped by the plane that owns them and the state each one makes durable.",
 };
 
 const GROUPS: {
@@ -26,95 +26,135 @@ const GROUPS: {
   items: [string, string][];
 }[] = [
   {
-    name: "Trust",
+    name: "Toron",
     index: "1.0",
-    claim: "Who is actually talking?",
-    lede: "Identity and transport stay verifiable across machines, restarts, and harnesses.",
-    href: "/security",
+    claim: "The transport and record layer.",
+    lede: "Mail, identity, receipts, reservations, and the durable engine. A handoff stays signed and queryable after the sender is gone.",
+    href: "/docs/toron",
     items: [
       ["Sealed mail", "NIP-17 gift-wrap keeps the body off every relay it passes through."],
-      ["Signed identity", "Schnorr signatures and NIP-49 keys give an agent a stable public name."],
-      ["Receipts", "owed → acked → resulted says what happened to a handoff, per recipient."],
-      ["Contacts and policy", "Trust policy controls who may request, reply, or escalate to you."],
-      ["Federation", "Relays carry signed events across sites without surrendering the mailbox."],
       [
-        "Operator authority",
-        "Privileged lifecycle operations need a separate key from agent identity.",
+        "Addressable inbox",
+        "Threads, correlation ids, and read cursors. The work-unit read is inbox --since last.",
       ],
-    ],
-  },
-  {
-    name: "Process",
-    index: "2.0",
-    claim: "What survives a crash?",
-    lede: "Work outlives approval gates, process death, retries, and the agent that started it.",
-    href: "/how-it-works",
-    items: [
+      [
+        "Receipts",
+        "owed → acked → resulted per recipient. degraded is visible and never silently green.",
+      ],
+      [
+        "Reservations and slots",
+        "Intent, hold, renew, release. A hard conflict blocks; the pre-commit guard enforces it.",
+      ],
       [
         "Durable workflows",
-        "A suspended workflow resumes from its journal instead of restarting from step one.",
+        "YAML runs as signed events. Approval, park, and a daemon crash keep the run resumable.",
       ],
+      ["MCP surface", "38 parity tools plus 3 additive tools, with 25 resources over toron://."],
       [
-        "Autonomous loops",
-        "flywheel polls, dispatches, watches, and deduplicates without a human in the loop.",
+        "Archive and federation",
+        "Signed events replay from Git. Federation is off by default and never required for local work.",
       ],
-      [
-        "Approval gates",
-        "A human decision suspends the run and releases it, surviving a restart in between.",
-      ],
-      ["Debate", "Adversarial rounds with a judge can run before code reaches a merge."],
-      ["Cron", "Recurring work fires on schedule whether or not a pane is open."],
-      ["Crash recovery", "The daemon restarts and resumes the run it was carrying."],
     ],
   },
   {
-    name: "Coordination",
+    name: "Flywheel",
+    index: "2.0",
+    claim: "The control loop that keeps work moving.",
+    lede: "Arrival, dispatch, wake, and recovery. flywheel decides what runs next, then proves a phase passed without pretending work closed itself.",
+    href: "/docs/flywheel",
+    items: [
+      [
+        "Session door",
+        "arrive and briefing observe the fleet and propose exactly one vehicle before code moves.",
+      ],
+      [
+        "Durable loop",
+        "Polls ready beads, claims and dispatches, watches the claim, and resumes from its journal.",
+      ],
+      [
+        "Workflow compose",
+        "Stages, compose tokens, YAML, wave gates, and host-derived evaluation evidence.",
+      ],
+      [
+        "Effect kernel",
+        "Pure reducers, interpreted effects, and an Unknown outcome that stays visible.",
+      ],
+      [
+        "Coalitions",
+        "A captain-formed intent board, soft and hard conflicts, and a sealed negotiation ladder.",
+      ],
+      [
+        "Judgment packs",
+        "Calibrated judgments return as evidence; code keeps authority over dispatch and close.",
+      ],
+      [
+        "Fleet operations",
+        "Interrupt, exit, relaunch, recover, drain. Reservations survive a teardown.",
+      ],
+      [
+        "Cron and compound",
+        "Scheduled work and ce-compound capture one learning from a verified run.",
+      ],
+    ],
+  },
+  {
+    name: "Beads",
     index: "3.0",
-    claim: "Who may touch this file?",
-    lede: "Agents share a workspace without editing over each other, and the guard enforces it at commit time.",
-    href: "/architecture",
+    claim: "The ledger that decides what is done.",
+    lede: "A work item is not a status update. It carries its verification fence, its claim clock, and the evidence that makes a close legal.",
+    href: "/docs/beads",
     items: [
+      ["Dispatchability", "One VERIFY command and the required PRINCIPLES make a bead claimable."],
       [
-        "File reservations",
-        "Intent, hold, renew, release. A hard conflict blocks the edit, not the commit.",
+        "Claims and staleness",
+        "A claim is a lease with a clock; reclaiming starts with an audit comment.",
       ],
       [
-        "Build slots",
-        "One serialized lane keeps an expensive verification from running twice at once.",
+        "Dependencies and waves",
+        "Blockers and wave labels order the work instead of a chat thread.",
+      ],
+      ["Gate rows", "Pass rows are written after the work and bound to the full commit sha."],
+      [
+        "Close ceremony",
+        "A cited commit and a legal verdict; --force waives dependencies, never evidence.",
       ],
       [
-        "Rooms and jobs",
-        "Kind 9 for crew-visible work, 43001 for first-claimer assignment with a loser path.",
-      ],
-      ["Contacts", "A handshake decides who may send work before any work is sent."],
-      [
-        "Abandoned work",
-        "Claims go stale on a clock, and reclaiming one requires an audited comment first.",
-      ],
-      [
-        "Dependency gates",
-        "A held item names its blockers instead of sitting silently in a column.",
+        "Graph analysis",
+        "Dependencies, triage, plans, and insights over the accountable work graph.",
       ],
     ],
   },
   {
-    name: "Permanence",
+    name: "Chiebukuro",
     index: "4.0",
-    claim: "What is left behind?",
-    lede: "The swarm can prove what it did and carry the useful part forward.",
-    href: "/features#memory",
+    claim: "The learning plane, with authority kept distinct.",
+    lede: "Curated knowledge and episodic memory are different claims. Consolidation can make memory stronger without making a guess into policy.",
+    href: "/docs/chiebukuro",
     items: [
+      ["Knowledge plane", "Compiled wiki, review queue, and explicit promotion."],
+      ["Memory plane", "Events become conclusions with premises, confidence, and supersession."],
       [
-        "Work ledger",
-        "Claims, dependencies, gate rows, and close evidence form the accountable record.",
+        "Dreamer",
+        "Journaled NREM consolidation and REM cross-scope synthesis, previewable with --dry-run.",
       ],
-      ["Verification gates", "An item closes on a recorded pass row, never on a status update."],
-      ["Git archive", "Signed events replay into a rebuilt index from either half of the record."],
-      ["Curated knowledge", "A searchable wiki the swarm reads before it plans."],
-      ["Episodic memory", "What was decided, by whom, and what changed as a result."],
-      ["Synthesis", "A finished run becomes the next run’s context instead of scrollback."],
+      [
+        "Recall and provenance",
+        "Class-labelled hits; explain the premises and zoom back to the source message.",
+      ],
+      [
+        "Session tree",
+        "A summary tree that preserves the prompt cache and opens to the raw message.",
+      ],
+      ["Synthesis", "A finished run becomes context for the next plan instead of scrollback."],
     ],
   },
+];
+
+const STATES: [string, string, string][] = [
+  ["Receipt", "owed → acked → resulted", "degraded is visible; never a green delivery"],
+  ["Bead", "open → in_progress → closed", "ready and blocked are views over open"],
+  ["Run", "queued → running → suspended", "effect Unknown stays visible until reconciled"],
+  ["Conclusion", "event → conclusion → review", "promotion into the wiki is explicit"],
 ];
 
 export default function FeaturesPage() {
@@ -158,8 +198,34 @@ export default function FeaturesPage() {
       ))}
 
       <Section
-        id="memory"
+        id="state"
         index="5.0"
+        label="State"
+        title="Every claim has a state you can read."
+        lede="The stack does not infer completion from a message. Each of these transitions has a command that moves it and a reader that can prove it later."
+      >
+        <div className="toron-grid toron-grid--2">
+          {STATES.map(([name, transition, note]) => (
+            <SurfaceCard key={name} eyebrow="State model" title={name}>
+              <code>{transition}</code>
+              <br />
+              {note}
+            </SurfaceCard>
+          ))}
+        </div>
+        <div className="toron-actions">
+          <Link href="/architecture#states" className="toron-btn">
+            Read every state model
+          </Link>
+          <Link href="/how-it-works" className="toron-btn">
+            Trace the diagrams
+          </Link>
+        </div>
+      </Section>
+
+      <Section
+        id="memory"
+        index="6.0"
         label="The compounding move"
         title="The stack improves because the record does."
         lede="A finished task is not the end of the loop. Its evidence becomes the next plan's context, and its conclusion stays distinct from a wiki page until someone promotes it."

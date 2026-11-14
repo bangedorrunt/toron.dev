@@ -12,8 +12,8 @@ Conventions: `<p>` is the project slug. The full clap surface is `flywheel --hel
 | `briefing` | Observe + propose one topology; `--commit` runs the argv (`--yes` required non-TTY on spawn-class topologies — crew-confirm gate); names `role` |
 | `decide` | The classifier leaf: one captain primitive per target, `--json` (names `role`, read from the workflow's steps) |
 | `helm <p>` | Session-start drain: open decisions, unread status, divergence |
-| `preflight` | herdr socket, resonate, operator key, toron mail, standing orders |
-| `deps` | Environment + toolchain health; `--ensure` starts a down loopback resonate |
+| `preflight` | hc socket, engine store, operator key, toron mail, standing orders |
+| `deps` | Environment + toolchain health; `--ensure` repairs missing dependencies (drift still needs a human) |
 | `spawn` | Spawn a swarm; `--profile <role>` is the default door, bare harness flags are the escape hatch |
 | `add` | Extend a running swarm with more panes |
 | `send` | Prompt one or more agents; stage params, `--wait`, `--raw` |
@@ -23,10 +23,13 @@ Conventions: `<p>` is the project slug. The full clap surface is `flywheel --hel
 | `crew` | `preview` + lifecycle `control` (interrupt, exit, relaunch) |
 | `rebind`, `recover` | Restore name bindings; restore or respawn agents |
 | `kill` | Close the swarm: `--force`, `--force-working`, `--drain` |
-| `doorbell` | Wake plane: status, start, stop, why, digest, events, inject, subscribe, unsubscribe, afk, re-inject |
+| `doorbell` | Wake plane: status, start, stop, why, digest, events, inject, subscribe, unsubscribe, afk, re-inject; `gc` prunes dead workspaces' audit logs (writes only with `--yes`) |
 | `loop-mode` | `run\|status\|list\|prune\|doctor\|replay\|why`; `run --work` is the durable dispatcher |
 | `steer` | One compose call to done; `--direct` skips the tracker |
-| `workflow` | `list\|lint\|run\|compose\|new\|crew\|history`; `--parts` grammar lives in [workflows](./workflows) |
+| `captain` | `watch` (harness resume on the captain inbox); `directory` (read-only sessions, tiers, addressability); `approve` (verify + run or deny a parked hosted steer) |
+| `workflow` | `list\|lint\|run\|compose\|new\|crew\|history\|verify`; `--parts` grammar lives in [workflows](./workflows) |
+| `peer` | P2P multiplayer protocol directives (`intent`, `request-release`, `release-response`, `review-request`) and reactive wakes |
+| `memory` | Chie Memory preflight trap check (`check-trap`) and lesson capture (`record-lesson`) |
 | `stage` | Stage prompts: `list`, authoring ladder (`new`, `lint`, `promote`) |
 | `cron` | Smart-cron registry: lint, start, pause/resume, status, history |
 | `coalition` | Captain-formed multi-crew around a goal; `form`, `join`, `leave`, `list`, `disband` |
@@ -43,6 +46,7 @@ Conventions: `<p>` is the project slug. The full clap surface is `flywheel --hel
 | `artifacts` | Typed per-run records: `<run_id> [--json]`, `stitch <run_id>` |
 | `snapshot`, `checkpoint`, `resume`, `changes`, `timeline`, `audit`, `analytics`, `history` | Fleet state forensics |
 | `runs` | Runs dashboard: state, owner, per-run cost |
+| `engine` | Removed with the vendor store (see Disk maintenance in fleet-ops); engine rows live in the toron index sqlite |
 | `profile`, `squad`, `model`, `slot`, `catalog`, `backend` | Identity and routing: profiles, squads (recipes/template aliases), model registry, routing slots, TUI catalog hub, backend selection (`profile show` projects `fallback`/`model_fallback`; `subscribe --project` names the auto-host pair) |
 | `worktree` | git worktree swarms (never on loop-owned beads) |
 | `guards`, `policy`, `safety` | Active policy guards, destructive-command policy, posture |
@@ -58,4 +62,4 @@ Rebuild after source changes: `mbx +nightly-aarch64-apple-darwin install --path 
 
 `flywheel config path` prints the XDG directory. `flywheel config list` prints every documented setting, its default, the file value, and the value in effect. `flywheel config seed` fills missing workflows, stages, judgment packs, and `config.toml`. `--overwrite none` is the default and does not replace files. `--overwrite stale` and `--overwrite all` replace only names the binary ships, after `--dry-run` or `--yes`. `config drift` only reports. `config.toml` is never overwritten.
 
-Exit codes: `0` ok, `1` herdr or server error, `2` usage error. stdout carries data (`--json` for machines); stderr carries messages and progress. `NO_COLOR` or a piped stdout disables color. `workflow list --json` rows carry `description`, `family`, `selection`, `run`, `compose_token`, and `decide_trigger`; `workflow list --brief --json` is the GS-052 hybrid: name/family/selection/run/topology/compose_token. Crew cap: `FLYWHEEL_CREW_MAX` env beats `[crew].max` in `~/.config/flywheel/config.toml`, default 5; `--crew-max` is the per-run operator override.
+Exit codes: `0` ok, `1` hc or server error, `2` usage error. stdout carries data (`--json` for machines); stderr carries messages and progress. `NO_COLOR` or a piped stdout disables color. `workflow list --json` rows carry `description`, `family`, `selection`, `run`, `compose_token`, and `decide_trigger`; `workflow list --brief --json` is the GS-052 hybrid: name/family/selection/run/topology/compose_token. Crew cap: `FLYWHEEL_CREW_MAX` env beats `[crew].max` in `~/.config/flywheel/config.toml`, default 5; `--crew-max` is the per-run operator override.

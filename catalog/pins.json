@@ -11,9 +11,9 @@
       "counts": {
         "tools": 38,
         "resources": 25,
-        "cli_commands": 29
+        "cli_commands": 34
       },
-      "surface_sha256": "91dbe7839785a0b8884dc5a48ca8f4fc7fc48819614738f9d1eb483b7815d5e2"
+      "surface_sha256": "55039b53aee19b0975884e03620ef68fac9dbfdfdc037a1a5573a94ca72da970"
     }
   }
 }

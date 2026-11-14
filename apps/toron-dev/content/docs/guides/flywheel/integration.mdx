@@ -51,13 +51,13 @@ Nothing pushes to an agent; agents are woken or poll by design.
 
 ```mermaid
 flowchart LR
-    subgraph wake["doorbell daemon (18980)"]
+    subgraph wake["doorbell daemon / toron (18080)"]
         J["journals, subscriptions"]
     end
     K9["kind 9 room post / mention / job"] --> J
     K9 --> WL["watch --live (subscribe_trusted)"]
     K9 --> MB["mail inbox --since last"]
-    J --> P["herdr prompt: one [doorbell] line"]
+    J --> P["plane prompt: one [doorbell] line"]
     P --> AK["presence working, or kind-9 reply within 120s"]
 ```
 
@@ -78,25 +78,25 @@ Findings longer than about 20 lines go to a durable file first; the post carries
 
 | Symptom | Meaning | Move |
 |---|---|---|
-| `flywheel preflight`: resonate DOWN (127.0.0.1:8001 refused) | durable loop and compose engine degraded | `flywheel deps --ensure` starts it, or run open-vehicle work and say so |
+| `flywheel preflight`: engine store DOWN (sqlite missing/unwritable) | durable loop and compose engine degraded | fix the store path and permissions, or run open-vehicle work and say so |
 | toron unreachable | no mail, no reservations | claim with explicit assignee, record file scope in a bead comment, check `git status` + `br list --status in_progress`, minimal scope, note it in the close reason |
 | doorbell port held by a foreign owner | `doorbell start` fails loud | port conflict, not corruption: stop the foreign holder or relocate the daemon |
 | no live fleet, stale reservations | briefing may read file contention | check `held_paths` holders; stale leases are visible in `toron list_file_reservations` |
-| dispatcher absent, herdr socket up | panes can run but no flywheel supervision | `flywheel daemon start`; embedded doorbell degrades loudly |
+| dispatcher absent, hc socket up | panes can run but no flywheel supervision | `flywheel daemon start`; embedded doorbell degrades loudly |
 
 ## Where things live
 
 | Path / port | Owner |
 |---|---|
 | `~/.config/flywheel/` | `config.toml`, `workflows/`, `crons/`, `profiles/`, `models/`, `policy/` |
-| `~/.config/herdr/herdr.sock` | herdr socket |
+| `$XDG_STATE_HOME/herdr-core/default/default.sock` | hc socket |
 | `<project>/.flywheel/agent-state/<name>.json` | per-agent context (git-ignored) |
 | `~/.local/state/flywheel/` | flywheel loops, journals, runs, facts, doorbell state |
 | `~/.local/state/toron/toron.pid` | toron pidfile (non-launchd hosts) |
-| `127.0.0.1:18080` | toron daemon (MCP + mailbox) |
+| `127.0.0.1:18080` | toron daemon (MCP + mailbox, and consolidated doorbell Plane D per ADR-0020) |
 | `127.0.0.1:18081` | chiebukuro MCP (HTTP) |
-| `127.0.0.1:18980` | doorbell daemon |
-| `http://localhost:8001` | Resonate (durable execution) |
+| `127.0.0.1:18980` | legacy doorbell port (retired per ADR-0020) |
+| `~/.local/share/toron/index.sqlite` (engine store) | Durable execution (local sqlite, no server) |
 | `.beads/` | SQLite + `issues.jsonl` + `gates.jsonl` |
 | `.flywheel/` | project stages + standing orders |
 | `.toron/workflows/` | workflow YAML |

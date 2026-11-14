@@ -15,18 +15,18 @@ Marketing + docs site for the autonomous agent stack: toron, flywheel, beads, an
    drift prevention, hosting. **D6 amends 0001's D3 stack table** — the
    effective stack is Next.js 16.3.x + Fumadocs v16 + Tailwind 4.3 +
    build-time mermaid + Vercel Web Analytics.
-3. `.agents/.agents/skills/README.md` — the dogfooded skills index. **MUST read the named
+3. `.agents/skills/README.md` — the dogfooded skills index. **MUST read the named
    skill before the matching work** (below).
 
 ## SKILLS CONTRACT (dogfooded — read before matching work)
 
-| Work | Read first |
-|---|---|
-| ANY Next.js code (files, routes, RSC, data, metadata) | `.agents/skills/next-best-practices/SKILL.md` |
-| ANY React component / perf-sensitive code | `.agents/skills/vercel-react-best-practices/SKILL.md` |
-| UI structure, color/typography/spacing choices, visual polish | `.agents/skills/ui-ux-pro-max/SKILL.md` |
+| Work                                                            | Read first                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| ANY Next.js code (files, routes, RSC, data, metadata)           | `.agents/skills/next-best-practices/SKILL.md`                                                         |
+| ANY React component / perf-sensitive code                       | `.agents/skills/vercel-react-best-practices/SKILL.md`                                                 |
+| UI structure, color/typography/spacing choices, visual polish   | `.agents/skills/ui-ux-pro-max/SKILL.md`                                                               |
 | Caching / cacheComponents / PPR / partial prefetching (Next 16) | `.agents/skills/next-cache-components-adoption/`, `.agents/skills/next-partial-prefetching-adoption/` |
-| Dev-loop discipline (build/test/lint cycle) | `.agents/skills/next-dev-loop/SKILL.md` |
+| Dev-loop discipline (build/test/lint cycle)                     | `.agents/skills/next-dev-loop/SKILL.md`                                                               |
 
 Design tokens + brand language are LOCKED by ADR-0001 D2 — `--toron-*`
 tokens, dark `#0a0a0f` default, Nostr violet `#8b5cf6`, state glyphs,
@@ -51,8 +51,8 @@ Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
   Turbopack font-resolution bug — pin + test font builds; fallback
   `next/font/local`).
 - **Lint and format with oxlint + oxfmt** (ADR-0008). No ESLint, no Prettier.
-- Mermaid renders at BUILD time (rehype-mermaid, inline SVG). Never ship
-  client-side mermaid for static diagrams.
+- Mermaid renders at BUILD time (Pele, inline SVG). Never ship client-side
+  mermaid for static diagrams.
 - Analytics = Vercel Web Analytics only (ADR-0002 D6). No GA, no cookies,
   no consent banner.
 - Product repos (toron, flywheel) never carry website code (ADR-0002 D2).

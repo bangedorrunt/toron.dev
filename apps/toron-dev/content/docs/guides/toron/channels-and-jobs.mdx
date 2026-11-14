@@ -8,13 +8,13 @@ description: Plane S rooms and plane J jobs. Lifecycle, caps, delivery proof, an
 A channel is the room. Creation and closing are kind 39000 (`h`/`d` identifies the channel); membership is kind 39002 with `p` mention tags; posts are kind 9, one line each.
 
 ```bash
-toron channel create steer-bd-z2d0 --name "steer bd-z2d0" --project <slug> --as <Pin>
-toron channel join steer-bd-z2d0 --project <slug> --as <Pin>
-toron channel post steer-bd-z2d0 --project <slug> --as <Pin> \
+toron channel create steer-<bead-id> --name "steer <bead-id>" --project <slug> --as <Pin>
+toron channel join steer-<bead-id> --project <slug> --as <Pin>
+toron channel post steer-<bead-id> --project <slug> --as <Pin> \
   --mention <Peer> --body "handing off crates/x/src/**"
-toron channel read steer-bd-z2d0 --project <slug> --as <Pin> --author <Peer>
-toron channel close steer-bd-z2d0 --project <slug> --as <Pin>   # creator-only tombstone
-toron channel purge steer-bd-z2d0 --project <slug> --as <Pin>   # creator/operator, closed only, audited
+toron channel read steer-<bead-id> --project <slug> --as <Pin> --author <Peer>
+toron channel close steer-<bead-id> --project <slug> --as <Pin>   # creator-only tombstone
+toron channel purge steer-<bead-id> --project <slug> --as <Pin>   # creator/operator, closed only, audited
 ```
 
 Every verb is `<ID> --project <slug> --as <Pin>`, with `--name` required on create
@@ -78,7 +78,7 @@ flowchart LR
     C --> K["43005 cancel"]
 ```
 
-An `@Name` in the body plus `--mention Name` (which sets the `p` tag) creates the job. A missing `p` tag is no job. Claim through `toron job claim`; never fake a 43002 with raw events:
+An `@Name` in the body plus `--mention Name` (which sets the `p` tag) creates the job. Both are required: a missing `p` tag is no job, and `--mention Name` without `@Name` in the body now exits 2 before publishing. Claim through `toron job claim`; never fake a 43002 with raw events:
 
 ```text
 $ toron job list --project toron

@@ -23,10 +23,10 @@ const PHASES: [string, string, string, string][] = [
     "An operator-facing report explaining which durable boundary was recovered, which work resumed, and which work was deliberately not retried.",
   ],
   [
-    "Next",
-    "3.0",
+    "Now",
+    "1.1",
     "Guides that track the products",
-    "A freshness-checked public projection of the canonical guides in each product repository, so the site cannot quietly drift from the code.",
+    "Every canonical guide is projected from its product repository, hash-locked on both sides, and checked on every build, so the site cannot quietly drift from the code.",
   ],
   [
     "Later",
@@ -78,7 +78,9 @@ export default function RoadmapPage() {
           </li>
           <li>Every ledger close has evidence, not confidence.</li>
           <li>Every memory write can be traced back to something that was observed.</li>
-          <li>A number on this site comes from a generated catalog, not from copy.</li>
+          <li>
+            A tool or command count in the docs comes from a generated catalog, not from copy.
+          </li>
         </ul>
       </Section>
 

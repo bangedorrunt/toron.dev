@@ -16,7 +16,7 @@ Run it from the parent workspace directory (`~/workspace`), not inside the repo,
 - `## VERIFY` heading plus exactly one fenced, single-line command. Missing, multi-line, or empty means not ready; the planner is mailed once on the bead thread.
 - Priority &lt;= 2 requires `## PRINCIPLES`: one `<name> — <decision it changed>` line per principle, names from `flywheel principles list`.
 
-Claim form: `br update <id> --status in_progress --assignee "<herdr-slug>"`. More than 3 ready beads at once trips the flood guard for one poll: a pause, not an error.
+Claim form: `br update <id> --status in_progress --assignee "<plane-slug>"`. More than 3 ready beads at once trips the flood guard for one poll: a pause, not an error.
 
 Dispatch briefs carry the bead header (`BEAD: <id>`) and the vehicle announcement. Crews restate the vehicle in their reports.
 
@@ -39,7 +39,7 @@ The workspace doorbell is the same machinery at fleet scale (ADR-0027): one live
 
 ## Fallbacks and recovery
 
-- A fresh `loop-mode run --work` may park after the first poll: `resonate promises reject <id>`, then relaunch.
+- A fresh `loop-mode run --work` may park after the first poll: `loop-mode doctor --fix` clears the stale invocation, then relaunch.
 - `loop-mode run` verbs: `status`, `list`, `prune`, `doctor`, `replay`, `why`.
 - Dead panes: `flywheel recover <project>` rebinds surviving panes or respawns dead ones. `flywheel rebind` only restores name bindings.
 - Context over 80 percent: the loop auto-respawns; otherwise `kill --force-working`, then re-spawn.

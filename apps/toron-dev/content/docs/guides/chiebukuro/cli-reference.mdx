@@ -10,31 +10,34 @@ Global flags: `--install [<shell>]`, `--completion <shell>`, `--agent` (agent-na
 | `init` | Interactive onboarding wizard |
 | `daemon` | Daemon and task management |
 | `diagnostic` | CLI, index, store health; `--llm` adds endpoint and key checks |
-| `preflight` | Live readiness: models, MCP, worker, Resonate, index |
-| `ingest` | File a source into `raw/` |
+| `preflight` | Live readiness: models, MCP, worker, engine store, index |
+| `ingest` | File a source into `raw/`; `--force` re-fetches a URL the connector has already seen; exits non-zero when any source fails. Prints a stable `saved_raw: <wiki-relative path>` line (unstyled, greppable) for every source it writes — use it to find a source before it is compiled |
 | `compile` | Extract concepts into the wiki (DSPy + lambda-RLM) |
 | `review` / `promote` / `reject` | The review queue for candidates and promoted conclusions |
-| `get` | Safe unified retrieval of a document (context-window protected) |
+| `get` | Fetch a document by path/ref (context-window protected). Prefers indexed refs from search (`qmd://collection/path`, `collection/path`, `#docid`); also resolves existing local filesystem paths (`~/`, absolute, relative) to indexed refs when possible, or reads an existing local file as fallback. Use `source get` for `raw/` sources (extraction/OCR, no index required) |
+| `source get` | Open/re-extract a wiki-relative raw source (e.g. `raw/papers/foo.md`). Works without any index — the read path for ingested-but-not-compiled sources. Text/markdown returns UTF-8; pdf/epub etc. extract via anydoc (hosted OCR on first extract); images return an actionable error; paths outside `raw/` are refused |
 | `status` | Knowledge-base status |
 | `lint` | Integrity, links, metadata |
 | `briefing` | Briefing from recent knowledge-plane activity |
-| `investigate` | Multi-hop RLM investigation over the knowledge base |
+| `investigate` | Multi-hop RLM investigation over the knowledge base; `--list-runs` finds interrupted runs, `--resume <id>` continues one, `--reconcile-inflight` retries calls whose outcome is unknown |
 | `query` | Query the knowledge base |
 | `qmd` | QMD index management (BM25 + vector) |
 | `graph` | Relationships, communities, gap analysis (`--json`) |
-| `queue` | Ingest queue status |
+| `queue` | Ingest queue status (the compile ledger — populated when compile starts, not at ingest time; freshly ingested sources may not appear yet) |
+| `tasks` | Daemon task introspection: `chie tasks show <id> --follow` watches a parked run; a timed-out dispatch is parked in the daemon, not failed |
 | `inbox` | Process inbox.md entries |
 | `youtube` | Dual-subtitle extraction |
 | `sessions` | Mine agent sessions from extension captures |
-| `map` | Durable map-reduce over search results (Resonate) |
+| `map` | Durable map-reduce over search results (in-house engine) |
 | `sql` | Metadata SQL pass-through to qmd |
-| `docs` | Auto-generated agent documentation |
+| `docs` | `--check`: every `chie` command named in a skill, guide, design doc, plugin README, or AGENTS.md must parse; every repo path cited in a skill, guide, plugin README, or AGENTS.md must exist; also fails on a nested `AGENTS.md` |
 | `auth` / `model` | LLM provider credentials; model selection for chie and RLM |
+| `config` | Author, diagnose, and migrate `config.toml`: `path`, `show` (schema + pending migration), `init`, `doctor` (health, syntax, permissions, providers), `migrate` (schema or `--dotenv`, `.bak` backup) |
 | `migrate-okf` | One-time wiki migration to OKF v0.1 (additive only) |
 | `remember` | Save a fact as an OKF wiki page, hash-deduplicated |
 | `raw-normalize` | Normalize raw source filenames |
-| `memory` | `record\|recall\|chat\|status\|promote\|dreamer\|repair` |
+| `memory` | `record\|ingest\|prime\|extract\|reason\|explain\|recall\|context\|chat\|status\|scope\|attribution\|promote\|dreamer\|forget\|repair\|vectors\|tree\|view\|zoom\|date\|import-honcho\|check-trap` |
 | `mcp` | Serve as MCP: stdio or Streamable HTTP (`127.0.0.1:18081`) |
 | `integration` | Wire chiebukuro plugins into agent/harness paths |
 
-MCP surface: 24 tools (17 knowledge + 7 memory) + 2 resources. The CLI is the path when a shell exists.
+MCP surface: 28 tools (17 knowledge + 11 memory) + 2 resources. The CLI is the path when a shell exists.

@@ -18,9 +18,18 @@ flowchart LR
 ```
 
 - `ingest` files a URL or file into `raw/`. `queue` shows pending work; `inbox` processes inbox.md entries; `youtube` extracts dual subtitles.
+- A URL that serves a document (PDF, DOCX, EPUB, …) is downloaded to `raw/papers/` with a metadata page; `compile` extracts it with anydoc, including hosted OCR for scanned pages. Images take the vision lane. Any other binary response is refused, never saved as a lossy markdown page.
 - `compile` extracts concepts into OKF pages. `migrate-okf` is the one-time additive migration for older pages; `raw-normalize` cleans raw filenames.
 - `qmd` (Rust) indexes markdown with BM25 + vector. Every hit carries a **gist**: about 350 characters from the OKF description or the first paragraph. Triage happens on gists; answers happen on full pages.
 - `remember` saves durable knowledge directly as wiki pages with OKF frontmatter, deduplicated by content hash.
+
+## Before a source is indexed
+
+`raw/` is never in the QMD index — ingest and compile are separate steps, and search only sees the compiled tree. Discovery and access differ:
+
+- **Find**: `chie ingest` prints an unstyled `saved_raw: <wiki-relative path>` line for every source it writes, and every ingest is logged with `Saved: <path>` in `log-<host>.md`. For connector lanes (X, Gmail, GitHub, YouTube, Reddit…) the path is in their `Saved … to <path>` output and the same log. `qmd search` and `chie query` do not find a source that has not been compiled.
+- **Read**: `chie get` retrieves by ref/path — prefer indexed refs from search; it can also resolve existing local filesystem paths to indexed refs or read an existing local file, but it does not discover uncompiled sources. `chie source get raw/<…>` (MCP `chie_get_source`) is the read path for `raw/` sources with no index: markdown returns as UTF-8, pdf/epub extract via anydoc (hosted OCR on first extract), images return an actionable error, and anything outside `raw/` is refused.
+- `chie queue` is the compile ledger; entries are created when compile starts, so a source ingested but never compiled does not appear there.
 
 ## The retrieval protocol (L0/L1)
 
@@ -35,6 +44,23 @@ flowchart LR
 ```
 
 Never answer from a gist alone. `chie sql --agent` is the metadata pass-through (counts, technical filters over FTS5/vector); `chie graph --json` maps relationships, communities, and gaps in the corpus.
+
+A gist is a **write-time** distillation: `compile` wrote it without knowing your question. When the gate `derive` is enabled (it is, unless `typesafe.gates` names an explicit list that omits it), `chie query` appends a `raw:` block per hit — the span of the page's underlying source that actually answers *this* question, selected by Jev and copied verbatim:
+
+```text
+$ chie query "how is the JIT-Mem curator trained and what benchmarks does it beat"
+30633563-3063356362 | τ²-bench | 0.69
+  gist: Agent benchmark (tau-squared bench) used in JitMem evaluation...
+  path: /…/entities/30633563-3063356362.md
+…
+== re-derived from raw (jev-1.13.0) ==
+39346531-alfworld  [2609.27334.md s2 conf 1.00]
+  raw: Given the retrieved traces and the new task, a memory curator synthesizes a
+  compact, task-adaptive payload … improving over the strongest baseline by 16.2,
+  16.3, and 3.9 absolute success-rate points, respectively.
+```
+
+Read the `raw:` block, not the gist, when the two disagree — the raw is the source of record and the gist is one distillation of it. It appears only where the source has something to say: a page with no `sources:` entry, or one where no span fits, contributes nothing, and the stderr line names which.
 
 ## Promotion
 

@@ -84,7 +84,7 @@ toron doctor --check`}</CodeBlock>
               {`key generated · role=operator · npub=npub1…  (secret not printed)
 daemon installed · com.toron.serve
 daemon started · 127.0.0.1:18080
-doctor: 4/4 checks passed  (herdr ok · git ok · keys ok · store ok)`}
+doctor: 10/10 checks passed  (hc ok · git ok · keys ok · engine_store ok · …)`}
             </CodeBlock>
           </WalkStep>
 
@@ -137,7 +137,7 @@ export AGENT_NAME=QuietHarbor`}</CodeBlock>
   --body "claiming <bead-id>" \\
   --thread <bead-id>
 
-toron mail inbox --since last
+toron mail inbox --project torondev --as QuietHarbor --since last
 toron receipt get --corr <corr-id>`}</CodeBlock>
             <CodeBlock label="you should see" out>
               {`sent · sealed · corr=9f2c…  deliveries=1
@@ -196,7 +196,7 @@ receipt: state=owed  → acked when the recipient reads it`}
         >
           toron/docs/guides
         </a>
-        . This page is a public projection of that path, deliberately not a second manual.
+        . This page is a public walkthrough of that path, deliberately not a second manual.
       </p>
 
       <CTABand

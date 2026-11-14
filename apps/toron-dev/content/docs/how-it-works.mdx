@@ -1,160 +1,225 @@
 ---
 title: How the autonomous stack works
-description: The four-plane execution loop as eight diagrams, from goal to evidence and memory.
+description: One verified run through toron, flywheel, beads, and chiebukuro, with the states and refusals that keep it honest.
 ---
 
-These eight diagrams are the protocol's behavior, which is the one thing a static figure cannot show. Each one is
-rendered at build time. Where a diagram would be better served by the actual interface, the public pages use a rendered
-product surface instead.
+The stack is not a queue with four logos on top. It is a loop of durable artifacts. A goal becomes a claimable work
+item, the item carries a verification fence, the handoff is signed, the close needs evidence, and the result becomes
+memory the next run can query.
 
-The loop is not a queue with extra steps. It is four planes handing durable artifacts to each other:
+These eight diagrams follow one run from arrival to recall. Each one names the state that survives the pane, the
+command that moves it, and the point where the stack refuses to pretend.
 
-1. **flywheel** turns a goal into dispatchable work.
-2. **beads** makes the work claimable, verifiable, and closeable.
-3. **toron** carries the signed handoff and the state that survives a crash.
-4. **chiebukuro** turns the result into memory the next run can use.
-
-## 1. Architecture stack
+## 1. One run, four planes
 
 ```mermaid
-flowchart TB
-  A[agents] --> M[MCP clients]
-  M --> T[toron-core]
-  T --> B[mail + identity + reservations]
-  T --> W[workflow + jobs]
-  T --> G[Git archive]
-  F[flywheel] --> T
-  C[chiebukuro] --> M
-  D[beads] --> T
+flowchart LR
+  G["goal"] --> A["arrive + brief"]
+  A --> B["bead: VERIFY + PRINCIPLES"]
+  B --> C["reserve + dispatch"]
+  C --> D["execute + verify"]
+  D -->|"no"| R["repair"] --> C
+  D -->|"yes"| E["commit → gate → close"]
+  E --> F["sync → memory"]
 ```
 
-A client reaches the mailbox, the workflow engine, and the archive through one surface. flywheel drives that surface
-rather than replacing it, which is why the same identity and the same reservations apply no matter which harness an
-agent runs in.
+The handoff between each pair is an artifact, not a function call: a bead with a verify command, a live path lease, a
+claimed work item, a receipt, a gate row, a cited commit, and a conclusion. That is why a killed pane can lose its
+process without losing the run.
 
-## 2. Message flow
+## 2. Signed mail and the receipt state machine
 
 ```mermaid
 sequenceDiagram
-  participant A as agentA
+  participant A as sender
   participant T as toron
-  participant B as agentB
-  A->>T: sign + gift-wrap
-  T->>B: deliver sealed event
-  B-->>T: receipt
-  T-->>A: correlated result
+  participant R as relay
+  participant B as recipient
+  A->>T: mail send: sign + NIP-17 gift-wrap
+  T->>R: sealed event
+  R->>T: route without plaintext
+  T->>B: deliver
+  B->>T: ack or read
+  T-->>A: receipt owed → acked
+  B->>T: result returns
+  T-->>A: receipt acked → resulted
 ```
 
-The relay routes the envelope. It never receives the plaintext inside it. The receipt is what turns "I sent it" into a
-state anyone can query.
+The relay routes the envelope and never receives the body. A send creates a per-recipient receipt at `owed`. An ack or
+read moves it to `acked`; an explicit result moves it to `resulted`. The store is monotonic and never downgrades. If the answer path is lost after a durable
+enqueue, the state is `degraded`: visible, never silently green, and not an invitation to resend.
 
-## 3. Durable workflow lifecycle
+The mailbox receipt proves a message moved. It does not prove a workflow effect happened. Those are separate stores,
+which is the point of the next two diagrams.
+
+## 3. A bead becomes dispatchable before anyone claims it
+
+```mermaid
+stateDiagram-v2
+  [*] --> open: br create
+  open --> in_progress: claim with assignee
+  in_progress --> in_progress: work + gate rows accumulate
+  in_progress --> closed: pass row + cited sha
+  open --> closed: same ceremony
+  closed --> open: reopen
+```
+
+`ready`, `blocked`, and `deferred` are views over `open`, not a second set of statuses. `br ready` only returns work
+that is open, unblocked, not deferred, and dispatchable. Dispatchability means a `## VERIFY` section with exactly one
+single-line command, plus a `## PRINCIPLES` citation when priority is 2 or higher. Work without that fence stays in the
+backlog by design.
+
+Claims go stale on a clock: about two hours for an agent, about a business day for a human or unclear claim. A live
+reservation, a recent comment, or dirty files in the claimed paths means the claim is still active. Reclaiming starts
+with an audit comment, not a silent takeover.
+
+## 4. The run and the effect are different machines
 
 ```mermaid
 stateDiagram-v2
   [*] --> queued
   queued --> running
-  running --> suspended: approval or crash
-  suspended --> running: resume from log
+  running --> suspended: approval, park, or crash
+  suspended --> running: resume from journal
   running --> completed
-  suspended --> failed
   running --> failed
+  suspended --> failed
   completed --> [*]
   failed --> [*]
 ```
 
-A crash is a transition, not a lost workflow. The record identifies the next durable boundary, which is why a resumed
-run replays completed steps instead of re-executing them.
+A durable run can be `suspended` without being failed. A `park` waits on absolute time and hands its intent to the
+journal before waiting, so a crash resumes the wait instead of losing it. A workflow lint failure is fail-stop: the run
+never starts dirty.
 
-## 4. Mention dispatch and first-claimer wins
+The effect journal is not the run state machine. A real external effect moves through:
 
-```mermaid
-sequenceDiagram
-  participant S as sender
-  participant B as bus
-  participant A as agentA
-  participant C as agentC
-  S->>B: post with mention + p tag
-  B-->>A: job 43001
-  B-->>C: job 43001
-  A->>B: claim
-  C->>B: claim
-  B-->>C: rejected
-  A->>B: result
+```text
+Prepared → Claimed → Running → Delivered
+                           → Failed
+                           → Unknown
 ```
 
-Two agents can see the same job. Exactly one claims it, and the loser gets a rejection rather than a silent overwrite.
-An `@Name` in the body without the matching `p` tag produces no job at all, which is the most common authoring mistake.
+`Accepted` means a queue took the work, not that a provider delivered it. `Unknown` is a truthful outcome and stays
+visible. Suspended, terminal, settled, and business completion are four different claims; the stack never collapses
+them into a green checkmark.
 
-## 5. The durable loop
+## 5. The loop dispatches; the doorbell wakes
 
 ```mermaid
 flowchart LR
-  G[goal] --> P[plan]
-  P --> D[dispatch]
-  D --> W[watch]
-  W --> R{blocked?}
-  R -->|yes| M[mail + recover]
-  R -->|no| V[verify]
-  M --> W
-  V --> C[compound]
-  C --> G
+  R["br ready --json"] --> D{"dispatchable?"}
+  D -->|"no"| B["backlog: missing VERIFY / PRINCIPLES"]
+  D -->|"yes"| L["loop claims + reserves paths"]
+  L --> W["doorbell wake: room, mention, job, receipt"]
+  W --> J["job 43001: first claimer wins"]
+  J --> E["agent executes"]
+  E --> S["result / error / blocked"]
+  S --> R
 ```
 
-The loop is durable because its record, its identity, and its work claims live outside the pane that happens to be
-running it. Kill the pane and the loop is still describable from the ledger.
+`flywheel loop-mode run <project> --work` is the durable dispatch state machine. One live loop runs per project, and
+running the same command after a crash is the recovery path. Wave labels hold higher waves behind lower ones; a
+`wave-N` item is not stuck, it is gated. More than three ready beads trips a one-poll flood guard on purpose.
 
-## 6. Debate before commitment
+The doorbell is the wake plane: room posts, mentions, jobs, and receipts become one prompt line. A dispatch to a busy
+actor is latched into its durable inbox rather than aborted. The loop and the wake path are related, but neither needs
+the other to be running.
+
+## 6. Coalitions negotiate before they collide
 
 ```mermaid
 flowchart LR
-  Q[proposition] --> R1[round 1]
-  R1 --> R2[round N]
-  R2 --> J[judge]
-  J --> V[verdict]
-  V --> D{approved?}
-  D -->|yes| W[commit work]
-  D -->|no| X[revise or stop]
+  C["coalition form"] --> I["intent declared, TTL-bounded"]
+  I --> S{"held reservation?"}
+  S -->|"no"| A["acquire path"]
+  S -->|"yes"| N["negotiate-request, sealed 1:1"]
+  N --> R{"holder responds"}
+  R -->|"agreed"| T["release / transfer"]
+  T --> A
+  R -->|"denied, deferred, or SLA"| E["escalation-due"]
+  E --> C
+  A --> W["work under its own pin"]
 ```
 
-Review is another workflow rather than a ritual performed outside the system, so the rounds, the judge's verdict, and
-the resulting decision all end up in the same record as the work.
+A coalition is a captain-formed grouping of pane crews with a goal workflow and a NIP-29 intent board. Crews declare
+intents before acquiring. Acquiring against an in-TTL intent is a **soft conflict**: freeze and propose. Acquiring
+against a held lease is a **hard conflict**: blocked. The negotiation ladder records `pending`, `responded`, and
+`escalation-due`; an elapsed SLA is a signal to escalate, not to work around the lease.
 
-## 7. Reservation lifecycle
+The atomic reservation remains the enforcement floor. Intents make contention negotiable before it becomes a block.
+
+## 7. The close is a legal transition, not a status update
 
 ```mermaid
-stateDiagram-v2
-  [*] --> intent
-  intent --> held: no conflict
-  intent --> intent: soft conflict
-  held --> held: renew
-  held --> released: close or transfer
-  released --> [*]
+flowchart TD
+  W["work done"] --> V["VERIFY fence passes"]
+  V --> C["commit names the bead id"]
+  C --> G["br gate report --status pass --to closed"]
+  G -->|"no pass row"| R["close refused"]
+  G -->|"pass row"| CL["br close --commit-sha"]
+  CL --> S["br sync --flush-only"]
+  S --> M["mail '[id] done' on the bead thread"]
 ```
 
-Acquiring against a held lease is a hard conflict and blocks. Acquiring against an in-TTL intent is a soft conflict and
-proposes. The pre-commit guard is the final check, not a suggestion, and it reads the committing shell's identity rather
-than a registry default.
+The commit comes before the gate row because the row's note must carry the full 40-hex `sha=<sha>` token that
+`flywheel ledger check` binds to the revision. The close resolves the sha read-only and refuses a commit that does not
+cite the bead. `--force` waives dependencies, never evidence.
 
-## 8. Dual recovery
+The close is one report with two channels: `--reason` is the durable ledger record, and the mail on the bead thread is
+the captain's copy. A close nobody is told about is invisible to the next coordinator.
+
+## 8. Memory compounds without inventing truth
 
 ```mermaid
-flowchart TB
-  L[live bus] --> C[current state]
-  G[Git archive] --> C
-  C --> X{crash?}
-  X -->|yes| R[read journal]
-  R --> G
-  R --> B[rebuild index]
-  B --> P[replay signed events]
-  P --> C
-  X -->|no| D[done]
+flowchart LR
+  E["event: decision, error, observation"] --> Q["derivation queue"]
+  Q --> C["conclusion + premise graph"]
+  C --> R["recall: class-labelled evidence"]
+  C --> D["Dreamer: NREM / REM"]
+  D --> C
+  C --> P["memory promote --conclusion"]
+  P --> V["knowledge review queue"]
+  V -->|"promote"| W["compiled wiki"]
+  V -->|"reject"| X["candidate rejected"]
 ```
 
-The live bus gives speed. The archive gives recovery. Either half can rebuild the other, which is the difference between
-having a backup and having a record.
+The memory plane answers "what happened, what did we decide". The knowledge plane answers "what is curated to be true".
+A conclusion is evidence, not a wiki page. Promotion is explicit, reviewable, and never automatic; reasoned conclusions
+are never promoted. Recall labels each hit by class so "we recorded this" stays distinct from "we concluded this".
+
+The Dreamer is a journaled consolidation program: NREM distillation and pruning by default, REM cross-scope synthesis
+on request. `memory explain` shows premises and supersession, and `memory zoom` opens a summary line back to the
+original message. The next run gets context with provenance instead of scrollback with confidence.
+
+## State is the interface
+
+| Plane            | Artifact         | Legal state                                                       | Read it with                                            |
+| ---------------- | ---------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| toron            | Message receipt  | `owed → acked → resulted`, or `acked → degraded`                  | `toron receipt get --corr <id>`                         |
+| beads            | Work item        | `open → in_progress → closed`; reopen is explicit                 | `br show <id> --json`, `br gate list <id>`              |
+| toron + flywheel | Durable run      | `queued → running → suspended → completed or failed`              | `flywheel artifacts <run-id>`, `toron doctor`           |
+| flywheel         | Project loop     | `active → idle or blocked → resumed`; one per project             | `flywheel loop-mode run <project> --robot-status`       |
+| toron + flywheel | Path reservation | `intent → held → released`; hard conflict blocks                  | `toron reserve list --project <project>`                |
+| chiebukuro       | Conclusion       | `event → derivation → conclusion → review → promoted or rejected` | `chie memory status --json`, `chie memory explain <id>` |
+
+A state is not a label on a dashboard. It is a durable row with a command that moves it and a reader that can prove it
+later. The [architecture page](/architecture#states) carries the same table next to the ownership boundaries, and the
+[walkthroughs](/docs/guides) exercise each transition on a real host.
+
+## Latest on the loop
+
+| Capability         | What it changes in this run                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Effect kernel**  | Reducers stay pure; interpreters perform I/O; settled, unknown, and business completion remain distinct.            |
+| **pstack pickup**  | A resumed bead runs its VERIFY fence first; a green fence means the work is already done and is not repeated.       |
+| **Judgment packs** | Calibrated judgments return as evidence. They never dispatch, settle delivery, close a bead, or turn unknown green. |
+| **Coalitions**     | Intents make file contention negotiable; the held reservation stays the hard floor.                                 |
+| **Doorbell**       | Wakes are journaled observations, not pushes; a busy actor's dispatch waits in a durable inbox.                     |
+| **Dreamer**        | Consolidation is a durable program, not a nightly guess; promotion stays a separate reviewed action.                |
 
 ## Next
 
-- [Survive a crash](/docs/guides/crash-recovery) exercises diagram 8 on a real host.
-- [Architecture](/architecture) names the owner of every capability in these diagrams.
+- [Architecture](/architecture) names the owner of every artifact in these diagrams.
+- [Run a swarm loop](/docs/guides/run-a-swarm-loop) creates and dispatches a bead with the real CLI.
+- [Survive a crash](/docs/guides/crash-recovery) kills the daemon and reads what survived.

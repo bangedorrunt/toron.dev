@@ -33,13 +33,13 @@ Do not run something else. The item recorded a specific one-line command at crea
 evidence is about.
 
 ```bash
-npx pnpm@11.21.0 --filter toron-dev build
+bun run build
 ```
 
 ```text title="You should see"
-  ▲ Next.js 16.3.1
+  ▲ Next.js 16.3.6
  ✓ Compiled successfully
- ✓ Generating static pages (66/66)
+ ✓ Generating static pages (215/215)
 ```
 
 <Fail diagnose="br show torondev-landing-grammar-xo2 --json">the command passes locally but is not the one the item declared. A different command, even a stricter one, is not evidence for this item.</Fail>
@@ -54,7 +54,7 @@ br gate report torondev-landing-grammar-xo2 \
   --gate command-verified \
   --provider QuietHarbor \
   --status pass \
-  --note 'npx pnpm@11.21.0 --filter toron-dev build → 66 routes, 0 type errors'
+  --note 'bun run build → 215 routes, 0 type errors'
 ```
 
 ```text title="You should see"
@@ -129,7 +129,7 @@ br sync --flush-only
 toron mail send --project torondev --as QuietHarbor \
   --to captain --thread torondev-landing-grammar-xo2 \
   --subject "[torondev-landing-grammar-xo2] done" \
-  --body "closed on command-verified · commit=4c9e1a2 · build 66 routes green"
+  --body "closed on command-verified · commit=4c9e1a2 · build 215 routes green"
 
 toron reserve release-by-reason torondev-landing-grammar-xo2 \
   --project torondev --as QuietHarbor

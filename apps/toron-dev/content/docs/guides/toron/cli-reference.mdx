@@ -10,9 +10,14 @@ Global flags on every command: `--json` (structured reads), `--plain` (flat tabl
 | `serve` | Run the daemon: `--mcp-stdio` or `--mcp-http <addr>`; no-flag serve bails |
 | `daemon` | `start\|stop\|restart\|status\|install\|uninstall` |
 | `status` | Quick health/config overview |
-| `catalog` | Emit the MCP surface catalog (38 tools, 25 resources, 29 CLI verbs); freshness-gated |
+| `catalog` | Emit the MCP surface catalog (38 tools, 25 resources, 34 CLI verbs); freshness-gated |
 | `config` | Effective configuration (flags > env > project > user > system) |
-| `mail` | `send\|inbox\|reply\|ack\|read\|search\|thread-summarize`, `whois`; flags in [mail](./mail) |
+| `mail` | `send\|overseer\|reply\|inbox\|ack\|read\|search\|thread-summarize`, `whois`; flags in [mail](./mail) |
+| `ack-sla` | Ack-SLA scan: one `ack-sla-expired` wake per overdue ack-required post; CLI-only |
+| `next` | Read the inbox past the cursor (commits cursor + Delivered; `--peek` commits neither) |
+| `ack` | `<msg> <verdict>`: accept or reject a delivered message |
+| `done` | `<task> --evidence <e>`: finish a held task (Acknowledged → Acted) |
+| `inbox` | `append\|send\|task`: inbox plumbing and task envelope listing |
 | `channel` | Plane S rooms: `create\|join\|leave\|close\|purge\|list\|members\|post\|read` |
 | `job` | Plane J lifecycle: `list\|show\|claim\|progress\|result\|error\|cancel` |
 | `react` | Kind 7 reaction on a channel post |
@@ -20,12 +25,12 @@ Global flags on every command: `--json` (structured reads), `--plain` (flat tabl
 | `watch` | Plane W: `--once` first match, `--live` real subscription |
 | `wait` | `wait --corr <id> --project <slug>`: subscribe-until-receipt, TTL-bounded |
 | `receipt` | Durable receipts: `get\|list\|set --state resulted` |
-| `reserve` | `acquire\|conflicts\|renew\|release\|force-release\|request-release\|respond\|transfer` |
+| `reserve` | `acquire\|conflicts\|list\|renew\|release\|release-by-reason\|sweep\|yield\|yields\|force-release\|request-release\|respond\|transfer\|with-lease` |
 | `slot` | Build slots: `acquire\|renew\|release` |
-| `guard` | Pre-commit guard: `install\|uninstall` |
+| `guard` | Pre-commit guard: `install\|uninstall\|check\|record` |
 | `contact` | `request\|respond\|list\|policy`, `captain [--pin\|--clear]` |
 | `role` | `pin\|list\|clear` via kind-30013 `role=` tags |
-| `agent` | `bootstrap`: register/upsert identity then optional reserve |
+| `agent` | `bootstrap\|prune\|rename` |
 | `key` | NIP-49: `generate --role operator\|agent\|anchor`, `inspect` (never prints the nsec) |
 | `project` | `ensure <slug>` (kind-30010 manifest, operator key), `list` |
 | `relay` | Federation: `list\|add\|remove\|info` (default empty) |
@@ -34,7 +39,54 @@ Global flags on every command: `--json` (structured reads), `--plain` (flat tabl
 | `doctor` | Deep health (`--check` exits 3); `doctor reconstruct` rebuilds SQLite from git |
 | `metrics` | Operator counters: tool calls, errors, latency |
 | `bench` | Mailbox scenarios: startup, inbox, send, search, threads |
-| `tui` | Operator dashboard; refuses non-TTY |
+| `tui` | Operator console: Mail/Channels/Agents/Dashboard/Settings tabs, vim keys; refuses non-TTY |
+| `run-state` | Checkpoint read side: `replay\|fork`, both `--thread` + `--seq`; dry, never installs |
+
+## Run-state (`run-state`)
+
+`toron run-state replay --thread <id> --seq <n>` renders one checkpoint
+boundary: the stored model plus the effect keys that boundary owned.
+
+```bash
+toron run-state replay --thread ws-1 --seq 42 --json
+```
+
+```text
+{"thread":"ws-1","seq":42,"model":{"step":42},"effect_keys":["prompt:pane-1"]}
+```
+
+`toron run-state fork --thread <id> --seq <n>` renders what a fork from that
+boundary WOULD do. It is dry by construction and there is no `--perform` flag:
+this build has no installer, so an opt-in flag would be one that lies. A plan
+reports `would_perform`, `installable` (always `false`), the inherited effect
+keys, and the refusals — led by the dispatch hazard when the boundary owned
+effects.
+
+`replay` is EXACT. A boundary that does not exist is a failure naming it, never
+the nearest row below: a reader that fell back would show a step nobody asked
+for. Seeding a live model from the log is the live host's authority call, so
+nothing here writes.
+
+**If it fails:** `no run-state index at <path>` means the host never recorded
+checkpoints (recording is opt-in), not that the read broke. A named boundary
+means that boundary is not in the log — list the thread's history rather than
+re-running against a nearby `seq`.
+
+## Operator console (`tui`)
+
+`toron tui [--refresh-ms <n>] [--project <slug>] [--as <pin>] [--tab <name>] [--folder <name>] [--all]`.
+
+Five tabs: `1` Mail, `2` Channels, `3` Agents, `4` Dashboard, `5` Settings (`--tab` also takes `inbox|channel|stats|config`). Folders are Inbox/Unread/Threads/NeedsAck/Important (`--folder` also takes `all|new|thread|ack|high`); `--all` includes closed channels on the Channels tab.
+
+Keys: `q`/Ctrl-C quit, `?` help, Tab/Shift-Tab or `1`-`5` switch tabs, `j`/`k`/arrows and `space`/PgDn move, `g`/`G` top/bottom, `h`/`l` panes, Enter open, `/` filter (Enter on Mail runs a server search), `c` compose, `a` ack, `m` mark read, `r` refresh, `[`/`]` refresh cadence, `-`/`+` dashboard window (6→12→24→48), `d` dense, `t` relative time, `C` closed channels (Channels tab).
+
+Compose (`c`, every tab) writes mail without leaving the console. It prefills from the Agents row under the cursor, or replies to the open conversation on Mail (`thread` set, subject copied verbatim), and starts blank otherwise. Tab and Enter walk the seven stops — To, Subject, Body, Wake, Importance, Ack, Send — and the body takes multiple lines with the caret following the logical line it is on. Wake cycles `Standing`/`Tasked` and Importance cycles `normal`/`high`/`urgent`, the same tags `toron mail send` sends, so a console send and a CLI send are the same message. Esc cancels. On send the status line names the thread id and, when the roster shows the recipient has no live pane, says the wake waits in their digest instead of implying they were notified; a refusal keeps the draft and shows the reason. Compose sends through `MailSurface::send_message`, so the kind-9 doorbell ring always accompanies it (see `toron mail send`).
+
+The layout folds with the terminal: three panes at 108+ columns, two (the sidebar beside the list and reader) from 80, and one pane at a time switched with `h`/`l` from 40, which is the shape a phone SSH client reports; below 40x12 it says so instead of drawing. Rows compact with it (one line per message, no stamp), so the subject stays readable on a phone.
+
+An empty pane names the next command with this project and pin already in it: Mail offers `toron mail send … --to <pin> --subject <subject> --body <body>` plus the room opener, Channels offers `toron channel create <id> --name <name> --project … --as …`, and Agents offers `toron agent bootstrap …`. An unknown pin stays a `<pin>` placeholder rather than a guess about who the operator is, and a REFUSED fetch settles the pane: it shows the error beside the command that fixes it instead of saying "loading" forever.
+
+The project falls back to `$TORON_PROJECT` and the agent to `$AGENT_NAME`. `--as` wins over that env. Without either, the tab fails loud rather than guessing. It reads the one mailbox the source selector resolves and refuses a non-loopback daemon. The whole console is an Elm core (`tick(&Model, Msg) -> (Model, Vec<Effect>)`): the fold does no I/O, the host runs every effect under a bound, and Channels/Dashboard refresh on a slower cadence than Mail/Agents.
 
 ## MCP clusters (the emitted 38-tool surface)
 
@@ -64,4 +116,4 @@ A drift gate reads the emitted catalog against these docs, so a count that moves
 in the binary fails the gate instead of aging quietly here.
 | Build slots (3) | `acquire_build_slot`, `renew_build_slot`, `release_build_slot` |
 
-Onboarding sequence: `ensure_project` -> `register_agent` (upsert) -> `file_reservation_paths` (if editing), or one `macro_start_session`. Pane identity helpers: `resolve_pane_identity` maps a herdr `pane_id` to the agent name; `cleanup_pane_identities` prunes identities whose panes are gone. Send receipts carry the rumor id, which is the same id ack and summarize take.
+Onboarding sequence: `ensure_project` -> `register_agent` (upsert) -> `file_reservation_paths` (if editing), or one `macro_start_session`. Pane identity helpers: `resolve_pane_identity` maps an hc terminal id to the agent name (via the `toron_pin` label, else the terminal name); `cleanup_pane_identities` prunes identities whose panes are gone. Send receipts carry the rumor id, which is the same id ack and summarize take.

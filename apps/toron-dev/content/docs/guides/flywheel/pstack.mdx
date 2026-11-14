@@ -39,7 +39,7 @@ sequenceDiagram
     F->>B: inspect open/in-progress and ledger gaps
 ```
 
-The Tick Law matters here. A poll result, clock value, or Herdr status becomes a message payload. Reducers do not read the clock, call I/O, mutate side maps, or silently drop a transition. The effect layer performs commands and feeds results back as messages. `doorbell why` can replay the journal because the decision lives in the reducer.
+The Tick Law matters here. A poll result, clock value, or plane status becomes a message payload. Reducers do not read the clock, call I/O, mutate side maps, or silently drop a transition. The effect layer performs commands and feeds results back as messages. `doorbell why` can replay the journal because the decision lives in the reducer.
 
 ## Pickup and pause
 

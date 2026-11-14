@@ -19,7 +19,8 @@ bun run format    # oxfmt
 
 `bun run build` runs the prebuild chain first: `scripts/generate-tool-docs.mjs`
 (generates the tool pages from `catalog/`), `scripts/check-guides.mjs`, and
-`playwright install chromium` for build-time mermaid.
+`scripts/check-freshness.mjs`. Mermaid fences render through Pele at build time;
+no browser install is required.
 
 ## Deploys
 
@@ -27,12 +28,8 @@ Pushes to `main` deploy production through the Vercel Git integration, and pull
 requests get preview deployments. Production serves at
 <https://toronmail.vercel.app>.
 
-Two Vercel-image specifics worth knowing:
+One Vercel-image specific worth knowing:
 
-- Builds run on Amazon Linux 2023, which lacks the NSS libraries Playwright's
-  Chromium needs. `scripts/vercel-chromium.mjs` extracts `@sparticuz/chromium`
-  and leaves a sidecar that `source.config.ts` reads to launch mermaid
-  rendering.
 - `vercel.json`'s `ignoreCommand` skips builds whose diff misses the app,
   package, and catalog paths.
 

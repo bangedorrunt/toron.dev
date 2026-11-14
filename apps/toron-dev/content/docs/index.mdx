@@ -34,7 +34,7 @@ toron doctor --check
 ```text title="You should see"
 daemon installed · com.toron.serve
 daemon started · 127.0.0.1:18080
-doctor: 4/4 checks passed  (herdr ok · git ok · keys ok · store ok)
+doctor: 10/10 checks passed  (hc ok · git ok · keys ok · engine_store ok · …)
 ```
 
 If it fails: `daemon install` refuses when an unmanaged process already holds the port. `toron daemon status`
@@ -44,8 +44,9 @@ between restarting and killing somebody else's daemon.
 ## Where the numbers come from
 
 The tool pages under **Tools**, and the [reference grid](/docs/reference), are generated from `catalog/toron-mcp.json`
-on every build. That catalog is the site's source of truth for tool names, schemas, resources, and CLI commands, which
-is why a count on this site and a count in the product repository cannot quietly disagree.
+on every build. That catalog is the site's source of truth for the 38-tool parity surface. The live product adds three
+additive tools outside the catalog, which is why the marketing copy names them separately instead of inflating the
+parity count.
 
 ## Next
 

@@ -8,7 +8,7 @@ description: The chiebukuro-first hook, output management, diagnostics, and the 
 - **Chiebukuro-first.** Project shell hooks intercept research-flavored web searches and deny them. The escape is appending `bypass_chiebukuro` to the query, and only when the wiki genuinely has nothing.
 - **QMD-first discovery.** Resolve and verify document paths with `chie get` / `chie sql` before OS-level reads; deterministic access, protected context.
 - **`--agent` everywhere on reads.** Output over 2KB becomes a preview plus a file path; extract signal from the file, never re-read it whole.
-- **Rate limits.** A global LLM semaphore with desynchronization jitter queues all LLM-backed calls; callers never hand-throttle.
+- **Rate limits.** A global LLM call semaphore with desynchronization jitter, plus a separate session-work limiter sized alike, queue all LLM-backed work; callers never hand-throttle.
 - **Output style.** Terse: `[thing] [action] [reason]. [next step].`
 
 ## Diagnostics
@@ -16,7 +16,7 @@ description: The chiebukuro-first hook, output management, diagnostics, and the 
 ```bash
 chie diagnostic           # CLI, QMD index, wiki store health
 chie diagnostic --llm     # LLM endpoint connectivity + API key validity
-chie preflight --quick    # live battery: models, MCP, worker, Resonate, index
+chie preflight --quick    # live battery: models, MCP, worker, engine store, index
 chie status               # knowledge-base status
 chie lint                 # knowledge-base integrity, links, metadata
 chie queue                # pending ingest work
@@ -63,7 +63,7 @@ row, since ingest and compile are the two verbs that depend on it.
 | Setup | `init` (wizard), `auth`, `model`, `mcp` (stdio or HTTP), `integration`, `daemon` |
 | Knowledge | `ingest`, `compile`, `qmd`, `get`, `query`, `investigate`, `map`, `sql`, `graph`, `remember`, `briefing`, `docs` |
 | Review | `review`, `promote`, `reject`, `queue`, `lint`, `status`, `migrate-okf`, `raw-normalize` |
-| Memory | `memory record\|recall\|chat\|status\|promote\|dreamer\|repair` |
+| Memory | `memory record\|recall\|chat\|status\|promote\|dreamer\|forget\|reason\|explain\|repair` |
 | Inputs | `inbox`, `youtube`, `sessions` (mine agent-session captures) |
 | Health | `diagnostic`, `preflight` |
 
@@ -100,8 +100,8 @@ If it fails: `chie daemon reset` is destructive to local task state — after it
 verify the worker (the `preflight` Worker row) before dispatching durable work,
 because a reset daemon with a dead worker queues work nothing will pick up.
 
-The daemon owns the Resonate workers and the scheduled memory drain and Dreamer work. `reset` is destructive to local task state: verify the worker before dispatching durable work after it. Configuration resolves CLI value, then process environment, then `.env`, then builtin; never print secret values.
+The daemon (`dev.chiebukuro.daemon-worker`) owns the durable worker, the 5s drive loop, and the cron host (memory drain/Dreamer runs are its schedule firings). `reset` is destructive to local task state: verify the worker before dispatching durable work after it. Configuration resolves CLI value, then process environment, then `config.toml`, then builtin (`.env` files are not read since ADR-0037); never print secret values.
 
-Memory variables that matter: `CHIEBUKURO_MEMORY_DUAL_WRITE` (mined sessions to SQLite, on by default), `CHIEBUKURO_MEMORY_LLM` (optional polish, off), `CHIEBUKURO_MEMORY_DEFAULT_PEER` / `_SESSION` (record targeting), `CHIEBUKURO_MEMORY_DREAMER_MAX_PEERS` (default 20) and `_BUDGET`, `CHIEBUKURO_MEMORY_DB` (SQLite path override), `CHIEBUKURO_MCP_LOCKFILE` / `CHIEBUKURO_CONCURRENCY_LOCKFILE` (lock paths), `CHIEBUKURO_RESONATE_GROUP` (worker claim isolation), `CHIEBUKURO_CLI` (MCP subprocess override).
+Memory variables that matter: `CHIEBUKURO_MEMORY_LLM` / `memory.llm` (grounded LLM session summaries on the hourly `memory-summarize` schedule, on by default), `CHIEBUKURO_MEMORY_TREE` (the per-session summary tree, on by default) and `CHIEBUKURO_MEMORY_REASON` (scheduled deduction and induction, on by default), `CHIEBUKURO_MEMORY_DEFAULT_PEER` / `_SESSION` (record targeting), `CHIEBUKURO_MEMORY_DREAMER_MAX_PEERS` (default 20) and `_BUDGET`, `CHIEBUKURO_MEMORY_DB` (SQLite path override), `CHIEBUKURO_MEMORY_MULTIWRITER` (off; opens the store through the installed multiwriter VFS, ADR-0053), `CHIEBUKURO_MEMORY_SEMANTIC` (`rrf` by default fuses the embedding rank with the bm25 rank; `semantic` trusts the embeddings alone; `off` keeps the lexical order; ADR-0059), `CHIEBUKURO_MCP_LOCKFILE` / `CHIEBUKURO_CONCURRENCY_LOCKFILE` (lock paths), `CHIEBUKURO_RESONATE_GROUP` (worker claim isolation), `CHIEBUKURO_CLI` (MCP subprocess override).
 
 Canonical memory event kinds: `chie_remember`, `decision`, `preference_signal`, `error`, `file_edit`, `command_result`, `tool_call`, `tool_result`, `user_message`, `assistant_message`, `link_shared`, `task_completed`, `imported_document`. Integration aliases (`fact`, `insight`, `gotcha`, `observation`, `event`) normalize at the parser boundary. `chie memory status --agent --json` is the machine contract: plane totals, conclusion levels, queue state, Honcho import counts. A failed status must fail, never fall back to zeros; unknown scopes return zero rows by design.
