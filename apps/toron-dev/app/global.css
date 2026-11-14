@@ -369,12 +369,14 @@ summary:focus-visible {
 @keyframes toron-vt-out {
   to {
     opacity: 0;
+    transform: translateY(-6px);
   }
 }
 
 @keyframes toron-vt-in {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
 }
 
@@ -405,6 +407,7 @@ summary:focus-visible {
   .toron-home__figure,
   .toron-home__trust,
   .toron-page__header,
+  .toron-section__copy,
   .toron-section__head,
   .toron-section__body,
   .toron-tile,
@@ -442,11 +445,168 @@ summary:focus-visible {
 
 @keyframes toron-reveal {
   from {
-    transform: translateY(12px);
+    transform: translateY(26px) scale(0.99);
   }
 
   to {
     transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toron-home__copy > .toron-kicker,
+  .toron-home__copy > h1,
+  .toron-home__copy > .toron-home__lede,
+  .toron-home__copy > .toron-actions,
+  .toron-home__copy > .toron-home__trust {
+    animation: toron-hero-enter 0.68s var(--toron-ease-settle) both;
+  }
+
+  .toron-home__copy > h1 {
+    animation-delay: 0.06s;
+  }
+
+  .toron-home__copy > .toron-home__lede {
+    animation-delay: 0.12s;
+  }
+
+  .toron-home__copy > .toron-actions {
+    animation-delay: 0.18s;
+  }
+
+  .toron-home__copy > .toron-home__trust {
+    animation-delay: 0.24s;
+  }
+
+  .toron-home__figure .toron-window {
+    animation: toron-figure-enter 0.82s var(--toron-ease-settle) both;
+    animation-delay: 0.16s;
+  }
+
+  .toron-kicker__dot::after {
+    animation: toron-status-ring 3.2s var(--toron-ease-enter) infinite;
+  }
+
+  .toron-stack-strip::before {
+    animation: toron-stack-scan 6s linear infinite;
+  }
+
+  .toron-stack-strip__packet {
+    animation: toron-stack-packet 6s linear infinite;
+  }
+
+  .toron-stack-strip__item::before {
+    animation: toron-stack-step 6s linear infinite;
+    animation-delay: var(--toron-stack-delay);
+  }
+}
+
+@keyframes toron-hero-enter {
+  from {
+    transform: translateY(16px);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes toron-figure-enter {
+  from {
+    transform: translateY(24px) scale(0.985);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes toron-status-ring {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.55);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes toron-stack-scan {
+  from {
+    opacity: 1;
+    transform: translateX(-8rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(calc(100cqw + 2rem));
+  }
+}
+
+@keyframes toron-stack-packet {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(calc(100cqw - 7px));
+  }
+}
+
+@keyframes toron-stack-packet-y {
+  from {
+    opacity: 1;
+    top: 0;
+  }
+
+  to {
+    opacity: 1;
+    top: calc(100% - 7px);
+  }
+}
+
+@keyframes toron-stack-step {
+  0% {
+    opacity: 0;
+  }
+
+  8%,
+  24% {
+    opacity: 1;
+  }
+
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    body::after {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 1000;
+      height: 2px;
+      background: linear-gradient(90deg, var(--toron-accent), var(--toron-accent-bright));
+      content: "";
+      pointer-events: none;
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      animation: toron-page-progress 1s linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes toron-page-progress {
+  to {
+    transform: scaleX(1);
   }
 }
 
@@ -489,6 +649,7 @@ summary:focus-visible {
   .toron-home__figure,
   .toron-home__trust,
   .toron-page__header,
+  .toron-section__copy,
   .toron-section__head,
   .toron-section__body,
   .toron-tile,
@@ -623,10 +784,20 @@ summary:focus-visible {
 }
 
 .toron-kicker__dot {
+  position: relative;
   width: 5px;
   height: 5px;
   border-radius: 999px;
   background: var(--toron-green);
+}
+
+.toron-kicker__dot::after {
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--toron-green);
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
 }
 
 .toron-home__hero .toron-actions,
@@ -1121,6 +1292,12 @@ summary:focus-visible {
   animation: toron-cycle var(--toron-dur-ambient) infinite;
 }
 
+.toron-cycle-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 /*
  * Off screen, the cycle stops. `animation-play-state` rather than removing the
  * animation, so resuming picks the cycle back up where it paused instead of
@@ -1452,9 +1629,44 @@ summary:focus-visible {
 /* ============================================================ stack strip */
 
 .toron-stack-strip {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
   border-top: 1px solid var(--toron-border);
+  container-type: inline-size;
+}
+
+.toron-stack-strip::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 7rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--toron-accent-bright), transparent);
+  box-shadow: 0 0 12px var(--toron-accent);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-8rem);
+}
+
+.toron-stack-strip__packet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--toron-accent-bright);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--toron-accent) 28%, transparent),
+    0 0 16px var(--toron-accent);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .toron-stack-strip__item {
@@ -1472,6 +1684,21 @@ summary:focus-visible {
   --toron-veil-wash: var(--toron-surface);
 }
 
+.toron-stack-strip__item::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-top: 1px solid var(--toron-accent-bright);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--toron-accent) 18%, transparent),
+    transparent 70%
+  );
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
 .toron-stack-strip__item:not(:first-child) {
   padding-left: 1rem;
 }
@@ -1479,6 +1706,22 @@ summary:focus-visible {
 .toron-stack-strip__item:last-child {
   padding-right: 0;
   border-right: 0;
+}
+
+.toron-stack-strip__item:nth-child(1) {
+  --toron-stack-delay: 0s;
+}
+
+.toron-stack-strip__item:nth-child(2) {
+  --toron-stack-delay: 1.5s;
+}
+
+.toron-stack-strip__item:nth-child(3) {
+  --toron-stack-delay: 3s;
+}
+
+.toron-stack-strip__item:nth-child(4) {
+  --toron-stack-delay: 4.5s;
 }
 
 .toron-stack-strip__item > .toron-character {
@@ -1784,6 +2027,77 @@ summary:focus-visible {
 .toron-compare-table tbody tr:last-child th,
 .toron-compare-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .toron-compare-wrap {
+    overflow: visible;
+    border-top: 0;
+  }
+
+  .toron-compare-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .toron-compare-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .toron-compare-table tbody,
+  .toron-compare-table tr,
+  .toron-compare-table th,
+  .toron-compare-table td {
+    display: block;
+  }
+
+  .toron-compare-table tbody tr {
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--toron-border);
+  }
+
+  .toron-compare-table tbody tr:first-child {
+    border-top: 0;
+    padding-top: 0.25rem;
+  }
+
+  .toron-compare-table tbody th {
+    padding: 0 0 0.45rem;
+    border: 0;
+    font-size: 0.8125rem;
+  }
+
+  .toron-compare-table tbody td {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.15rem 0;
+    border: 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .toron-compare-table tbody td::before {
+    color: var(--toron-muted);
+    font-family: var(--toron-font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .toron-compare-table tbody tr:last-child th,
+  .toron-compare-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
 }
 
 /* ============================================================ changelog */
@@ -2492,6 +2806,30 @@ summary:focus-visible {
 
   .toron-page {
     padding-top: 3.5rem;
+  }
+
+  .toron-stack-strip::before {
+    display: none;
+  }
+
+  .toron-stack-strip__packet {
+    top: 0;
+    left: 0;
+    animation-name: toron-stack-packet-y;
+  }
+
+  .toron-stack-strip__item {
+    border-right: 0;
+    border-top: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
+    padding: 0.75rem 0;
+  }
+
+  .toron-stack-strip__item:first-child {
+    border-top: 0;
+  }
+
+  .toron-stack-strip__item:not(:first-child) {
+    padding-left: 0;
   }
 }
 

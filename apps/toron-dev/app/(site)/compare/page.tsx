@@ -107,7 +107,9 @@ export default function ComparePage() {
                 <tr key={label}>
                   <th scope="row">{label}</th>
                   {cells.map((cell, index) => (
-                    <td key={`${label}-${index}`}>{cell}</td>
+                    <td key={`${label}-${index}`} data-label={COLUMNS[index]}>
+                      {cell}
+                    </td>
                   ))}
                 </tr>
               ))}

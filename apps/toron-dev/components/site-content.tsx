@@ -100,6 +100,7 @@ export function Section({
 export function StackStrip() {
   return (
     <div className="toron-stack-strip" aria-label="The four planes of the autonomous agent stack">
+      <span className="toron-stack-strip__packet" aria-hidden="true" />
       {PLANES.map((plane) => (
         <a
           key={plane.slug}
