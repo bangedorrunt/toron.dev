@@ -55,11 +55,11 @@ export function ThemeToggle({
       id={id}
       className={`toron-toggle toron-focus ${className ?? ""}`}
       aria-pressed={isPaper}
-      aria-label={isPaper ? "Switch to ink (dark) theme" : "Switch to paper (light) theme"}
+      aria-label={isPaper ? "Switch to dark theme" : "Switch to light theme"}
       onClick={() => setTheme(isPaper ? "dark" : "paper")}
     >
       {isPaper ? <SunIcon /> : <MoonIcon />}
-      <span>{isPaper ? "paper" : "ink"}</span>
+      <span>{isPaper ? "Light" : "Dark"}</span>
     </button>
   );
 }
