@@ -30,7 +30,7 @@ Marketing + docs site for the autonomous agent stack: toron, flywheel, beads, an
 
 Design tokens + brand language are LOCKED by ADR-0001 D2 — `--toron-*`
 tokens, dark `#0a0a0f` default, Nostr violet `#8b5cf6`, state glyphs,
-Space Grotesk / JetBrains Mono / Inter. Do not invent a second palette.
+Operator SSM Plus / Operator Mono SSM Plus. Do not invent a second palette.
 
 ## STRUCTURE
 

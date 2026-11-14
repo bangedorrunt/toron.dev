@@ -49,10 +49,13 @@
   /* elevation belongs to popovers and dialogs, not to content */
   --toron-elev: 0 18px 44px -24px rgb(0 0 0 / 0.72);
 
-  --toron-font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --toron-font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --toron-font-display:
+    var(--font-operator, "Operator SSM Plus"), ui-sans-serif, system-ui, sans-serif;
+  --toron-font-body:
+    var(--font-operator, "Operator SSM Plus"), ui-sans-serif, system-ui, sans-serif;
   --toron-font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    var(--font-operator-mono, "Operator Mono SSM Plus"), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
 
   /*
    * Motion. The scale is deliberately small: five steps express response,
@@ -243,8 +246,7 @@
 
 .toron-glyph {
   display: inline-block;
-  font-family:
-    var(--toron-font-mono), "Apple Color Emoji", "Segoe UI Symbol", sans-serif;
+  font-family: var(--toron-font-mono), "Apple Color Emoji", "Segoe UI Symbol", sans-serif;
   line-height: 1;
 }
 

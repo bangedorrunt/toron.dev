@@ -9,9 +9,6 @@ type HastNode = {
   value?: string;
 };
 
-const FONT_SANS = "Inter, ui-sans-serif, system-ui, sans-serif";
-const FONT_MONO = "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace";
-
 function textContent(node: HastNode): string {
   if (typeof node.value === "string") return node.value;
   return (node.children ?? []).map(textContent).join("");
@@ -45,8 +42,6 @@ export function rehypePele() {
       const options = {
         responsive: true,
         fontSize: 13,
-        fontFamily: FONT_SANS,
-        fontFamilyMono: FONT_MONO,
       };
       const svgFrom = (markup: string): HastNode => {
         const parsed = fromHtml(markup, { fragment: true }) as unknown as HastNode;

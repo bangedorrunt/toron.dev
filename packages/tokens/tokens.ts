@@ -44,11 +44,12 @@ export const toronPaperTokens = {
   max: "1120px",
 } as const;
 
-// Inter carries both display and body. Mono is reserved for machine text.
+// Operator SSm Plus carries both display and body. Operator Mono SSm Plus is
+// reserved for machine text.
 export const toronFonts = {
-  display: '"Inter", ui-sans-serif, system-ui, sans-serif',
-  body: '"Inter", ui-sans-serif, system-ui, sans-serif',
-  mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+  display: 'var(--font-operator), "Operator SSM Plus", ui-sans-serif, system-ui, sans-serif',
+  body: 'var(--font-operator), "Operator SSM Plus", ui-sans-serif, system-ui, sans-serif',
+  mono: 'var(--font-operator-mono), "Operator Mono SSM Plus", ui-monospace, SFMono-Regular, Menlo, monospace',
 } as const;
 
 /** The 4px density scale the site's spacing is built from. */

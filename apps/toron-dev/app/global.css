@@ -7,14 +7,15 @@
  * governed-by: ADR-0004 D2/D3/D4
  *
  * Layout grammar: numbered sections, each carrying a server-rendered product
- * surface. Inter for display and body; JetBrains Mono for machine text.
+ * surface. Operator SSm Plus for display and body; Operator Mono SSm Plus for
+ * machine text.
  */
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-body: var(--font-inter);
-  --font-display: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-sans: var(--font-operator);
+  --font-body: var(--font-operator);
+  --font-display: var(--font-operator);
+  --font-mono: var(--font-operator-mono);
 }
 
 /*
@@ -3429,8 +3430,8 @@ summary:focus-visible {
   --pele-accent: var(--toron-accent-bright);
   --pele-critical: var(--toron-red);
   --pele-error: var(--toron-red);
-  --pele-font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --pele-font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pele-font: var(--toron-font-body);
+  --pele-font-mono: var(--toron-font-mono);
   --pele-radius: 6px;
   --pele-title-weight: 600;
   --pele-heading-weight: 600;

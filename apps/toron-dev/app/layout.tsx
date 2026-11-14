@@ -1,18 +1,33 @@
 import { Analytics } from "@vercel/analytics/next";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import type { Metadata } from "next";
 import { themeInitScript } from "@toron/tokens/theme-init";
 import { siteUrl } from "@/lib/shared";
 import "./global.css";
 
-// ADR-0004 D2: Inter carries display and body. Space Grotesk is gone, which
-// also drops one family from the font load path.
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+const operator = localFont({
+  src: [
+    { path: "./fonts/OperatorSSMPlus-Book.otf", weight: "400", style: "normal" },
+    { path: "./fonts/OperatorSSMPlus-Medium.otf", weight: "500", style: "normal" },
+    { path: "./fonts/OperatorSSMPlus-Medium.otf", weight: "600", style: "normal" },
+    { path: "./fonts/OperatorSSMPlus-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-operator",
   display: "swap",
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
+  preload: false,
+});
+const operatorMono = localFont({
+  src: [
+    { path: "./fonts/OperatorMonoSSMPlus-Book.otf", weight: "400", style: "normal" },
+    { path: "./fonts/OperatorMonoSSMPlus-Medium.otf", weight: "500", style: "normal" },
+    { path: "./fonts/OperatorMonoSSMPlus-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-operator-mono",
+  display: "swap",
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+  preload: false,
 });
 
 const jsonLd = [
@@ -142,7 +157,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${operator.variable} ${operatorMono.variable}`}
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col">
