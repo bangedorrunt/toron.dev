@@ -17,6 +17,98 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+/*
+ * Fumadocs owns the docs shell's colour variables, so they are mapped onto the
+ * site tokens rather than left as a second palette. `:root` covers light, and
+ * `.dark` is repeated because the vendor sets its dark palette at class
+ * specificity. Paper still wins: every value resolves through --toron-*.
+ */
+:root,
+.dark,
+.light,
+.paper {
+  --color-fd-background: var(--toron-bg);
+  --color-fd-foreground: var(--toron-ink);
+  --color-fd-muted: var(--toron-surface);
+  --color-fd-muted-foreground: var(--toron-muted);
+  --color-fd-popover: var(--toron-overlay);
+  --color-fd-popover-foreground: var(--toron-ink);
+  --color-fd-card: var(--toron-surface);
+  --color-fd-card-foreground: var(--toron-ink);
+  --color-fd-border: var(--toron-border);
+  --color-fd-primary: var(--toron-accent);
+  --color-fd-primary-foreground: #fff;
+  --color-fd-secondary: var(--toron-raised);
+  --color-fd-secondary-foreground: var(--toron-ink);
+  --color-fd-accent: var(--toron-raised);
+  --color-fd-accent-foreground: var(--toron-ink);
+  --color-fd-ring: var(--toron-accent);
+  --color-fd-overlay: rgb(0 0 0 / 0.5);
+}
+
+/*
+ * Docs chrome: one 48px bar, flat surfaces, denser navigation. Fumadocs'
+ * search and theme controls are hidden because the command menu and the
+ * site toggle own those jobs; two controls for one action is noise.
+ */
+header[aria-label="Main"] {
+  height: 48px;
+}
+
+header[aria-label="Main"] > div {
+  background: var(--toron-bg);
+  backdrop-filter: none;
+}
+
+header[aria-label="Main"] nav {
+  height: 48px;
+  padding-inline: 1rem;
+}
+
+header[aria-label="Main"] nav a {
+  font-size: 0.8125rem;
+}
+
+[data-theme-toggle],
+[data-search-full],
+#nd-sidebar [data-search],
+[data-sidebar-panel] [data-search] {
+  display: none;
+}
+
+#nd-sidebar {
+  font-size: 0.75rem;
+}
+
+#nd-sidebar a,
+#nd-sidebar button {
+  min-height: 28px;
+  font-size: 0.75rem;
+}
+
+#nd-sidebar [class~="empty:hidden"] {
+  align-self: flex-start;
+  padding-inline-end: 0.125rem;
+}
+
+#nd-page {
+  max-width: 820px;
+}
+
+#nd-page > h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+}
+
+#nd-page .prose {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+#nd-toc {
+  font-size: 0.6875rem;
+}
+
 html {
   scrollbar-gutter: stable;
 }
@@ -31,52 +123,11 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ============================================================ background */
+/* ============================================================ canvas */
 
-.toron-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  background: var(--toron-bg);
-  pointer-events: none;
-}
-
-/* Top-anchored indigo bloom, fading out before it reaches the fold. */
-.toron-bg__field {
-  position: absolute;
-  inset: -30% -20% auto;
-  height: 120vh;
-  background:
-    radial-gradient(
-      ellipse 46% 42% at 50% 0%,
-      color-mix(in srgb, var(--toron-accent) 22%, transparent) 0%,
-      transparent 68%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at 84% 6%,
-      color-mix(in srgb, var(--toron-accent) 10%, transparent) 0%,
-      transparent 62%
-    );
-}
-
-.toron-bg__grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in srgb, var(--toron-border) 62%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--toron-border) 62%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 68px 68px;
-  opacity: 0.34;
-  mask-image: radial-gradient(ellipse 76% 52% at 50% 0%, black 0%, transparent 74%);
+::selection {
+  background: var(--toron-accent-dim);
+  color: var(--toron-ink);
 }
 
 .toron-sr-only {
@@ -95,9 +146,14 @@ html {
 a:focus-visible,
 button:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--toron-accent-bright);
-  outline-offset: 3px;
-  border-radius: 4px;
+  outline: 2px solid var(--toron-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.toron-home [id],
+.toron-page [id] {
+  scroll-margin-top: 4rem;
 }
 
 /* ============================================================ shell + type */
@@ -110,7 +166,7 @@ summary:focus-visible {
 }
 
 .toron-page {
-  padding: 5rem 0 0;
+  padding: 3.25rem 0 0;
 }
 
 .toron-page__eyebrow,
@@ -119,9 +175,9 @@ summary:focus-visible {
   margin: 0;
   color: var(--toron-body);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -131,16 +187,17 @@ summary:focus-visible {
   margin: 0.5rem 0 0;
   color: var(--toron-ink);
   font-family: var(--toron-font-display);
-  font-size: clamp(2.6rem, 5.6vw, 4.25rem);
+  font-size: clamp(2.15rem, 4.4vw, 3.35rem);
   font-weight: 600;
-  line-height: 1.03;
-  letter-spacing: -0.038em;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
 .toron-page__header h1 {
-  max-width: 20ch;
-  font-size: clamp(2.25rem, 4.6vw, 3.5rem);
+  max-width: 26ch;
+  font-size: clamp(1.8rem, 3.2vw, 2.45rem);
+  letter-spacing: -0.03em;
 }
 
 .toron-section__claim,
@@ -150,31 +207,31 @@ summary:focus-visible {
   margin: 0;
   color: var(--toron-ink);
   font-family: var(--toron-font-display);
-  font-size: clamp(1.65rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.3rem, 2.1vw, 1.7rem);
   font-weight: 600;
-  line-height: 1.12;
-  letter-spacing: -0.028em;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
   text-wrap: balance;
 }
 
 .toron-lede,
 .toron-home__lede {
-  max-width: 44rem;
-  margin: 1rem 0 0;
+  max-width: 38rem;
+  margin: 0.85rem 0 0;
   color: var(--toron-body);
   font-family: var(--toron-font-body);
-  font-size: clamp(1rem, 1.5vw, 1.125rem);
-  line-height: 1.65;
+  font-size: 0.9375rem;
+  line-height: 1.6;
 }
 
 .toron-sublede,
 .toron-page__description,
 .toron-section__lede {
-  max-width: 42rem;
-  margin: 0.75rem 0 0;
+  max-width: 38rem;
+  margin: 0.65rem 0 0;
   color: var(--toron-body);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.875rem;
+  line-height: 1.65;
 }
 
 .toron-page__description {
@@ -198,26 +255,27 @@ summary:focus-visible {
 /* ============================================================ sections */
 
 .toron-section {
-  margin: 7rem 0;
+  margin: 4.5rem 0;
 }
 
 .toron-section--tight {
-  margin: 4.5rem 0;
+  margin: 2.5rem 0;
 }
 
 .toron-section__head {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .toron-section__index {
-  color: var(--toron-accent-bright);
+  color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
 
 .toron-section__copy {
@@ -225,34 +283,35 @@ summary:focus-visible {
 }
 
 .toron-section__body {
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
 }
 
 .toron-page__header {
   position: relative;
-  max-width: 56rem;
-  padding-bottom: 2.5rem;
+  max-width: 48rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--toron-border);
 }
 
 /* ============================================================ buttons */
 
 .toron-btn {
   display: inline-flex;
-  min-height: 38px;
+  min-height: var(--toron-control);
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--toron-border-strong);
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--toron-border);
   border-radius: var(--radius);
-  background: var(--toron-raised);
+  background: transparent;
   color: var(--toron-ink);
   font-family: var(--toron-font-body);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
 }
 
 /*
@@ -394,62 +453,6 @@ summary:focus-visible {
  * Firefox has no scroll-driven animations and needs none: without the at-rule
  * nothing animates and both layers sit exactly where the static rules put them.
  */
-@supports (animation-timeline: scroll()) {
-  .toron-bg__field {
-    animation: toron-depth-field linear both;
-    animation-timeline: scroll(root block);
-  }
-
-  .toron-bg__grid {
-    animation: toron-depth-grid linear both;
-    animation-timeline: scroll(root block);
-  }
-}
-
-@supports (animation-timeline: view()) {
-  .toron-home__figure::before,
-  .toron-cta::before {
-    animation: toron-depth-bloom linear both;
-    animation-timeline: view();
-    animation-range: cover 0% cover 100%;
-  }
-}
-
-/*
- * The field is the page's top glow: it recedes as the reader leaves it. The grid
- * is the floor: it slides the other way, which is what makes the page read as a
- * surface being moved over rather than an image being scaled.
- */
-@keyframes toron-depth-field {
-  from {
-    transform: translateY(-2%) scale(1);
-  }
-
-  to {
-    transform: translateY(8%) scale(1.06);
-  }
-}
-
-@keyframes toron-depth-grid {
-  from {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(-5%);
-  }
-}
-
-@keyframes toron-depth-bloom {
-  from {
-    transform: translateY(16px) scale(0.96);
-  }
-
-  to {
-    transform: translateY(-16px) scale(1.03);
-  }
-}
-
 /*
  * A reader who asked for less motion gets none of it, including the reveals.
  * Without this block a reduced-motion browser would still get the scroll-linked
@@ -495,13 +498,7 @@ summary:focus-visible {
  * the overlay escape behind the element's own background and the hover becomes
  * invisible. With it, the veil paints above the surface and below the text.
  */
-:is(
-  .toron-btn,
-  .toron-home__pill,
-  .toron-stack-strip__item,
-  .toron-card--link,
-  .toron-plane-row__item
-) {
+:is(.toron-btn, .toron-stack-strip__item, .toron-card--link, .toron-plane-row__item) {
   position: relative;
   isolation: isolate;
   /* Named explicitly rather than left to the initial value, which is `all`.
@@ -512,13 +509,7 @@ summary:focus-visible {
   transition-duration: 0s;
 }
 
-:is(
-  .toron-btn,
-  .toron-home__pill,
-  .toron-stack-strip__item,
-  .toron-card--link,
-  .toron-plane-row__item
-)::after {
+:is(.toron-btn, .toron-stack-strip__item, .toron-card--link, .toron-plane-row__item)::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -531,80 +522,38 @@ summary:focus-visible {
   transition: opacity var(--toron-dur-fast) var(--toron-ease-standard);
 }
 
-:is(
-    .toron-btn,
-    .toron-home__pill,
-    .toron-stack-strip__item,
-    .toron-card--link,
-    .toron-plane-row__item
-  ):is(:hover, :focus-visible)::after {
+:is(.toron-btn, .toron-stack-strip__item, .toron-card--link, .toron-plane-row__item):is(
+    :hover,
+    :focus-visible
+  )::after {
   opacity: 1;
 }
 
-/*
- * The primary action gets a light rake across it on hover.
- *
- * It is one gradient translated on `transform` over the slow duration, so the
- * compositor does it and the button never repaints. The veil is not enough on
- * its own for the one control on the page that is shaped like a decision: the
- * veil shifts the surface it sits on, and this passes over it, which is the
- * difference between a button that has been noticed and one that has been
- * picked up.
- *
- * `overflow: hidden` is load-bearing: without it the gradient is visible outside
- * the button's own radius, and the effect reads as a smudge on the page. The
- * focus ring is an outline, which is not clipped by an ancestor's overflow, so
- * keyboard users still get the ring they had.
- */
-.toron-btn--primary {
-  position: relative;
-  overflow: hidden;
-}
-
-.toron-btn--primary::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 34%,
-    color-mix(in srgb, white 20%, transparent) 48%,
-    transparent 62%
-  );
-  content: "";
-  pointer-events: none;
-  transform: translateX(-130%);
-  transition: transform var(--toron-dur-slow) var(--toron-ease-standard);
-}
-
-:is(.toron-btn--primary:hover, .toron-btn--primary:focus-visible)::before {
-  transform: translateX(130%);
-}
-
 .toron-btn {
-  --toron-veil-border: color-mix(in srgb, var(--toron-border-strong) 70%, var(--toron-ink));
-  --toron-veil-wash: color-mix(in srgb, var(--toron-raised) 88%, var(--toron-ink));
+  --toron-veil-border: var(--toron-border-strong);
+  --toron-veil-wash: var(--toron-surface);
 }
 
 .toron-btn--primary {
-  border-color: color-mix(in srgb, var(--toron-accent) 82%, transparent);
-  background: var(--toron-accent);
+  border-color: color-mix(in srgb, var(--toron-accent) 70%, var(--toron-border));
+  background: color-mix(in srgb, var(--toron-accent) 88%, var(--toron-bg));
   color: #fff;
 }
 
 .toron-btn--primary:hover {
   border-color: var(--toron-accent-bright);
-  background: color-mix(in srgb, var(--toron-accent) 82%, var(--toron-accent-bright));
+  background: color-mix(in srgb, var(--toron-accent) 78%, var(--toron-accent-bright));
 }
 
 .toron-btn--lg {
-  min-height: 44px;
-  padding: 0.65rem 1.15rem;
-  font-size: 0.9375rem;
+  min-height: 34px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
 }
 
 .toron-text-link {
   color: var(--toron-ink);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: none;
 }
@@ -617,100 +566,76 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.625rem;
-  margin-top: 1.75rem;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
 }
 
 /* ============================================================ hero */
 
 .toron-home__hero {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: center;
-  padding: 6.5rem 0 4rem;
-  text-align: center;
+  gap: 3rem;
+  padding: 3.5rem 0 3rem;
+  text-align: left;
 }
 
 .toron-home__copy {
   display: flex;
-  max-width: 52rem;
+  max-width: none;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.toron-home__pill {
+.toron-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
-  border: 1px solid var(--toron-border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--toron-surface) 70%, transparent);
+  gap: 0.4rem;
+  margin: 0;
   color: var(--toron-body);
-  font-size: 0.8125rem;
-  text-decoration: none;
-  transition: color var(--toron-dur-fast) var(--toron-ease-standard);
-}
-
-/*
- * The border half of this hover is a veil; the colour half is a real
- * transition, because `color` on the label is the whole signal here and there
- * is no overlay that can carry it without covering the text.
- */
-.toron-home__pill {
-  --toron-veil-border: var(--toron-border-strong);
-}
-
-.toron-home__pill:hover {
-  color: var(--toron-ink);
-}
-
-.toron-home__pill-tag {
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--toron-accent) 18%, transparent);
-  color: var(--toron-accent-bright);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.toron-kicker__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--toron-green);
 }
 
 .toron-home__hero .toron-actions,
 .toron-home__hero .toron-home__trust {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .toron-home__trust {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  margin-top: 1.5rem;
+  gap: 0.35rem 0;
+  margin-top: 1rem;
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.01em;
+}
+
+.toron-home__trust span + span::before {
+  margin: 0 0.6rem;
+  color: var(--toron-border-strong);
+  content: "/";
 }
 
 .toron-home__figure {
   position: relative;
-  margin-top: 3.5rem;
+  margin: 0;
   width: 100%;
-}
-
-/* The bloom behind the hero figure, so the window reads as lit from above. */
-.toron-home__figure::before {
-  position: absolute;
-  inset: -10% -6% -18%;
-  z-index: -1;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse 52% 46% at 50% 22%,
-    color-mix(in srgb, var(--toron-accent) 26%, transparent),
-    transparent 70%
-  );
-  content: "";
 }
 
 .toron-home__figure .toron-window,
@@ -724,35 +649,35 @@ summary:focus-visible {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   background: var(--toron-surface);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
-    0 24px 64px -32px color-mix(in srgb, black 80%, transparent);
 }
 
 .toron-window__bar {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   min-width: 0;
-  padding: 0.625rem 0.875rem;
+  height: 30px;
+  padding: 0 0.7rem;
   border-bottom: 1px solid var(--toron-border);
-  background: color-mix(in srgb, var(--toron-surface) 60%, var(--toron-raised));
+  background: var(--toron-surface);
 }
 
-.toron-window__dots {
-  display: flex;
+.toron-window__glyph {
+  width: 5px;
+  height: 5px;
   flex: none;
-  gap: 0.3rem;
+  border-radius: 1px;
+  background: var(--toron-accent);
 }
 
 .toron-window__title {
   overflow: hidden;
   color: var(--toron-body);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.02em;
+  font-size: 0.625rem;
+  letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -760,16 +685,16 @@ summary:focus-visible {
 .toron-window__meta {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   margin-left: auto;
-  color: var(--toron-green);
+  color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   white-space: nowrap;
 }
 
 .toron-window__body {
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .toron-window__body--flush {
@@ -777,116 +702,124 @@ summary:focus-visible {
 }
 
 .toron-figure-caption {
-  margin: 0.75rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
-  text-align: center;
-  text-transform: uppercase;
+  font-size: 0.625rem;
+  letter-spacing: 0.03em;
+  text-align: left;
 }
 
 /* ============================================================ surfaces: board */
 
 .toron-board {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--toron-border);
+  display: block;
 }
 
-.toron-board__col {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem;
-  background: var(--toron-bg);
+.toron-board__group {
+  border-top: 1px solid var(--toron-border);
+}
+
+.toron-board__group:first-child {
+  border-top: 0;
 }
 
 .toron-board__head {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: color-mix(in srgb, var(--toron-surface) 60%, var(--toron-bg));
   color: var(--toron-body);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 500;
+}
+
+.toron-board__state {
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.625rem;
 }
 
 .toron-board__count {
   margin-left: auto;
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .toron-board__rows {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .toron-issue {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.55rem 0.6rem;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr) auto 1.25rem;
+  min-height: var(--toron-row);
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--toron-border) 60%, transparent);
+  background: transparent;
+}
+
+.toron-issue:hover {
   background: var(--toron-surface);
 }
 
 .toron-issue__id {
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
 }
 
 .toron-issue__title {
+  overflow: hidden;
   color: var(--toron-ink);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.4;
-}
-
-.toron-issue__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .toron-chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.1rem 0.4rem;
+  padding: 0.05rem 0.3rem;
   border: 1px solid var(--toron-border);
-  border-radius: 999px;
+  border-radius: var(--radius-xs);
   color: var(--toron-body);
   font-family: var(--toron-font-mono);
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   letter-spacing: 0.02em;
 }
 
 .toron-chip--accent {
-  border-color: color-mix(in srgb, var(--toron-accent) 45%, transparent);
+  border-color: transparent;
+  background: var(--toron-accent-dim);
   color: var(--toron-accent-bright);
 }
 
 .toron-chip--green {
-  border-color: color-mix(in srgb, var(--toron-green) 40%, transparent);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--toron-green) 12%, transparent);
   color: var(--toron-green);
 }
 
 .toron-chip--amber {
-  border-color: color-mix(in srgb, var(--toron-amber) 40%, transparent);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--toron-amber) 12%, transparent);
   color: var(--toron-amber);
 }
 
 .toron-chip--red {
-  border-color: color-mix(in srgb, var(--toron-red) 40%, transparent);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--toron-red) 12%, transparent);
   color: var(--toron-red);
 }
 
@@ -917,11 +850,11 @@ summary:focus-visible {
 
 .toron-mail__row {
   display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.875rem;
-  border-bottom: 1px solid var(--toron-border);
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
 }
 
 .toron-mail__row:last-child {
@@ -944,7 +877,7 @@ summary:focus-visible {
 .toron-mail__subject {
   overflow: hidden;
   color: var(--toron-ink);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -952,13 +885,13 @@ summary:focus-visible {
 .toron-mail__from {
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
 }
 
 .toron-mail__state {
-  color: var(--toron-body);
+  color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   white-space: nowrap;
 }
 
@@ -970,8 +903,8 @@ summary:focus-visible {
   gap: 0.1rem;
   margin: 0;
   font-family: var(--toron-font-mono);
-  font-size: 0.75rem;
-  line-height: 1.75;
+  font-size: 0.6875rem;
+  line-height: 1.7;
 }
 
 .toron-log__line {
@@ -1017,9 +950,10 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.875rem;
-  border-bottom: 1px solid var(--toron-border);
+  gap: 0.6rem;
+  min-height: var(--toron-row);
+  padding: 0 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
 }
 
 .toron-ledger__row:last-child {
@@ -1057,12 +991,10 @@ summary:focus-visible {
 .toron-memory__hit {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--toron-border);
-  border-left: 2px solid color-mix(in srgb, var(--toron-accent) 60%, transparent);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  background: var(--toron-bg);
+  gap: 0.2rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 1px solid var(--toron-accent);
+  background: transparent;
 }
 
 .toron-memory__source {
@@ -1367,11 +1299,16 @@ summary:focus-visible {
 .toron-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0 2rem;
+  align-items: start;
 }
 
 .toron-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.toron-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .toron-grid--4 {
@@ -1381,10 +1318,11 @@ summary:focus-visible {
 .toron-tile {
   display: flex;
   flex-direction: column;
-  padding: 1.25rem;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--toron-surface) 62%, transparent);
+  padding: 0.9rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--toron-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--toron-ink);
 }
 
@@ -1401,14 +1339,14 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.35rem;
 }
 
 .toron-tile h3 {
   margin: 0;
   color: var(--toron-ink);
   font-family: var(--toron-font-display);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -1416,8 +1354,8 @@ summary:focus-visible {
 .toron-tile__body {
   margin: 0;
   color: var(--toron-body);
-  font-size: 0.875rem;
-  line-height: 1.6;
+  font-size: 0.8125rem;
+  line-height: 1.55;
 }
 
 .toron-tile__label {
@@ -1431,54 +1369,62 @@ summary:focus-visible {
 
 .toron-badge {
   display: inline-flex;
-  min-width: 1.5rem;
+  min-width: 1.25rem;
   align-items: center;
   justify-content: center;
   margin-left: auto;
-  padding: 0.1rem 0.4rem;
-  border: 1px solid var(--toron-border);
-  border-radius: 999px;
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--radius-xs);
+  background: var(--toron-raised);
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
 }
 
 .toron-card__arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   margin-top: auto;
-  padding-top: 0.9rem;
-  color: var(--toron-accent-bright);
-  font-size: 0.8125rem;
+  padding-top: 0.75rem;
+  color: var(--toron-body);
+  font-size: 0.6875rem;
 }
 
 .toron-stat-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: var(--toron-border);
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-stat-row > div {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 1.25rem;
-  background: var(--toron-bg);
+  gap: 0.15rem;
+  padding: 0.75rem 1rem 0.75rem 0;
+  border-right: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
+}
+
+.toron-stat-row > div:last-child {
+  border-right: 0;
+}
+
+.toron-stat-row > div:not(:first-child) {
+  padding-left: 1rem;
 }
 
 .toron-stat-row strong {
   color: var(--toron-ink);
   font-family: var(--toron-font-mono);
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-weight: 500;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .toron-stat-row span {
-  color: var(--toron-body);
-  font-size: 0.8125rem;
+  color: var(--toron-muted);
+  font-size: 0.6875rem;
   line-height: 1.45;
 }
 
@@ -1487,24 +1433,35 @@ summary:focus-visible {
 .toron-stack-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: var(--toron-border);
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-stack-strip__item {
-  display: flex;
-  min-height: 96px;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: var(--toron-bg);
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-areas:
+    "art name"
+    "art role";
+  column-gap: 0.6rem;
+  align-items: center;
+  padding: 0.75rem 1rem 0.75rem 0;
+  border-right: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
   color: var(--toron-ink);
   text-decoration: none;
   --toron-veil-wash: var(--toron-surface);
+}
+
+.toron-stack-strip__item:not(:first-child) {
+  padding-left: 1rem;
+}
+
+.toron-stack-strip__item:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.toron-stack-strip__item > .toron-character {
+  grid-area: art;
 }
 
 /* The mascot leads the cell and the name sits under it, so the four read as a
@@ -1523,10 +1480,9 @@ summary:focus-visible {
    of them. Contain keeps the character's own shape while the box stays square,
    which is what keeps the row aligned. */
 .toron-stack-strip__mascot {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
   object-fit: contain;
-  margin-bottom: 0.25rem;
   transition: transform var(--toron-dur-base) var(--toron-ease-standard);
 }
 
@@ -1538,14 +1494,16 @@ summary:focus-visible {
 }
 
 .toron-stack-strip__name {
-  font-family: var(--toron-font-mono);
-  font-size: 0.9375rem;
+  grid-area: name;
+  font-family: var(--toron-font-body);
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .toron-stack-strip__role {
-  color: var(--toron-body);
-  font-size: 0.75rem;
+  grid-area: role;
+  color: var(--toron-muted);
+  font-size: 0.6875rem;
   line-height: 1.4;
 }
 
@@ -1708,25 +1666,21 @@ summary:focus-visible {
 .toron-api {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: var(--toron-border);
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-api__row {
   display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-  gap: 1rem;
-  padding: 0.65rem 0.875rem;
-  background: var(--toron-bg);
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
 }
 
 .toron-api__key {
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1734,46 +1688,39 @@ summary:focus-visible {
 .toron-api__val {
   color: var(--toron-ink);
   font-family: var(--toron-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   overflow-wrap: anywhere;
 }
 
 /* ============================================================ ownership table */
 
 .toron-ownership-table {
-  overflow: hidden;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-ownership-table__row {
   display: grid;
   grid-template-columns: 0.7fr 1.5fr 1fr;
   gap: 1rem;
-  padding: 0.85rem 1rem;
-  border-top: 1px solid var(--toron-border);
+  padding: 0.55rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
   color: var(--toron-body);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
 }
 
-.toron-ownership-table__row:first-child {
-  border-top: 0;
-}
-
 .toron-ownership-table__row--head {
-  background: var(--toron-surface);
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  font-size: 0.5625rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 .toron-ownership-table__row strong {
   color: var(--toron-ink);
   font-family: var(--toron-font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 500;
 }
 
@@ -1781,8 +1728,7 @@ summary:focus-visible {
 
 .toron-compare-wrap {
   overflow-x: auto;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-compare-table {
@@ -1790,22 +1736,21 @@ summary:focus-visible {
   min-width: 860px;
   border-collapse: collapse;
   color: var(--toron-body);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .toron-compare-table th,
 .toron-compare-table td {
-  padding: 0.8rem 0.9rem;
-  border-bottom: 1px solid var(--toron-border);
+  padding: 0.55rem 0.7rem 0.55rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
   text-align: left;
   vertical-align: top;
 }
 
 .toron-compare-table thead th {
-  background: var(--toron-surface);
   color: var(--toron-muted);
   font-family: var(--toron-font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.5625rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1877,67 +1822,69 @@ summary:focus-visible {
 .toron-faq-list {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  border-top: 1px solid var(--toron-border);
 }
 
 .toron-faq-list details {
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--toron-surface) 62%, transparent);
-}
-
-.toron-faq-list details[open] {
-  background: var(--toron-surface);
+  border: 0;
+  border-bottom: 1px solid var(--toron-border);
+  border-radius: 0;
+  background: transparent;
 }
 
 .toron-faq-list summary {
   cursor: pointer;
-  padding: 1rem 1.15rem;
+  padding: 0.7rem 0;
   color: var(--toron-ink);
   font-family: var(--toron-font-display);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+}
+
+.toron-faq-list summary::marker {
+  color: var(--toron-muted);
 }
 
 .toron-faq-list p {
   margin: 0;
-  padding: 0 1.15rem 1.1rem;
+  padding: 0 0 0.8rem;
   color: var(--toron-body);
-  font-size: 0.9375rem;
-  line-height: 1.65;
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
 
 /* ============================================================ callout + cta */
 
 .toron-callout {
   display: flex;
-  gap: 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--toron-surface) 62%, transparent);
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 0.2rem 0 0.2rem 0.8rem;
+  border: 0;
+  border-left: 1px solid var(--toron-amber);
+  background: transparent;
 }
 
 .toron-callout__glyph {
   margin: 0;
-  color: var(--toron-green);
+  color: var(--toron-amber);
   font-family: var(--toron-font-mono);
-  font-size: 1.75rem;
-  line-height: 1;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .toron-callout h3 {
   margin: 0;
   color: var(--toron-ink);
   font-family: var(--toron-font-display);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .toron-callout__body {
-  margin: 0.4rem 0 0;
+  margin: 0.3rem 0 0;
   color: var(--toron-body);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
 }
 
@@ -1947,46 +1894,32 @@ summary:focus-visible {
 }
 
 .toron-cta {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  margin: 6rem 0 0;
-  overflow: hidden;
-  padding: 2.5rem;
+  margin: 4rem 0 0;
+  padding: 1.25rem 1.5rem;
   border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   background: var(--toron-surface);
-}
-
-.toron-cta::before {
-  position: absolute;
-  inset: -60% 0 auto;
-  height: 200%;
-  background: radial-gradient(
-    ellipse 40% 60% at 22% 40%,
-    color-mix(in srgb, var(--toron-accent) 20%, transparent),
-    transparent 70%
-  );
-  content: "";
-}
-
-.toron-cta > * {
-  position: relative;
 }
 
 .toron-cta h2 {
   margin: 0;
-  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.35rem);
 }
 
 .toron-cta p {
   max-width: 34rem;
-  margin: 0.5rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--toron-body);
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.toron-cta .toron-actions {
+  margin-top: 0;
 }
 
 /* ============================================================ footer */
@@ -1997,11 +1930,11 @@ summary:focus-visible {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  margin: 5rem 0 2.5rem;
-  padding-top: 1.5rem;
+  margin: 3.5rem 0 1.5rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--toron-border);
   color: var(--toron-muted);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
 }
 
 .toron-page__footer {
@@ -2009,17 +1942,17 @@ summary:focus-visible {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  margin: 5rem 0 2.5rem;
-  padding-top: 1.5rem;
+  margin: 3.5rem 0 1.5rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--toron-border);
   color: var(--toron-muted);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
 }
 
 .toron-footer__links {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .toron-footer a {
@@ -2084,10 +2017,11 @@ summary:focus-visible {
 .toron-card {
   display: flex;
   flex-direction: column;
-  padding: 1.25rem;
-  border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--toron-surface) 62%, transparent);
+  padding: 0.9rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--toron-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--toron-ink);
 }
 
@@ -2276,18 +2210,12 @@ summary:focus-visible {
 .toron-plane-mark {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  margin: 1.5rem 0 0.5rem;
-  padding: 1.25rem 1.5rem;
+  gap: 1rem;
+  margin: 1.25rem 0 0.5rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--toron-border);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(
-      ellipse 26% 62% at 9% 50%,
-      color-mix(in srgb, var(--toron-accent) 18%, transparent),
-      transparent 72%
-    ),
-    color-mix(in srgb, var(--toron-surface) 55%, transparent);
+  border-radius: var(--radius);
+  background: var(--toron-surface);
 }
 
 /*
@@ -2390,27 +2318,6 @@ summary:focus-visible {
 }
 
 /*
- * The dust field in the closing call to action.
- *
- * `position: absolute` has to win over `.toron-cta > *`, which gives every direct
- * child `position: relative`, so this rule lives after that one. Written before it,
- * the canvas would be a block in the band's flex row, `height: 100%` would resolve
- * against an auto-height parent to the canvas default of 150px, and the band would
- * grow by a canvas nobody can see.
- *
- * It is first in the markup so it paints under the copy, and `z-index: 0` keeps the
- * stacking order explicit rather than a consequence of document order.
- */
-.toron-cta__particles {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/*
  * The character effects, switched off for a reader who asked for less motion.
  *
  * This block sits here, at the end of the section that introduces the effects,
@@ -2439,18 +2346,11 @@ summary:focus-visible {
      `:is()` is dropped as an invalid argument, the rule stays valid for the rest,
      and both blooms keep running for exactly the readers this block exists for.
      That is what the harness caught. */
-  :is(.toron-bg__field, .toron-bg__grid),
-  .toron-home__figure::before,
-  .toron-cta::before {
-    animation: none;
-  }
-
   :is(
     .toron-character__art,
     .toron-stack-strip__mascot,
     .toron-plane-row__art,
-    .toron-plane-mark__art,
-    .toron-btn--primary::before
+    .toron-plane-mark__art
   ) {
     transition: none;
   }
@@ -2459,6 +2359,25 @@ summary:focus-visible {
 /* ============================================================ responsive */
 
 @media (max-width: 900px) {
+  .toron-home__hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2.75rem 0 2rem;
+  }
+
+  .toron-home__copy,
+  .toron-home__figure {
+    min-width: 0;
+  }
+
+  #nd-page .prose table {
+    width: 100%;
+  }
+
+  #nd-page .prose td code {
+    font-size: 0.625rem;
+  }
+
   .toron-plane-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2467,21 +2386,6 @@ summary:focus-visible {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
-  }
-
-  .toron-home__hero {
-    padding-top: 4.5rem;
-    text-align: left;
-    align-items: flex-start;
-  }
-
-  .toron-home__copy {
-    align-items: flex-start;
-  }
-
-  .toron-home__hero .toron-actions,
-  .toron-home__hero .toron-home__trust {
-    justify-content: flex-start;
   }
 
   .toron-grid,
@@ -2524,11 +2428,11 @@ summary:focus-visible {
   }
 
   .toron-home__hero {
-    padding: 3rem 0 2.5rem;
+    padding: 2rem 0 1.5rem;
   }
 
   .toron-section {
-    margin: 4.5rem 0;
+    margin: 3rem 0;
   }
 
   .toron-grid,
@@ -2596,5 +2500,534 @@ summary:focus-visible {
 
   .toron-hero__envelopes .toron-envelope-glyph {
     opacity: 1;
+  }
+}
+
+/* ============================================================ app chrome */
+
+.toron-nav-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toron-cmd-trigger {
+  display: inline-flex;
+  height: var(--toron-control);
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.45rem 0 0.5rem;
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--toron-muted);
+  font-family: var(--toron-font-body);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition:
+    color var(--toron-dur-fast) var(--toron-ease-standard),
+    border-color var(--toron-dur-fast) var(--toron-ease-standard),
+    background-color var(--toron-dur-fast) var(--toron-ease-standard);
+}
+
+.toron-cmd-trigger:hover {
+  border-color: var(--toron-border-strong);
+  background: var(--toron-surface);
+  color: var(--toron-ink);
+}
+
+.toron-cmd-trigger kbd {
+  padding: 1px 4px;
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius-xs);
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+}
+
+/* ------------------------------------------------------------- command menu */
+
+.toron-cmdk {
+  position: fixed;
+  inset: 12vh 0 auto;
+  width: min(560px, calc(100vw - 2rem));
+  max-height: 68vh;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--toron-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--toron-overlay);
+  color: var(--toron-ink);
+  box-shadow: var(--toron-elev);
+}
+
+.toron-cmdk::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.toron-cmdk[open] {
+  animation: toron-cmdk-in var(--toron-dur-fast) var(--toron-ease-enter);
+}
+
+@keyframes toron-cmdk-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toron-cmdk__panel {
+  display: flex;
+  max-height: 68vh;
+  flex-direction: column;
+}
+
+.toron-cmdk__search {
+  display: flex;
+  height: 46px;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.8rem;
+  border-bottom: 1px solid var(--toron-border);
+  color: var(--toron-muted);
+}
+
+.toron-cmdk__search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--toron-ink);
+  font-family: var(--toron-font-body);
+  font-size: 0.8125rem;
+}
+
+.toron-cmdk__search input::placeholder {
+  color: var(--toron-muted);
+  opacity: 0.8;
+}
+
+.toron-cmdk__search kbd,
+.toron-cmdk__foot kbd {
+  padding: 1px 4px;
+  border: 1px solid var(--toron-border);
+  border-radius: var(--radius-xs);
+  background: var(--toron-surface);
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+}
+
+.toron-cmdk__copied {
+  color: var(--toron-green);
+  font-family: var(--toron-font-mono);
+  font-size: 0.625rem;
+}
+
+.toron-cmdk__list {
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.toron-cmdk__group {
+  margin: 0.45rem 0.5rem 0.15rem;
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.toron-cmdk__row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 14px auto minmax(0, 1fr) auto 12px;
+  min-height: 32px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--toron-body);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toron-cmdk__row.is-active {
+  background: var(--toron-accent-dim);
+  color: var(--toron-ink);
+}
+
+.toron-cmdk__icon {
+  display: inline-flex;
+  color: var(--toron-muted);
+}
+
+.toron-cmdk__row.is-active .toron-cmdk__icon {
+  color: var(--toron-accent-bright);
+}
+
+.toron-cmdk__label {
+  color: inherit;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.toron-cmdk__desc {
+  overflow: hidden;
+  color: var(--toron-muted);
+  font-size: 0.6875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toron-cmdk__hint {
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.625rem;
+  white-space: nowrap;
+}
+
+.toron-cmdk__go {
+  color: var(--toron-muted);
+  opacity: 0;
+}
+
+.toron-cmdk__row.is-active .toron-cmdk__go {
+  color: var(--toron-accent-bright);
+  opacity: 1;
+}
+
+.toron-cmdk__empty {
+  margin: 1.5rem 0.5rem;
+  color: var(--toron-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.toron-cmdk__foot {
+  display: flex;
+  height: 34px;
+  flex: none;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.8rem;
+  border-top: 1px solid var(--toron-border);
+  color: var(--toron-muted);
+  font-size: 0.625rem;
+}
+
+.toron-cmdk__foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ============================================================ dense index */
+
+.toron-index {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 3rem;
+}
+
+.toron-index__group {
+  margin-bottom: 1.4rem;
+  border-top: 1px solid var(--toron-border);
+}
+
+.toron-index__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0 0.25rem;
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.toron-index__count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.toron-index__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toron-index__row {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--toron-border) 55%, transparent);
+}
+
+.toron-index__title {
+  color: var(--toron-ink);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.toron-index__body {
+  color: var(--toron-body);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------- install rows */
+
+.toron-steps {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--toron-border);
+  list-style: none;
+}
+
+.toron-steps__row {
+  display: grid;
+  grid-template-columns: 2rem 10rem minmax(0, 1fr);
+  min-height: 40px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
+}
+
+.toron-steps__num {
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.toron-steps__title {
+  color: var(--toron-ink);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.toron-steps__code {
+  overflow-wrap: anywhere;
+  color: var(--toron-body);
+  font-family: var(--toron-font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------- link rows */
+
+.toron-link-rows {
+  border-top: 1px solid var(--toron-border);
+}
+
+.toron-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--toron-border) 70%, transparent);
+  color: var(--toron-ink);
+  text-decoration: none;
+}
+
+.toron-link-row__copy {
+  display: grid;
+  grid-template-columns: 5rem 9rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.toron-link-row__eyebrow {
+  color: var(--toron-muted);
+  font-family: var(--toron-font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.toron-link-row__title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.toron-link-row__body {
+  color: var(--toron-body);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.toron-link-row__go {
+  flex: none;
+  color: var(--toron-muted);
+  transition: transform var(--toron-dur-fast) var(--toron-ease-standard);
+}
+
+.toron-link-row:hover .toron-link-row__go,
+.toron-link-row:focus-visible .toron-link-row__go {
+  transform: translateX(2px);
+  color: var(--toron-accent-bright);
+}
+
+/* ------------------------------------------------------------- responsive */
+
+@media (max-width: 900px) {
+  .toron-index {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .toron-link-row__copy {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+
+  .toron-link-row__body {
+    grid-column: 2;
+  }
+
+  .toron-steps__row {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    row-gap: 0.15rem;
+    padding: 0.55rem 0;
+  }
+
+  .toron-steps__code {
+    grid-column: 2;
+  }
+
+  .toron-cmd-trigger__label,
+  .toron-cmd-trigger kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .toron-index__row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+    padding: 0.5rem 0;
+  }
+
+  .toron-link-row__copy {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+
+  .toron-link-row__body {
+    grid-column: 1;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) table {
+    display: block;
+    width: 100%;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) tbody,
+  #nd-page .prose:has(h2#every-canonical-guide) tr,
+  #nd-page .prose:has(h2#every-canonical-guide) td {
+    display: block;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) tr {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--toron-border);
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td {
+    padding: 0.1rem 0;
+    border: 0;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(2)::before,
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(3)::before {
+    display: inline-block;
+    width: 4.75rem;
+    color: var(--toron-muted);
+    font-family: var(--toron-font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    content: "";
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(2)::before {
+    content: "Read when";
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(3)::before {
+    content: "Canonical";
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(1) {
+    font-weight: 500;
+  }
+
+  #nd-page .prose:has(h2#every-canonical-guide) td:nth-child(3) code {
+    font-size: 0.625rem;
+  }
+
+  .toron-issue {
+    grid-template-columns: 3.6rem minmax(0, 1fr) 1.25rem;
+    gap: 0.45rem;
+  }
+
+  .toron-issue .toron-chip {
+    display: none;
+  }
+
+  .toron-cmdk__row {
+    grid-template-columns: 14px minmax(0, 1fr) auto 12px;
+  }
+
+  .toron-cmdk__desc {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .toron-issue {
+    grid-template-columns: 3.2rem minmax(0, 1fr) 1.1rem;
+    min-height: 36px;
+    padding-block: 4px;
+  }
+
+  .toron-issue__id {
+    font-size: 0.5625rem;
+  }
+
+  .toron-issue__title {
+    line-height: 1.35;
+    text-overflow: clip;
+    white-space: normal;
   }
 }

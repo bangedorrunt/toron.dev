@@ -1,5 +1,6 @@
 import type { BaseLayoutProps, LinkItemType, MainItemType } from "fumadocs-ui/layouts/shared";
 import type { ReactNode } from "react";
+import { IconGithub } from "@/components/ui/icons";
 import { appName, gitConfig } from "./shared";
 
 // ADR-0004 D7: the top nav surfaces the walkthroughs, because a reader who
@@ -21,7 +22,7 @@ function rightCluster(): LinkItemType[] {
     {
       type: "icon",
       label: "GitHub repository",
-      icon: <span aria-hidden="true">⌘</span>,
+      icon: <IconGithub />,
       text: "GitHub",
       secondary: true,
       url: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
@@ -33,6 +34,7 @@ function rightCluster(): LinkItemType[] {
 
 export interface SiteNavOptions {
   themeToggle?: ReactNode;
+  commandMenu?: ReactNode;
 }
 
 export function baseOptions(options?: SiteNavOptions): BaseLayoutProps {
@@ -43,8 +45,7 @@ export function baseOptions(options?: SiteNavOptions): BaseLayoutProps {
   }
 
   return {
-    nav: { title: appName },
+    nav: { title: appName, children: options?.commandMenu },
     links: items,
-    githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }

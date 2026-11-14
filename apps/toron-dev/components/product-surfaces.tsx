@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /*
- * governed-by: ADR-0004 D3
+ * governed-by: ADR-0004 D3, ADR-0011 D3/D4
  *
  * Server-rendered product surfaces. These are the landing-page and guide
  * figures: real DOM, real type, zero client JavaScript. They are illustrative
@@ -23,11 +23,7 @@ export function AppWindow({
   return (
     <div className="toron-window">
       <div className="toron-window__bar">
-        <span className="toron-window__dots" aria-hidden="true">
-          <span className="toron-terminal-dot toron-terminal-dot--red" />
-          <span className="toron-terminal-dot toron-terminal-dot--amber" />
-          <span className="toron-terminal-dot toron-terminal-dot--green" />
-        </span>
+        <span className="toron-window__glyph" aria-hidden="true" />
         <span className="toron-window__title">{title}</span>
         {meta ? <span className="toron-window__meta">{meta}</span> : null}
       </div>
@@ -182,32 +178,40 @@ const BOARD: { column: string; count: number; issues: Issue[] }[] = [
   },
 ];
 
+const STATE_GLYPH: Record<string, string> = {
+  Ready: "○",
+  "In progress": "◐",
+  Blocked: "◉",
+  Closed: "✓",
+};
+
 export function BoardSurface() {
   return (
     <div className="toron-board">
       {BOARD.map((col) => (
-        <div className="toron-board__col" key={col.column}>
-          <p className="toron-board__head">
+        <section className="toron-board__group" key={col.column}>
+          <header className="toron-board__head">
+            <span className="toron-board__state" aria-hidden="true">
+              {STATE_GLYPH[col.column]}
+            </span>
             {col.column}
             <span className="toron-board__count">{col.count}</span>
-          </p>
+          </header>
           <ul className="toron-board__rows">
             {col.issues.map((issue) => (
               <li className="toron-issue" key={issue.id}>
                 <span className="toron-issue__id">{issue.id}</span>
                 <span className="toron-issue__title">{issue.title}</span>
-                <span className="toron-issue__meta">
-                  <span className={`toron-chip${issue.tone ? ` toron-chip--${issue.tone}` : ""}`}>
-                    {issue.label ?? "task"}
-                  </span>
-                  <span className="toron-avatar" aria-hidden="true">
-                    {issue.who}
-                  </span>
+                <span className={`toron-chip${issue.tone ? ` toron-chip--${issue.tone}` : ""}`}>
+                  {issue.label ?? "task"}
+                </span>
+                <span className="toron-avatar" aria-hidden="true">
+                  {issue.who}
                 </span>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       ))}
     </div>
   );

@@ -68,7 +68,7 @@ const ZOOM = 160; // the review row, deliberately not a size the site draws
 // The size the css draws the art at, kept here as the assertion target rather
 // than read back out of the stylesheet: a check that reads its input from the
 // thing it is checking passes after the stylesheet loses the rule.
-const BOX = 72; // 4.5rem at the 16px root
+const BOX = 28; // 1.75rem at the 16px root (the compact strip)
 
 // The rungs the operator chooses between. The shipped size has to appear among
 // them, or the ladder starts comparing candidates the site does not draw.
@@ -226,15 +226,6 @@ ${LADDER.map((s) => `  <h2>${s}px${s === BOX ? " · shipped" : ""}</h2>\n  ${str
 <div class="zoom">${PLANES.map(frame).join("")}</div>
 <div class="gap"></div>
 ${placements()}
-<div class="gap"></div>
-<h1>depth · <b>the field, the grid, and the band that answer the scroll</b></h1>
-<div class="toron-bg" id="depth"><div class="toron-bg__field"></div><div class="toron-bg__grid"></div></div>
-<div id="cta-depth">
-  <div class="toron-cta">
-    <canvas class="toron-cta__particles"></canvas>
-    <div><h2>The band, with the canvas the app puts in it</h2><p>Depth is the one effect the sheet can hold still.</p></div>
-  </div>
-</div>
 </body></html>`;
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -494,64 +485,6 @@ line(
 /* ------------------------------------------------------------------ depth */
 
 /*
- * The depth effects are not a component: the two background layers ride a scroll
- * timeline and the two blooms ride their own visibility. All four are pure CSS, and
- * the failure they have is silent — a misspelled keyframe name leaves the rule in
- * place and the page still — so they are read as computed styles off the real
- * stylesheet rather than trusted to the source text.
- *
- * `@supports` is why the expectation is a pair of alternatives rather than a
- * constant: in a browser without scroll timelines the declarations are dropped and
- * the names read `none`, which is the intended behaviour and not a failure. The gap
- * between `none` and the name is what is being checked; which side of it this
- * browser lands on is reported.
- *
- * The canvas rule is checked here too, and the interesting half is its position in
- * the cascade: `.toron-cta > *` sets `position: relative` on every child of the band,
- * so the rule that puts the canvas behind the copy only wins because it is written
- * after it. Computed `absolute` is that order holding.
- */
-const depth = await one.evaluate(() => {
-  const anim = (el, pseudo) => {
-    const style = getComputedStyle(el, pseudo);
-    return { name: style.animationName, timeline: style.animationTimeline };
-  };
-  const particles = getComputedStyle(document.querySelector("#cta-depth .toron-cta__particles"));
-  return {
-    scrollTimeline: CSS.supports("animation-timeline: scroll()"),
-    viewTimeline: CSS.supports("animation-timeline: view()"),
-    field: anim(document.querySelector("#depth .toron-bg__field")),
-    grid: anim(document.querySelector("#depth .toron-bg__grid")),
-    bloom: anim(document.querySelector("#cta-depth .toron-cta"), "::before"),
-    particles: {
-      position: particles.position,
-      zIndex: particles.zIndex,
-      pointerEvents: particles.pointerEvents,
-    },
-  };
-});
-line(
-  !depth.scrollTimeline ||
-    (depth.field.name === "toron-depth-field" && depth.grid.name === "toron-depth-grid"),
-  "scroll depth",
-  depth.scrollTimeline
-    ? `the field runs ${depth.field.name} and the grid ${depth.grid.name} on ${depth.field.timeline}`
-    : "no scroll timeline in this browser, so the @supports block drops and the page is still",
-);
-line(
-  !depth.viewTimeline || depth.bloom.name === "toron-depth-bloom",
-  "view depth",
-  depth.viewTimeline
-    ? `the band's bloom runs ${depth.bloom.name} on ${depth.bloom.timeline}`
-    : "no view timeline in this browser, so the blooms drop and the page is still",
-);
-line(
-  depth.particles.position === "absolute" && depth.particles.zIndex === "0",
-  "canvas behind copy",
-  `the particle canvas computes ${depth.particles.position} z-${depth.particles.zIndex} with pointer-events ${depth.particles.pointerEvents}, so it sits under the band's copy and takes no clicks`,
-);
-
-/*
  * The sheet's copy of the plane list is checked against the module that owns it.
  * Every number and name below is otherwise read off a copy, and a copy that drifts
  * is a green check on the wrong set: this is the one check that keeps the sheet
@@ -591,10 +524,6 @@ const calm = await calmPage.evaluate(() => ({
     .animationName,
   strip: getComputedStyle(document.querySelector("#strip .toron-stack-strip__mascot"))
     .transitionDuration,
-  field: getComputedStyle(document.querySelector("#depth .toron-bg__field")).animationName,
-  grid: getComputedStyle(document.querySelector("#depth .toron-bg__grid")).animationName,
-  bloom: getComputedStyle(document.querySelector("#cta-depth .toron-cta"), "::before")
-    .animationName,
 }));
 await calmPage.close();
 line(
@@ -602,11 +531,10 @@ line(
   "mark arrival",
   `the plane mark runs ${arrival.name} over ${arrival.duration}`,
 );
-const quietDepth = [calm.field, calm.grid, calm.bloom].every((name) => name === "none");
 line(
-  calm.arrival === "none" && Number.parseFloat(calm.strip) < 0.05 && quietDepth,
+  calm.arrival === "none" && Number.parseFloat(calm.strip) < 0.05,
   "reduced motion",
-  `with reduce: arrival ${calm.arrival}, strip hover transition ${calm.strip}, depth ${[calm.field, calm.grid, calm.bloom].join("/")} (the pointer physics are gated in the component)`,
+  `with reduce: arrival ${calm.arrival}, strip hover transition ${calm.strip} (the pointer physics are gated in the component)`,
 );
 
 /*
@@ -978,8 +906,8 @@ if (!serving) {
       : "no apple-touch-icon in the head: iOS falls back to a screenshot of the page",
   );
   line(
-    icons.manifest?.theme_color === "#08090a" &&
-      icons.manifest?.background_color === "#08090a" &&
+    icons.manifest?.theme_color === "#0b0c0e" &&
+      icons.manifest?.background_color === "#0b0c0e" &&
       icons.sizes.png.length === 2 &&
       sized(icons.sizes.png[0], [192, 192]) &&
       sized(icons.sizes.png[1], [512, 512]),
@@ -1151,102 +1079,6 @@ if (!serving) {
       : `ready ${landed.ready}, finished ${landed.finished}, and no view-transition animation was ever sampled: the click pushed the route without morphing anything`,
   );
   line(landed.frames > 0, "page still ticks", frameNote(landed.frames));
-
-  /*
-   * The canvas, in a real tab: it has to draw while the band is on screen, and it has
-   * to have stopped once the band is not. The stopped half is the one an eager
-   * implementation fails, and it is checkable exactly — a cancelled frame loop leaves
-   * the last frame on the canvas, so two readings taken away from the band have to
-   * agree exactly. The running half cannot be that strict (a frame is a moment, not a
-   * value), so it asks for a changed reading and reports the totals it saw.
-   */
-  const homePage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await homePage.goto(`${ORIGIN}/`, { waitUntil: "networkidle" });
-  const field = await homePage.evaluate(async () => {
-    const canvas = document.querySelector(".toron-cta__particles");
-    if (!canvas) return null;
-    const context = canvas.getContext("2d");
-    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-    // The painted count says the field is there; the alpha total says whether the
-    // frame changed. Summing every alpha is the cheap reading of the whole buffer:
-    // sub-pixel motion moves it through anti-aliasing alone, so a still frame and a
-    // running one cannot look the same.
-    const ink = () => {
-      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-      let painted = 0;
-      let sum = 0;
-      for (let i = 3; i < data.length; i += 4) {
-        sum += data[i];
-        if (data[i] > 0) painted++;
-      }
-      return { painted, sum };
-    };
-    canvas.scrollIntoView({ block: "center" });
-    await wait(700); // a beat for the observer to arrive and the field to fill
-    const onScreen = ink();
-    await wait(400);
-    const later = ink();
-    window.scrollTo(0, 0);
-    await wait(800); // out of view, and past the 140px margin the observer starts on
-    const away = ink();
-    await wait(400);
-    const awayLater = ink();
-    return {
-      box: [canvas.width, canvas.height],
-      dpr: window.devicePixelRatio,
-      onScreen,
-      later,
-      away,
-      awayLater,
-      base: canvas.width === 300 && canvas.height === 150,
-    };
-  });
-  const still = await browser.newPage({
-    reducedMotion: "reduce",
-    viewport: { width: 1280, height: 800 },
-  });
-  await still.goto(`${ORIGIN}/`, { waitUntil: "networkidle" });
-  const quiet = await still.evaluate(async () => {
-    const canvas = document.querySelector(".toron-cta__particles");
-    if (!canvas) return null;
-    canvas.scrollIntoView({ block: "center" });
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    const { data } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-    let painted = 0;
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) painted++;
-    return { painted, box: [canvas.width, canvas.height] };
-  });
-  await Promise.all([homePage.close(), still.close()]);
-
-  const drew = field ? Math.max(field.onScreen.painted, field.later.painted) : 0;
-  line(
-    Boolean(field) && drew > 0 && !field.onScreen.base,
-    "canvas draws",
-    field
-      ? `${drew} painted pixel(s) in a ${field.box.join("x")} canvas on screen at dpr ${field.dpr}, so it is the field and not an untouched 300x150 element`
-      : "no .toron-cta__particles canvas on the home page",
-  );
-  line(
-    Boolean(field) && field.onScreen.sum !== field.later.sum,
-    "canvas animates",
-    field
-      ? `the frame changed between two readings 400ms apart while on screen (${field.onScreen.painted} painted pixels, alpha total ${field.onScreen.sum} → ${field.later.sum})`
-      : "nothing to animate",
-  );
-  line(
-    Boolean(field) && field.away.sum === field.awayLater.sum,
-    "canvas stops",
-    field
-      ? `scrolled away it held still: two readings 400ms apart are byte-identical, alpha total ${field.away.sum}, with the last frame's ${field.away.painted} painted pixel(s) left on the canvas`
-      : "nothing to stop",
-  );
-  line(
-    Boolean(quiet) && quiet.painted === 0,
-    "canvas honours reduce",
-    quiet
-      ? `under reduce the canvas is never sized or drawn: ${quiet.painted} painted pixel(s) in a ${quiet.box.join("x")} canvas`
-      : "no canvas to check",
-  );
 }
 
 const shots = await Promise.all(

@@ -135,7 +135,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
   },
-  other: { "theme-color": "#08090a" },
+  other: { "theme-color": "#0b0c0e" },
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {
@@ -146,10 +146,6 @@ export default function Layout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col">
-        <div className="toron-bg" aria-hidden="true">
-          <div className="toron-bg__field" />
-          <div className="toron-bg__grid" />
-        </div>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} suppressHydrationWarning />
         {jsonLd.map((block, index) => (
           <script
@@ -158,7 +154,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
             dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }}
           />
         ))}
-        <RootProvider search={{ options: { type: "static" } }}>{children}</RootProvider>
+        <RootProvider search={{ enabled: false }}>{children}</RootProvider>
         <Analytics />
       </body>
     </html>

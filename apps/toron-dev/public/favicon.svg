@@ -7,7 +7,7 @@
        fails when these three disagree with them. That check exists because this
        file kept the previous palette for weeks after the tokens moved, and no
        colour in a file nobody opens is a colour anybody notices. -->
-  <rect width="64" height="64" rx="14" fill="#08090a"/>
-  <path d="M15 21h34v22H15z" fill="none" stroke="#5e6ad2" stroke-width="4" stroke-linejoin="round"/>
-  <path d="m16 23 16 13 16-13" fill="none" stroke="#f7f8f8" stroke-width="4" stroke-linejoin="round"/>
+  <rect width="64" height="64" rx="14" fill="#0b0c0e"/>
+  <path d="M15 21h34v22H15z" fill="none" stroke="#6e79d6" stroke-width="4" stroke-linejoin="round"/>
+  <path d="m16 23 16 13 16-13" fill="none" stroke="#f4f5f6" stroke-width="4" stroke-linejoin="round"/>
 </svg>

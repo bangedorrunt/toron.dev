@@ -14,12 +14,12 @@ import {
 import {
   CTABand,
   Callout,
-  CodeBlock,
   Section,
   StackStrip,
   StatRow,
   SurfaceCard,
 } from "@/components/site-content";
+import { IconArrowRight } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "The autonomous agent stack",
@@ -39,7 +39,7 @@ const EVERYTHING: { label: string; count: string; items: [string, string][] }[] 
       ["Rooms and jobs", "Kind 9 for crew-visible work, 43001 for first-claimer job assignment."],
       [
         "File reservations",
-        "Intent, hold, renew, release. A hard conflict blocks the edit, not the commit.",
+        "Intent, hold, renew, release. A hard conflict blocks the reservation; the pre-commit guard blocks the commit.",
       ],
       ["Build slots", "One serialized lane, so two agents never bench the same expensive build."],
     ],
@@ -80,14 +80,35 @@ const EVERYTHING: { label: string; count: string; items: [string, string][] }[] 
 ];
 
 const INSTALL_STEPS: [string, string, string][] = [
-  ["01", "Install the binary", "$ cargo install toron"],
-  ["02", "Start the daemon", "$ toron daemon install && toron daemon start"],
-  ["03", "Register the agent", "$ toron agent bootstrap --project <project> --as <Pin>"],
+  ["01", "Install the binary", "cargo install toron"],
+  ["02", "Start the daemon", "toron daemon install && toron daemon start"],
+  ["03", "Register the agent", "toron agent bootstrap --project <project> --as <Pin>"],
   [
     "04",
     "Send a sealed handoff",
-    '$ toron mail send --to <pin> --subject "<bead> start" --thread <bead>',
+    'toron mail send --project <project> --as <Pin> --to <pin> --subject "<bead> start" --body "claiming <bead>" --thread <bead>',
   ],
+];
+
+const NEXT_STEPS: { eyebrow: string; title: string; body: string; href: string }[] = [
+  {
+    eyebrow: "Map it",
+    title: "Architecture",
+    body: "Which plane owns mail, dispatch, work evidence, and memory, and what each one refuses to do.",
+    href: "/architecture",
+  },
+  {
+    eyebrow: "Trace it",
+    title: "How it works",
+    body: "Eight diagrams covering the message flow, the job race, the crash path, and dual recovery.",
+    href: "/how-it-works",
+  },
+  {
+    eyebrow: "Compare it",
+    title: "Compare",
+    body: "How the stack sits next to swarmtools, herdr, plain MCP memory, and doing nothing.",
+    href: "/compare",
+  },
 ];
 
 export default function HomePage() {
@@ -95,21 +116,22 @@ export default function HomePage() {
     <main className="toron-home">
       <section className="toron-home__hero" aria-labelledby="home-title">
         <div className="toron-home__copy">
-          <Link href="/architecture" className="toron-home__pill">
-            <span className="toron-home__pill-tag">New</span>
-            <span>Four planes, one execution loop</span>
-          </Link>
+          <p className="toron-kicker">
+            <span className="toron-kicker__dot" aria-hidden="true" />
+            The autonomous agent stack
+          </p>
           <h1 id="home-title">Agents that finish the job and prove it.</h1>
           <p className="toron-home__lede">
             Goal in, verified work out. toron signs the mail, flywheel keeps the loop moving, beads
             closes the work on evidence, and chiebukuro remembers what it learned.
           </p>
           <div className="toron-actions">
-            <Link href="#install" className="toron-btn toron-btn--primary toron-btn--lg">
+            <Link href="#install" className="toron-btn toron-btn--primary">
               Install toron
             </Link>
-            <Link href="/docs/guides" className="toron-btn toron-btn--lg">
+            <Link href="/docs/guides" className="toron-btn">
               Read the walkthroughs
+              <IconArrowRight />
             </Link>
           </div>
           <p className="toron-home__trust">
@@ -120,15 +142,16 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="toron-home__figure">
+        <figure className="toron-home__figure">
           <AppWindow title="flywheel briefing · torondev" meta="dispatcher: absent">
             <LoopSurface />
           </AppWindow>
           <FigureCaption>
             One run, end to end: briefing, ready work, reservation, crash, resume
           </FigureCaption>
-        </div>
-      </section>{" "}
+        </figure>
+      </section>
+
       <Section
         index="0.0"
         label="The stack"
@@ -137,6 +160,7 @@ export default function HomePage() {
       >
         <StackStrip />
       </Section>
+
       <Section
         id="coordinate"
         index="1.0"
@@ -150,7 +174,7 @@ export default function HomePage() {
         <FigureCaption>
           Sealed envelopes, receipts, and a blocked item nobody answered
         </FigureCaption>
-        <div className="toron-grid" style={{ marginTop: "1.5rem" }}>
+        <div className="toron-grid toron-grid--3">
           <SurfaceCard eyebrow="Privacy" title="The relay holds no plaintext">
             NIP-17 gift-wrap seals the body to the recipient. A relay routes the envelope and can
             never read it.
@@ -165,6 +189,7 @@ export default function HomePage() {
           </SurfaceCard>
         </div>
       </Section>
+
       <Section
         id="dispatch"
         index="2.0"
@@ -176,7 +201,7 @@ export default function HomePage() {
           <BoardSurface />
         </AppWindow>
         <FigureCaption>Work items carry their verify command at creation, not after</FigureCaption>
-        <div className="toron-grid toron-grid--2" style={{ marginTop: "1.5rem" }}>
+        <div className="toron-grid toron-grid--2">
           <SurfaceCard
             eyebrow="Admission"
             title="A bead without a verify command is not dispatchable"
@@ -192,6 +217,7 @@ export default function HomePage() {
           </SurfaceCard>
         </div>
       </Section>
+
       <Section
         id="prove"
         index="3.0"
@@ -209,6 +235,7 @@ export default function HomePage() {
           including the next agent that reads the ledger.
         </Callout>
       </Section>
+
       <Section
         id="recover"
         index="4.0"
@@ -221,6 +248,7 @@ export default function HomePage() {
         </AppWindow>
         <FigureCaption>Crash → restart → resume, replayed from the journal</FigureCaption>
       </Section>
+
       <Section
         id="remember"
         index="5.0"
@@ -233,6 +261,7 @@ export default function HomePage() {
         </AppWindow>
         <FigureCaption>Curated knowledge and episodic memory, authority-distinct</FigureCaption>
       </Section>
+
       <Section
         index="6.0"
         label="Integrate"
@@ -243,16 +272,17 @@ export default function HomePage() {
           rows={[
             ["mcp", "toron serve --mcp-http 127.0.0.1:18080"],
             ["stdio", "toron serve --mcp-stdio"],
-            ["catalog", "toron catalog --json → 38 tools · 25 resources · 19 commands"],
+            ["catalog", "toron catalog --json → 38 tools · 25 resources · 34 commands"],
             ["transport", "local-first · federation off by default · zero egress"],
           ]}
         />
       </Section>
+
       <Section
         index="7.0"
         label="State"
         title="Where the stack stands today."
-        lede="Numbers on this page come from the generated catalog, not from copy. When they drift, the build fails."
+        lede="Tool and command counts in the docs reference come from the generated catalog, and the freshness gate fails the build when they drift."
         tight
       >
         <StatRow
@@ -264,32 +294,33 @@ export default function HomePage() {
           ]}
         />
       </Section>
+
       <Section
         index="8.0"
         label="Everything else"
         title="Everything a swarm needs, nothing it doesn't."
         lede="The full feature set, grouped by the plane that owns it."
       >
-        <div className="toron-grid toron-grid--2">
+        <div className="toron-index">
           {EVERYTHING.map((group) => (
-            <div className="toron-tile" key={group.label}>
-              <p className="toron-tile__label">
-                {group.label} <span className="toron-badge">{group.count}</span>
-              </p>
-              <div className="toron-grid toron-grid--2" style={{ gap: "0.9rem" }}>
+            <section className="toron-index__group" key={group.label}>
+              <header className="toron-index__head">
+                <span className="toron-index__name">{group.label}</span>
+                <span className="toron-index__count">{group.count}</span>
+              </header>
+              <ul className="toron-index__rows">
                 {group.items.map(([title, body]) => (
-                  <div key={title}>
-                    <h3>{title}</h3>
-                    <p className="toron-tile__body" style={{ marginTop: "0.3rem" }}>
-                      {body}
-                    </p>
-                  </div>
+                  <li className="toron-index__row" key={title}>
+                    <span className="toron-index__title">{title}</span>
+                    <span className="toron-index__body">{body}</span>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
         </div>
       </Section>
+
       <Section
         id="install"
         index="9.0"
@@ -297,19 +328,15 @@ export default function HomePage() {
         title="Four commands to a verifiable handoff."
         lede="The walkthroughs show the expected output at every step and what to do when a step fails."
       >
-        <div className="toron-grid toron-grid--2">
+        <ol className="toron-steps">
           {INSTALL_STEPS.map(([n, title, code]) => (
-            <div className="toron-tile" key={n}>
-              <p className="toron-tile__label">
-                {n} <span className="toron-badge">step</span>
-              </p>
-              <h3>{title}</h3>
-              <div style={{ marginTop: "0.75rem" }}>
-                <CodeBlock>{code}</CodeBlock>
-              </div>
-            </div>
+            <li className="toron-steps__row" key={n}>
+              <span className="toron-steps__num">{n}</span>
+              <span className="toron-steps__title">{title}</span>
+              <code className="toron-steps__code">{code}</code>
+            </li>
           ))}
-        </div>
+        </ol>
         <div className="toron-actions">
           <Link href="/docs/guides" className="toron-btn toron-btn--primary">
             Start the first walkthrough
@@ -319,32 +346,34 @@ export default function HomePage() {
           </Link>
         </div>
       </Section>
+
       <Section index="10.0" label="Start" title="Read the part you need." tight>
-        <div className="toron-grid">
-          <SurfaceCard eyebrow="Map it" title="Architecture" href="/architecture">
-            Which plane owns mail, dispatch, work evidence, and memory, and what each one refuses to
-            do.
-          </SurfaceCard>
-          <SurfaceCard eyebrow="Trace it" title="How it works" href="/how-it-works">
-            Eight diagrams covering the message flow, the job race, the crash path, and dual
-            recovery.
-          </SurfaceCard>
-          <SurfaceCard eyebrow="Compare it" title="Compare" href="/compare">
-            How the stack sits next to swarmtools, herdr, plain MCP memory, and doing nothing.
-          </SurfaceCard>
+        <div className="toron-link-rows">
+          {NEXT_STEPS.map((item) => (
+            <Link href={item.href} className="toron-link-row" key={item.href}>
+              <span className="toron-link-row__copy">
+                <span className="toron-link-row__eyebrow">{item.eyebrow}</span>
+                <span className="toron-link-row__title">{item.title}</span>
+                <span className="toron-link-row__body">{item.body}</span>
+              </span>
+              <IconArrowRight className="toron-link-row__go" />
+            </Link>
+          ))}
         </div>
       </Section>
+
       <CTABand
         title="Start planning on your own terms."
         body="Self-host the mailbox, keep your keys, and have agents coordinating by tonight. No per-seat fee, no relay plaintext, no account."
       >
-        <Link href="#install" className="toron-btn toron-btn--primary toron-btn--lg">
+        <Link href="#install" className="toron-btn toron-btn--primary">
           Install toron
         </Link>
-        <Link href="/docs/guides" className="toron-btn toron-btn--lg">
+        <Link href="/docs/guides" className="toron-btn">
           Read the walkthroughs
         </Link>
       </CTABand>
+
       <footer className="toron-footer">
         <span>toron.dev · the autonomous agent stack</span>
         <span className="toron-footer__links">

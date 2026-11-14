@@ -1,18 +1,14 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { PLANES, type PlaneSlug } from "@/lib/planes";
+import { IconArrowRight } from "@/components/ui/icons";
 import { Character } from "./mascot";
-import { ParticleField } from "./particle-field";
 
 /*
- * governed-by: ADR-0004 D3/D5/D6
+ * governed-by: ADR-0004 D3/D5/D6, ADR-0011 D3
  *
- * The marketing kit. A section is a numbered claim carrying a figure.
- *
- * This module imports the interactive character, which is the whole point of it:
- * every surface here is a marketing surface, where the physics are worth their
- * bytes. The components the docs also use live in `./docs-content`, which imports
- * no client component, and are re-exported at the bottom of this file.
+ * The marketing kit. A section is a numbered claim carrying a figure; the
+ * chrome around it stays quiet. No card soup, no decorative gradients.
  */
 
 /* ------------------------------------------------------------------ shell */
@@ -113,8 +109,8 @@ export function StackStrip() {
           className="toron-stack-strip__item"
         >
           {/* The art keeps its own class, because `.toron-stack-strip__mascot`
-              is the rule that fixes the 4.5rem box the strip's measurement was
-              taken at; the character component supplies the physics around it. */}
+              is the rule that fixes the box the strip's measurement was taken
+              at; the character component supplies the physics around it. */}
           <Character slug={plane.slug} size="strip" className="toron-stack-strip__mascot" />
           <span className="toron-stack-strip__name">{plane.name}</span>
           <span className="toron-stack-strip__role">{plane.role}</span>
@@ -156,8 +152,9 @@ export function SurfaceCard({
       </span>
       <p className="toron-card__body">{children}</p>
       {href ? (
-        <span className="toron-card__arrow" aria-hidden="true">
-          Read more →
+        <span className="toron-card__arrow">
+          Read more
+          <IconArrowRight />
         </span>
       ) : null}
     </>
@@ -183,18 +180,11 @@ export function CTABand({
 }) {
   return (
     <div className="toron-cta">
-      {/* First in the markup, so it paints under the copy, and behind the very
-          last thing every marketing page asks the reader to do. Nothing about the
-          band depends on it: the canvas is aria-hidden, takes no pointer events,
-          and is simply absent for a reader who asked for less motion. */}
-      <ParticleField className="toron-cta__particles" />
       <div>
         <h2>{title}</h2>
         <p>{body}</p>
       </div>
-      <div className="toron-actions" style={{ marginTop: 0 }}>
-        {children}
-      </div>
+      <div className="toron-actions">{children}</div>
     </div>
   );
 }

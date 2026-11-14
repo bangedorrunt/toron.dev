@@ -1,51 +1,58 @@
-// governed-by: ADR-0004 D1/D2 (amends ADR-0001 D2)
+// governed-by: ADR-0011 D1/D2 (amends ADR-0004 D1/D2)
 //
-// Near-black canvas + indigo accent. Values mirror theme.css exactly; if
-// they drift, theme.css is the one that renders and this file is the lie.
+// Values mirror theme.css exactly; if they drift, theme.css is the one that
+// renders and this file is the lie.
 export const toronTokens = {
-  bg: "#08090a",
-  surface: "#0f1011",
-  raised: "#16171a",
-  ink: "#f7f8f8",
-  body: "#8a8f98",
-  muted: "#62666d",
-  border: "#23252a",
-  borderStrong: "#34363c",
-  accent: "#5e6ad2",
-  accentBright: "#828fff",
-  green: "#4cb782",
-  amber: "#f2c94c",
-  red: "#eb5757",
-  radius: "8px",
-  radiusLg: "12px",
+  bg: "#0b0c0e",
+  surface: "#111214",
+  raised: "#17181b",
+  overlay: "#1c1e22",
+  ink: "#f4f5f6",
+  body: "#9a9ea6",
+  muted: "#7b7f87",
+  border: "#24262b",
+  borderStrong: "#35383f",
+  accent: "#6e79d6",
+  accentBright: "#a0a8f5",
+  green: "#63a98a",
+  amber: "#c8a75f",
+  red: "#c97c7c",
+  radiusXs: "4px",
+  radius: "6px",
+  radiusLg: "8px",
   max: "1120px",
 } as const;
 
 export const toronPaperTokens = {
-  bg: "#ffffff",
-  surface: "#f9f9fa",
-  raised: "#f1f1f3",
-  ink: "#16171a",
-  body: "#62666d",
-  muted: "#8a8f98",
-  border: "#e4e5e8",
-  borderStrong: "#d0d1d6",
-  accent: "#5e6ad2",
-  accentBright: "#4c57c4",
-  green: "#1f7a4d",
-  amber: "#8a6100",
-  red: "#b4232a",
-  radius: "8px",
-  radiusLg: "12px",
+  bg: "#fcfcfd",
+  surface: "#f6f7f8",
+  raised: "#eef0f2",
+  overlay: "#ffffff",
+  ink: "#17181b",
+  body: "#565b63",
+  muted: "#70757d",
+  border: "#e3e5e8",
+  borderStrong: "#d2d5da",
+  accent: "#5561c9",
+  accentBright: "#414dbb",
+  green: "#2c6e51",
+  amber: "#7a5f1c",
+  red: "#a33c3c",
+  radiusXs: "4px",
+  radius: "6px",
+  radiusLg: "8px",
   max: "1120px",
 } as const;
 
-// Inter carries both display and body (ADR-0004 D2). Space Grotesk is gone.
+// Inter carries both display and body. Mono is reserved for machine text.
 export const toronFonts = {
   display: '"Inter", ui-sans-serif, system-ui, sans-serif',
   body: '"Inter", ui-sans-serif, system-ui, sans-serif',
   mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
 } as const;
+
+/** The 4px density scale the site's spacing is built from. */
+export const toronSpace = [4, 8, 12, 16, 20, 24, 32, 40] as const;
 
 export type ToronTheme = "dark" | "paper";
 

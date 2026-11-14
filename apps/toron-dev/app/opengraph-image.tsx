@@ -39,8 +39,8 @@ const ART = PLANES.map((plane) => ({ slug: plane.slug, name: plane.name, src: ar
  */
 const S = {
   card: {
-    background: "#08090a",
-    color: "#f7f8f8",
+    background: "#0b0c0e",
+    color: "#f4f5f6",
     display: "flex",
     flexDirection: "column",
     height: "100%",
@@ -49,18 +49,18 @@ const S = {
     fontFamily: "sans-serif",
   },
   eyebrow: {
-    color: "#5e6ad2",
+    color: "#6e79d6",
     fontSize: 24,
     letterSpacing: 4,
     textTransform: "uppercase",
     marginBottom: 24,
   },
   title: { fontSize: 74, fontWeight: 700, lineHeight: 1.05, maxWidth: 920 },
-  subtitle: { color: "#8a8f98", fontSize: 30, marginTop: 26 },
+  subtitle: { color: "#9a9ea6", fontSize: 30, marginTop: 26 },
   row: { display: "flex", gap: 26, marginTop: 46 },
   cell: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
   art: { objectFit: "contain" },
-  name: { color: "#5e6ad2", fontSize: 18, letterSpacing: 1 },
+  name: { color: "#6e79d6", fontSize: 18, letterSpacing: 1 },
 } as const;
 
 export const alt = "toron.dev: the autonomous agent stack";

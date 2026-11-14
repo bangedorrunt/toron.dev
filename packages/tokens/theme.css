@@ -1,35 +1,53 @@
 @import "tailwindcss";
 
 /*
- * governed-by: ADR-0004 D1/D2 (amends ADR-0001 D2)
+ * governed-by: ADR-0011 (amends ADR-0004 D1/D2)
  *
- * Near-black canvas + indigo accent. The --toron-* namespace is retained
- * because it names the site, not the accent; the values and the accent's
- * name are not. --toron-violet is deleted, not aliased: a token named
- * "violet" holding #5E6AD2 is a lie the next reader has to decode.
+ * Neutral graphite canvas, one restrained indigo accent, muted semantics.
+ * The --toron-* namespace names the site, not a hue. Dark is ground truth.
  */
 :root {
-  /* ink — dark is ground truth */
-  --toron-bg: #08090a;
-  --toron-surface: #0f1011;
-  --toron-raised: #16171a;
-  --toron-ink: #f7f8f8;
-  --toron-body: #8a8f98;
-  --toron-muted: #62666d;
-  --toron-border: #23252a;
-  --toron-border-strong: #34363c;
+  /* ink — neutral graphite, not blue-black */
+  --toron-bg: #0b0c0e;
+  --toron-surface: #111214;
+  --toron-raised: #17181b;
+  --toron-overlay: #1c1e22;
+  --toron-ink: #f4f5f6;
+  --toron-body: #9a9ea6;
+  --toron-muted: #7b7f87;
+  --toron-border: #24262b;
+  --toron-border-strong: #35383f;
 
-  --toron-accent: #5e6ad2;
-  --toron-accent-bright: #828fff;
-  --toron-accent-dim: color-mix(in srgb, #5e6ad2 14%, transparent);
+  --toron-accent: #6e79d6;
+  --toron-accent-bright: #a0a8f5;
+  --toron-accent-dim: color-mix(in srgb, #6e79d6 12%, transparent);
 
-  --toron-green: #4cb782;
-  --toron-amber: #f2c94c;
-  --toron-red: #eb5757;
+  /* semantic colour, muted enough to scan without shouting */
+  --toron-green: #63a98a;
+  --toron-amber: #c8a75f;
+  --toron-red: #c97c7c;
 
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius-xs: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
   --max: 1120px;
+
+  /* density: a 4px base, and only the steps the interface uses */
+  --toron-space-1: 4px;
+  --toron-space-2: 8px;
+  --toron-space-3: 12px;
+  --toron-space-4: 16px;
+  --toron-space-5: 20px;
+  --toron-space-6: 24px;
+  --toron-space-7: 32px;
+  --toron-space-8: 40px;
+
+  --toron-control-sm: 26px;
+  --toron-control: 30px;
+  --toron-row: 34px;
+
+  /* elevation belongs to popovers and dialogs, not to content */
+  --toron-elev: 0 18px 44px -24px rgb(0 0 0 / 0.72);
 
   --toron-font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --toron-font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -37,37 +55,15 @@
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /*
-   * Motion. Durations and easings are tokens because the alternative is a
-   * number typed next to a transition, and a second number typed next to the
-   * first is how a third appears. Measured before these existed: six
-   * transition rules, two durations, one easing, no scale.
-   *
-   * The scale is deliberately small. Five steps is enough to express intent
-   * and few enough that nobody adds a sixth for one component.
-   *
-   *   instant  a state change the eye must not notice (focus, selection)
-   *   fast     hover and press, the reader is acting and expecting an answer
-   *   base     an element entering or leaving, the default
-   *   slow     a large surface moving, where a fast fade would look cheap
-   *   ambient  an unattended loop with no reader in the loop
+   * Motion. The scale is deliberately small: five steps express response,
+   * transition, arrival, landing, and an unattended ambient loop.
    */
   --toron-dur-instant: 90ms;
-  --toron-dur-fast: 150ms;
-  --toron-dur-base: 220ms;
-  --toron-dur-slow: 380ms;
+  --toron-dur-fast: 140ms;
+  --toron-dur-base: 200ms;
+  --toron-dur-slow: 320ms;
   --toron-dur-ambient: 12s;
 
-  /*
-   * Easings carry as much meaning as durations, so they are named for what
-   * they do rather than for their curve.
-   *
-   *   standard    symmetric, the default when nothing else applies
-   *   enter       accelerates out, for something arriving
-   *   exit        leaves faster than it entered, because it is already gone
-   *   settle      decelerates with a hair of overshoot, for something
-   *               arriving at rest, which is the crash cycle's resume
-   *   stepped     holds, then jumps, for a state machine rather than a slide
-   */
   --toron-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --toron-ease-enter: cubic-bezier(0, 0, 0.2, 1);
   --toron-ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -75,38 +71,38 @@
   --toron-ease-stepped: steps(1, end);
 }
 
-/*
- * Paper variant — tonal variants of the same hues, verified WCAG AA
- * (4.5:1+) on the light surface. Dark stays verbatim; paper is the
- * accessibility light variant (ADR-0001 D2, re-derived by ADR-0004 D1).
- */
+/* Paper is the accessibility light variant, re-derived from the same hues. */
 .paper {
-  --toron-bg: #ffffff;
-  --toron-surface: #f9f9fa;
-  --toron-raised: #f1f1f3;
-  --toron-ink: #16171a;
-  --toron-body: #62666d;
-  --toron-muted: #8a8f98;
-  --toron-border: #e4e5e8;
-  --toron-border-strong: #d0d1d6;
+  --toron-bg: #fcfcfd;
+  --toron-surface: #f6f7f8;
+  --toron-raised: #eef0f2;
+  --toron-overlay: #ffffff;
+  --toron-ink: #17181b;
+  --toron-body: #565b63;
+  --toron-muted: #70757d;
+  --toron-border: #e3e5e8;
+  --toron-border-strong: #d2d5da;
 
-  --toron-accent: #5e6ad2;
-  --toron-accent-bright: #4c57c4;
-  --toron-accent-dim: color-mix(in srgb, #5e6ad2 10%, transparent);
+  --toron-accent: #5561c9;
+  --toron-accent-bright: #414dbb;
+  --toron-accent-dim: color-mix(in srgb, #5561c9 10%, transparent);
 
-  --toron-green: #1f7a4d;
-  --toron-amber: #8a6100;
-  --toron-red: #b4232a;
+  --toron-green: #2c6e51;
+  --toron-amber: #7a5f1c;
+  --toron-red: #a33c3c;
+
+  --toron-elev: 0 18px 44px -28px rgb(23 24 27 / 0.28);
 }
 
 /*
- * Tailwind v4 theme mapping. Utilities reference the --color-toron-* vars at
- * runtime, so the ink/paper class flip propagates without a rebuild.
+ * Tailwind v4 theme mapping. Utilities reference the runtime vars, so the
+ * ink/paper class flip propagates without a rebuild.
  */
 @theme {
   --color-toron-bg: var(--toron-bg);
   --color-toron-surface: var(--toron-surface);
   --color-toron-raised: var(--toron-raised);
+  --color-toron-overlay: var(--toron-overlay);
   --color-toron-ink: var(--toron-ink);
   --color-toron-body: var(--toron-body);
   --color-toron-muted: var(--toron-muted);
@@ -141,18 +137,18 @@
 .toron-terminal-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: var(--toron-space-2);
+  padding: 0.4rem 0.65rem;
   border-bottom: 1px solid var(--toron-border);
   background: var(--toron-surface);
 }
 
 .toron-terminal-dot {
-  width: 9px;
-  height: 9px;
+  width: 6px;
+  height: 6px;
   border-radius: 9999px;
   flex: none;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .toron-terminal-dot--red {
@@ -168,9 +164,9 @@
 }
 
 .toron-terminal-title {
-  margin-left: 0.25rem;
-  color: var(--toron-body);
-  font-size: 12px;
+  margin-left: var(--toron-space-1);
+  color: var(--toron-muted);
+  font-size: 11px;
   letter-spacing: 0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -185,21 +181,21 @@
 }
 
 .toron-terminal-body {
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 0.85rem;
   color: var(--toron-ink);
-  font-size: 12.5px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.65;
   overflow-x: auto;
 }
 
 .toron-ascii {
   margin: 0;
-  padding: 1rem 1.25rem;
+  padding: var(--toron-space-4);
   background: var(--toron-bg);
   border: 1px solid var(--toron-border);
   border-radius: var(--radius);
   font-family: var(--toron-font-mono);
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--toron-body);
   overflow-x: auto;
@@ -208,10 +204,10 @@
 }
 
 .toron-ascii-title {
-  margin-bottom: 0.5rem;
-  color: var(--toron-body);
+  margin-bottom: var(--toron-space-2);
+  color: var(--toron-muted);
   font-family: var(--toron-font-body);
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.02em;
 }
 
@@ -219,18 +215,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
+  padding: 0.15rem 0.5rem;
   border: 1px solid var(--toron-border);
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--toron-accent) 10%, transparent);
-  color: var(--toron-accent-bright);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--toron-body);
   font-family: var(--toron-font-body);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .toron-envelope-glyph {
-  animation: toron-envelope-arrival 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: toron-envelope-arrival 0.5s var(--toron-ease-settle) both;
   animation-delay: var(--toron-env-delay, 0ms);
 }
 
@@ -239,8 +235,8 @@
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 60% 50% at 50% 0%,
-    color-mix(in srgb, var(--toron-accent) 16%, transparent),
+    ellipse 52% 42% at 50% 0%,
+    color-mix(in srgb, var(--toron-accent) 8%, transparent),
     transparent 70%
   );
 }
@@ -277,33 +273,34 @@
   align-items: center;
   gap: 0.375rem;
   font-family: var(--toron-font-body);
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--toron-body);
 }
 
 .toron-state-glyph__glyph {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .toron-pulse-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 9999px;
   background: currentColor;
-  animation: toron-pulse 2s ease-in-out infinite;
+  animation: toron-pulse 2.4s ease-in-out infinite;
 }
 
 .toron-toggle {
   display: inline-flex;
+  height: var(--toron-control);
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
   border: 1px solid var(--toron-border);
-  border-radius: 9999px;
-  background: var(--toron-surface);
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--toron-body);
   font-family: var(--toron-font-body);
-  font-size: 12.5px;
+  font-size: 11.5px;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -315,6 +312,7 @@
 .toron-toggle:hover {
   color: var(--toron-ink);
   border-color: var(--toron-border-strong);
+  background: var(--toron-surface);
 }
 
 .toron-focus:focus-visible {
@@ -330,7 +328,7 @@
   }
 
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
     transform: scale(0.82);
   }
 }
@@ -338,7 +336,7 @@
 @keyframes toron-envelope-arrival {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(6px) scale(0.97);
   }
 
   to {

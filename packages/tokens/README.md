@@ -1,14 +1,14 @@
 # @toron/tokens
 
-Design tokens + base components for toron.dev (ADR-0004 D1/D2, amending
-ADR-0001 D2).
+Design tokens + base components for toron.dev (ADR-0011 D1/D2, amending
+ADR-0004 D1/D2 and ADR-0001 D2).
 
 ## Files
 
-- `theme.css` — verbatim `--toron-*` token set (dark ground truth), `.paper`
-  light variant (WCAG AA tonal variants), Tailwind v4 `@theme` mapping,
-  component classes, CSS-only motion (pulse, envelope arrival), reduced-motion
-  guard.
+- `theme.css` — verbatim `--toron-*` token set (neutral graphite dark ground
+  truth), a 4px density scale, `.paper` light variant (WCAG AA tonal variants),
+  Tailwind v4 `@theme` mapping, component classes, CSS-only motion (pulse,
+  envelope arrival), reduced-motion guard.
 - `tokens.ts` — TS export of the token set, paper variants, fonts, state-glyph
   metadata.
 - `components/` — React components: `TerminalPane`, `AsciiStrip`,
@@ -47,7 +47,11 @@ In the root layout (server component — `theme-init` is client-free):
 ## Design rules
 
 - Dark is the ground truth; `--toron-*` values in `:root` are verbatim from
-  ADR-0004 D1 and must not change without a further ADR amendment.
+  ADR-0011 D1 and must not change without a further ADR amendment.
+- Density comes from the 4px scale and the 30px control / 34px row tokens; do
+  not add spacing that is not on the scale.
+- Radii are 4px (chips, keys), 6px (controls, panels), and 8px (dialogs only).
+  Content surfaces are flat with hairline separators, not cards.
 - The `--toron-*` namespace names the site, not the accent. The accent token is
   `--toron-accent`; there is no `--toron-violet`.
 - Paper variant uses tonal variants of the same hues, verified WCAG AA
